@@ -17,7 +17,7 @@ jobs:
 
       # 2. JDK 25 환경 설정
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: oracle
           java-version: 25
