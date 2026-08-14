@@ -1,5 +1,5 @@
 # Java 25 환경
-FROM openjdk:25-jdk-slim
+FROM eclipse-temurin:25-jdk
 WORKDIR /app
 
 # Gradle 빌드 후 생성된 JAR 파일 복사
