@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # GitHub 표준 클라우드 러너 사용
+    runs-on: self-hosted
 
     steps:
       # 1. 소스코드 체크아웃
@@ -43,7 +43,7 @@ jobs:
           cd Homework4/backend/kms
           docker build -t ${{ secrets.DOCKER_USERNAME }}/ineb-backend:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/ineb-backend:latest
-          
+
       # Frontend 빌드 및 푸시 Step
       - name: Build & Push Frontend Image
         run: |
