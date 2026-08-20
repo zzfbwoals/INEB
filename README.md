@@ -23,3 +23,4 @@
 ## Homework4 - 아이넵 솔루션 어드민 웹 개발 과제 (강재홍 상무님)
 [C2_DGuardKMS_어드민웹_과제안내서.html](https://github.com/user-attachments/files/30968516/C2_DGuardKMS_._.html)
 
+[![Deploy INEB KMS Project](https://github.com/zzfbwoals/INEB/actions/workflows/deploy.yml/badge.svg)](https://github.com/zzfbwoals/INEB/actions/workflows/deploy.yml)
