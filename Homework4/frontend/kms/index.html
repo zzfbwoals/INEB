@@ -1,10 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>kms</title>
+    <title>iNEB D'GuardKMS</title>
+    <script>
+      // 렌더 전 테마 적용 (FOUC 방지) — 본 로직은 src/lib/theme.ts
+      ;(function () {
+        try {
+          var mode = localStorage.getItem('kms.theme') || 'system'
+          var dark =
+            mode === 'dark' ||
+            (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark'
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,25 +1,47 @@
 package com.ineb.kms.config;
 
+import com.ineb.kms.security.JwtAuthenticationFilter;
+import com.ineb.kms.security.RestAccessDeniedHandler;
+import com.ineb.kms.security.RestAuthenticationEntryPoint;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                // REST API 환경인 경우 CSRF 비활성화
-                .csrf(AbstractHttpConfigurer::disable)
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-                // URL별 접근 권한 설정
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationFilter jwtAuthenticationFilter,
+                                           RestAuthenticationEntryPoint authenticationEntryPoint,
+                                           RestAccessDeniedHandler accessDeniedHandler) throws Exception {
+        http
+                // REST API — CSRF 비활성화, 세션 미사용(JWT)
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Swagger / OpenAPI 관련 엔드포인트 전체 허용
+                        // Swagger / OpenAPI
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -28,13 +50,31 @@ public class SecurityConfig {
                                 "/webjars/**"
                         ).permitAll()
 
-                        // 2. 인증 없이 접근해야 하는 공용 API (예: 로그인, 회원가입 등)
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // 로그인만 공개 — me/logout은 인증 필요
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 
-                        // 3. 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
-                );
+                )
+
+                .exceptionHandling(handling -> handling
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
+
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /** dev에서 Vite 개발 서버(5173)가 백엔드(8080)에 직접 호출 — 운영은 Nginx 동일 출처 프록시라 CORS 불필요 */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", config);
+        return source;
     }
 }

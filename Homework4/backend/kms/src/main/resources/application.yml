@@ -4,11 +4,6 @@ spring:
     username: dguard
     password: ineb!1234
 
-  security:
-    user:
-      name: admin
-      password: Admin!@#$5
-
   jpa:
     hibernate:
       ddl-auto: update
