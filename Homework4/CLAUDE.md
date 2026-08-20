@@ -46,15 +46,20 @@ npm run lint       # oxlint (ESLint 아님)
 
 ## 기술 스택
 
-- **백엔드**: Java 25, Spring Boot **4.0.7** (스타터 아티팩트명이 Boot 3와 다름: `spring-boot-starter-webmvc`, 테스트도 `spring-boot-starter-webmvc-test`/`data-jpa-test`/`security-test`로 분리), Spring Data JPA, Spring Security(JWT 예정), springdoc-openapi 3.x, PostgreSQL 17
-- **프론트엔드**: React 19 + TypeScript, Vite 8(rolldown 기반), React Compiler(babel preset), oxlint, Shadcn/ui·React Router·Axios·Recharts 도입 예정
+- **백엔드**: Java 25, Spring Boot **4.0.7** (스타터 아티팩트명이 Boot 3와 다름: `spring-boot-starter-webmvc`, 테스트도 `spring-boot-starter-webmvc-test`/`data-jpa-test`/`security-test`로 분리), Spring Data JPA, Spring Security + JWT(jjwt 0.13, HS256), springdoc-openapi 3.x, PostgreSQL 17
+- **프론트엔드**: React 19 + TypeScript, Vite 8(rolldown 기반), React Compiler(babel preset), oxlint, Tailwind CSS v4(@tailwindcss/vite), Shadcn/ui(CLI 대신 `src/components/ui/`에 직접 벤더링, 목업 디자인 시스템으로 커스터마이징), react-router v7, Axios, Recharts 도입 예정. 경로 별칭 `@/` → `src/`
 - **DB**: 원격 개발 서버 `192.168.200.52:5432/INEB`, 계정 dguard, `ddl-auto: update` (스키마는 JPA 엔티티가 생성)
 - Swagger UI: `/swagger-ui`, `/v3/api-docs` (SecurityConfig에서 permitAll, Nginx도 프록시)
 
 ## 현재 구현 상태
 
-백엔드는 골격만 존재: `KmsApplication`, `SecurityConfig`(Swagger·`/api/auth/**` permitAll, 나머지 인증 필요), `application.yml`.
-프론트엔드는 Vite 초기 템플릿 상태. **대부분의 기능(마스터키, 키 관리, 사용자, 감사로그, 게시판, 대시보드)은 아직 미구현**이며 아래 설계에 따라 구현해야 한다.
+구현 완료 (1주차):
+- 백엔드: 마스터키 유도·KCV 검증(`crypto/`, 기동 fail-fast), JWT 로그인/me/logout(`auth/`·`security/`, BCrypt), admin 계정 시드(`config/AdminUserSeeder` — admin_user 비어 있을 때만), 공통 응답·예외(`common/`), CORS(localhost:5173)
+- 프론트: 로그인 화면(목업 이식), 앱 셸(사이드바·상단바·프로필 메뉴·테마 라이트/다크/시스템 전환), 임시 홈. 사이드바 탭 전환은 미구현
+- 기동 필수 환경변수: `KMS_MASTER_PASSPHRASE`, `JWT_SECRET`(32바이트 이상). 선택: `KMS_ADMIN_INIT_PASSWORD`
+- 로컬 개발 DB(localhost:5432)의 crypto_config에 salt/KCV가 이미 확정돼 있음 — 틀린 패스프레이즈로 기동하면 정상적으로 기동 실패함
+
+미구현: KMS 키 관리·암복호화 테스트(2주차), 사용자 관리·감사로그·무결성(3주차), 게시판·대시보드(4주차)
 
 ## 핵심 아키텍처 (설계 문서 기준)
 
@@ -85,7 +90,7 @@ npm run lint       # oxlint (ESLint 아님)
 
 | 데이터 | 방식 | 컬럼 |
 |---|---|---|
-| 비밀번호 (admin_user·app_user) | 단방향 SHA-256 + 16바이트 개별 Salt (설계 문서 확정) | password_hash, password_salt |
+| 비밀번호 (admin_user·app_user) | BCrypt (적응형 단방향 해시, salt는 해시 문자열에 내장 — 별도 컬럼 없음) | password_hash |
 | 연락처·이메일·첨부파일 | AES-256-GCM(마스터키) + Base64 저장 | phone_enc, email_enc, iv, enc_ver |
 | 행 무결성 | HMAC-SHA256 (`INTEGRITY_HMAC_KEY`) | integrity_hash / prev_hash·row_hash |
 
@@ -122,6 +127,7 @@ main 푸시 → self-hosted runner(개발 서버 내)가 Gradle bootJar 빌드 �
 
 ## 주의사항
 
-- 안내서와 설계 문서가 다른 부분은 **설계 문서(류재민 설계)가 확정안**이다: Java 25/Boot 4/React 19/TS, PBKDF2 10,000회, 비밀번호 SHA-256+Salt, 생명주기 7종, 암호문 Base64 문자열 저장
+- 안내서와 설계 문서가 다른 부분은 **설계 문서(류재민 설계)가 확정안**이다: Java 25/Boot 4/React 19/TS, PBKDF2 10,000회, 생명주기 7종, 암호문 Base64 문자열 저장
+- 비밀번호는 **BCrypt** (2026-08-20 사용자 지시로 SHA-256+Salt에서 변경, password_salt 컬럼 없음 — 설계 문서 docx에는 아직 미반영일 수 있음)
 - 실제 고객 데이터·운영 키 사용 금지, 샘플 데이터만 사용
 - 범위 밖 기능 추가는 멘토 승인 후에만 진행 (심화: 코드·정책 관리 화면, `/api/keys/{id}/rotate`)
