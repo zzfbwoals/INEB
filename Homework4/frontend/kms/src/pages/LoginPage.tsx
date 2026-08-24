@@ -16,10 +16,23 @@ export default function LoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    const id = loginId.trim()
+    if (!id && !password) {
+      setError('아이디와 비밀번호를 입력해주세요.')
+      return
+    }
+    if (!id) {
+      setError('아이디를 입력해주세요.')
+      return
+    }
+    if (!password) {
+      setError('비밀번호를 입력해주세요.')
+      return
+    }
     setPending(true)
     setError(null)
     try {
-      const result = await login(loginId.trim(), password)
+      const result = await login(id, password)
       setToken(result.accessToken)
       navigate('/', { replace: true })
     } catch (err) {
