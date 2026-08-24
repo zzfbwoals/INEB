@@ -63,7 +63,7 @@ export default function LoginPage() {
             </svg>
             <Input
               id="loginId"
-              placeholder="관리자 아이디"
+              placeholder="아이디"
               autoComplete="username"
               value={loginId}
               onChange={(e) => setLoginId(e.target.value)}

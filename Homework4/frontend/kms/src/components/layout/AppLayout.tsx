@@ -229,10 +229,6 @@ export default function AppLayout({ crumb, children }: { crumb?: string; childre
           </button>
           <div className="crumb">{crumb ? `홈 / ${crumb}` : '홈'}</div>
           <div className="sp" />
-          <div className="envchip">
-            <span className="pulse" />
-            KCV 정상 · 기동됨
-          </div>
         </header>
         <div className="content">{children}</div>
       </div>

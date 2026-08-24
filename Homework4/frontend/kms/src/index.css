@@ -324,33 +324,6 @@ body.collapsed .nav-it span {
 .topbar .sp {
   flex: 1;
 }
-.envchip {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--green);
-  background: var(--green-bg);
-  padding: 5px 11px;
-  border-radius: 99px;
-}
-.envchip .pulse {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--green);
-  animation: pl 2.1s infinite;
-}
-@keyframes pl {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  55% {
-    opacity: 0.35;
-  }
-}
 
 /* 사이드바 하단 프로필 + 메뉴 */
 .side-profile {
