@@ -56,7 +56,7 @@ npm run lint       # oxlint (ESLint 아님)
 구현 완료 (1주차):
 - 백엔드: 마스터키 유도·KCV 검증(`crypto/`, 기동 fail-fast), JWT 로그인/me/logout(`auth/`·`security/`, BCrypt), admin 계정 시드(`config/AdminUserSeeder` — admin_user 비어 있을 때만), 공통 응답·예외(`common/`), CORS(localhost:5173)
 - 프론트: 로그인 화면(목업 이식), 앱 셸(사이드바·상단바·프로필 메뉴·테마 라이트/다크/시스템 전환), 임시 홈. 사이드바 탭 전환은 미구현
-- 기동 필수 환경변수: `KMS_MASTER_PASSPHRASE`, `JWT_SECRET`(32바이트 이상). 선택: `KMS_ADMIN_INIT_PASSWORD`
+- 기동 필수 환경변수: `KMS_MASTER_PASSPHRASE`, `JWT_SECRET`(32바이트 이상), `DB_PASSWORD`(DB 비밀번호 — application.yml에서 평문 제거). 선택: `KMS_ADMIN_INIT_PASSWORD`
 - 로컬 개발 DB(localhost:5432)의 crypto_config에 salt/KCV가 이미 확정돼 있음 — 틀린 패스프레이즈로 기동하면 정상적으로 기동 실패함
 
 미구현: KMS 키 관리·암복호화 테스트(2주차), 사용자 관리·감사로그·무결성(3주차), 게시판·대시보드(4주차)
