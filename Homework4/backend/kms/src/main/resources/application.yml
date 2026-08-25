@@ -2,9 +2,15 @@ spring:
   datasource:
     url: jdbc:postgresql://192.168.200.52:5432/INEB
     username: dguard
-    password: ${DB_PASSWORD}
+    # 운영 서버의 KMS_MASTER_PASSPHRASE(/home/dguard/kms.env)로 암호화한 DB 비밀번호 — 생성: "평문" | ./gradlew -q encryptSecret
+    password: ENC(0lBSKT2c7E6v4t59uzFMVd11XlDSn4vdEU7HNvfFmXfdHqeE34OYQ7rWOwFxcB78JcoGZho=)
 
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+kms:
+  admin:
+    # 최초 기동(admin_user 비어 있을 때)에만 사용하는 admin 초기 비밀번호 — DB 비밀번호와 같은 방식으로 암호화, 평문 금지
+    init-password: ENC(Lk3r7Xpzov2ZB3MsCzvd17muDKk8CD3Os//tUmlk9Jz6o1J+uhJuIwFi8Cp7z9uRuDXZMoVH)

@@ -42,3 +42,12 @@ tasks.withType(JavaCompile).configureEach {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// application.yml에 넣을 ENC(...) 암호문 생성: "평문" | ./gradlew.bat -q encryptSecret (KMS_MASTER_PASSPHRASE 환경변수 필요)
+tasks.register('encryptSecret', JavaExec) {
+	group = 'kms'
+	description = 'Encrypt a secret for application.yml as ENC(...) using KMS_MASTER_PASSPHRASE'
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = 'com.ineb.kms.tool.ConfigSecretEncryptTool'
+	standardInput = System.in
+}

@@ -38,7 +38,7 @@ public class MasterKeyInitializer {
 
     @PostConstruct
     public void initialize() {
-        char[] passphrase = loadPassphrase();
+        char[] passphrase = MasterPassphrase.load(environment);
         byte[] masterKey;
         try {
             byte[] salt = loadOrCreateSalt();
@@ -55,14 +55,6 @@ public class MasterKeyInitializer {
         log.info("마스터키 유도 및 KCV 검증 완료");
     }
 
-    private char[] loadPassphrase() {
-        String value = environment.getProperty(CryptoConstants.MASTER_PASSPHRASE_ENV);
-        if (value == null || value.isBlank()) {
-            throw new MasterKeyException(
-                    "환경변수 " + CryptoConstants.MASTER_PASSPHRASE_ENV + "가 설정되지 않아 기동을 중단합니다");
-        }
-        return value.toCharArray();
-    }
 
     private byte[] loadOrCreateSalt() {
         Optional<CryptoConfig> stored = cryptoConfigRepository.findById(CryptoConstants.CONFIG_KEY_SALT);

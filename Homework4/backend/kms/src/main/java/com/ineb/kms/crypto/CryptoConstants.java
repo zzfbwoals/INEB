@@ -5,7 +5,7 @@ package com.ineb.kms.crypto;
  */
 public final class CryptoConstants {
 
-    /** 마스터 패스프레이즈 주입 환경변수명 */
+    /** 마스터 패스프레이즈 주입 환경변수명 — 유일한 보안 환경변수 */
     public static final String MASTER_PASSPHRASE_ENV = "KMS_MASTER_PASSPHRASE";
 
     /** PBKDF2-HMAC-SHA256 반복 횟수 */
@@ -26,9 +26,13 @@ public final class CryptoConstants {
     /** KCV 계산용 고정 평문 */
     public static final String KCV_PLAIN_TEXT = "KMS-KCV-V1";
 
-    /** crypto_config 테이블의 config_key 값 */
+    /** crypto_config 테이블의 config_key 값 — 마스터키 유도·검증 (비밀 아님) */
     public static final String CONFIG_KEY_SALT = "salt";
     public static final String CONFIG_KEY_KCV = "kcv";
+
+    /** crypto_config 테이블의 config_key 값 — 마스터키로 래핑된 내부 비밀키 (WrappedSecretStore) */
+    public static final String CONFIG_KEY_JWT_KEY = "jwt_key";
+    public static final String CONFIG_KEY_INTEGRITY_KEY = "integrity_key";
 
     /**
      * KCV 계산 전용 고정 IV (0x00 12바이트).

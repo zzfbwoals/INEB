@@ -56,7 +56,11 @@ npm run lint       # oxlint (ESLint 아님)
 구현 완료 (1주차):
 - 백엔드: 마스터키 유도·KCV 검증(`crypto/`, 기동 fail-fast), JWT 로그인/me/logout(`auth/`·`security/`, BCrypt), admin 계정 시드(`config/AdminUserSeeder` — admin_user 비어 있을 때만), 공통 응답·예외(`common/`), CORS(localhost:5173)
 - 프론트: 로그인 화면(목업 이식), 앱 셸(사이드바·상단바·프로필 메뉴·테마 라이트/다크/시스템 전환), 임시 홈. 사이드바 탭 전환은 미구현
-- 기동 필수 환경변수: `KMS_MASTER_PASSPHRASE`, `JWT_SECRET`(32바이트 이상), `DB_PASSWORD`(DB 비밀번호 — application.yml에서 평문 제거). 선택: `KMS_ADMIN_INIT_PASSWORD`
+- 보안 환경변수는 `KMS_MASTER_PASSPHRASE` **하나뿐** (2026-08-25 상사 지시로 통합, `KMS_ADMIN_INIT_PASSWORD`도 제거됨)
+  - DB 비밀번호: `application.yml`의 `spring.datasource.password`에 `ENC(base64(salt|iv|ct+tag))` 암호문으로 저장 → `config/DataSourceConfig`가 패스프레이즈로 복호화(`crypto/ConfigSecretCodec`, salt를 암호문에 동봉하므로 DB 접속 전 복호화 가능). 암호문 생성: `"평문" | ./gradlew.bat -q encryptSecret` (환경변수 `KMS_MASTER_PASSPHRASE` 필요, **운영은 서버의 kms.env 패스프레이즈로 만든 값이어야 함**)
+  - admin 초기 비밀번호: `kms.admin.init-password`에 같은 `ENC(...)` 방식으로 저장(평문이면 기동 실패). `config/AdminUserSeeder`가 admin_user 비어 있을 때만 복호화 → BCrypt 저장
+  - JWT 서명 키·무결성 HMAC 키: 환경변수 없음. 최초 기동 시 SecureRandom 32바이트로 생성해 마스터키로 래핑하여 `crypto_config`(`jwt_key`, `integrity_key`)에 저장, 이후 언래핑(`crypto/WrappedSecretStore`). DB 초기화 시 함께 사라짐
+  - 틀린 패스프레이즈로 기동하면 KCV보다 앞서 DataSource 생성 단계(ENC 복호화 GCM 태그 불일치)에서 실패함
 - 로컬 개발 DB(localhost:5432)의 crypto_config에 salt/KCV가 이미 확정돼 있음 — 틀린 패스프레이즈로 기동하면 정상적으로 기동 실패함
 
 미구현: KMS 키 관리·암복호화 테스트(2주차), 사용자 관리·감사로그·무결성(3주차), 게시판·대시보드(4주차)
@@ -73,7 +77,7 @@ npm run lint       # oxlint (ESLint 아님)
 - 기동 시 1회: `PBKDF2-HMAC-SHA256(env.KMS_MASTER_PASSPHRASE, crypto_config의 salt, 10,000회, 32바이트)` — 설계 문서가 반복 횟수를 10,000회로 확정함 (안내서 예시는 210,000회였음)
 - **KCV 검증 fail-fast**: 유도 직후 고정 문자열 `"KMS-KCV-V1"`을 암호화해 `crypto_config`의 kcv와 대조, 불일치 시 예외를 던져 기동 중단. "경고만 남기고 진행" 금지 — 틀린 키로 신규 데이터가 암호화되는 사고 방지가 목적
 - 메모리 취급: 마스터키는 `byte[]`로만 보관, 사용 직후 `Arrays.fill(key, (byte)0)` zeroize. **`String` 사용 금지** (힙덤프 노출)
-- 운영 주입: `/home/dguard/kms.env` (권한 600) → Docker `--env-file`. `KMS_MASTER_PASSPHRASE`와 `INTEGRITY_HMAC_KEY`는 별개의 값
+- 운영 주입: `/home/dguard/kms.env` (권한 600) → Docker `--env-file`. 파일에는 `KMS_MASTER_PASSPHRASE`만 있으면 됨 (`INTEGRITY_HMAC_KEY`·`JWT_SECRET`·`DB_PASSWORD`·`KMS_ADMIN_INIT_PASSWORD`는 더 이상 읽지 않음)
 
 ### KMS 관리 키 생명주기 (구현 2주차)
 
@@ -92,7 +96,7 @@ npm run lint       # oxlint (ESLint 아님)
 |---|---|---|
 | 비밀번호 (admin_user·app_user) | BCrypt (적응형 단방향 해시, salt는 해시 문자열에 내장 — 별도 컬럼 없음) | password_hash |
 | 연락처·이메일·첨부파일 | AES-256-GCM(마스터키) + Base64 저장 | phone_enc, email_enc, iv, enc_ver |
-| 행 무결성 | HMAC-SHA256 (`INTEGRITY_HMAC_KEY`) | integrity_hash / prev_hash·row_hash |
+| 행 무결성 | HMAC-SHA256 (`WrappedSecretStore.integrityKey()` — crypto_config에 래핑 보관) | integrity_hash / prev_hash·row_hash |
 
 - 암호화 컬럼은 평문 LIKE 불가 → HMAC 기반 `phone_hash`/`email_hash`로 **정확검색만** 지원
 - 목록/상세 응답은 개인정보 마스킹(예: 010-****-1234). 원문 조회 `GET /api/users/{id}/plain`은 ADMIN 권한 한정 + 감사로그 필수 기록
