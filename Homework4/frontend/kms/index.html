@@ -17,6 +17,12 @@
         } catch (e) {
           document.documentElement.dataset.theme = 'dark'
         }
+        // 사이드바 축소 상태도 렌더 전 적용 (페이지 진입 시 폭 변화 애니메이션 방지)
+        try {
+          if (localStorage.getItem('kms.side') === 'collapsed') {
+            document.documentElement.classList.add('collapsed')
+          }
+        } catch (e) {}
       })()
     </script>
   </head>

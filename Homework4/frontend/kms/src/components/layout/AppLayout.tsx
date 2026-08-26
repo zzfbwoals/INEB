@@ -131,8 +131,8 @@ export default function AppLayout({ crumb, children }: { crumb?: string; childre
   }, [])
 
   useEffect(() => {
-    document.body.classList.toggle('collapsed', collapsed)
-    return () => document.body.classList.remove('collapsed')
+    document.documentElement.classList.toggle('collapsed', collapsed)
+    return () => document.documentElement.classList.remove('collapsed')
   }, [collapsed])
 
   function toggleSide() {
@@ -159,13 +159,20 @@ export default function AppLayout({ crumb, children }: { crumb?: string; childre
         <div className="brand">
           <LogoFull className="full" />
           <LogoMark className="mark" />
+          {/* 확장 시 우측 축소 버튼 / 축소 시 마크 호버로 나타나는 확대 버튼 */}
+          <button type="button" className="tgl side-tgl" onClick={toggleSide} title="사이드바 열기/닫기" aria-label="사이드바 열기/닫기">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="16" rx="2.5" />
+              <path d="M9.5 4v16" />
+            </svg>
+          </button>
         </div>
 
         {NAV.map((group) => (
           <div key={group.section ?? 'root'} className="contents">
             {group.section && <div className="nav-sec">{group.section}</div>}
             {group.items.map((item) => (
-              <button key={item.key} type="button" className="nav-it" title="추후 제공 예정">
+              <button key={item.key} type="button" className="nav-it" data-label={item.label} title="추후 제공 예정">
                 {item.icon}
                 <span>{item.label}</span>
               </button>
@@ -221,12 +228,6 @@ export default function AppLayout({ crumb, children }: { crumb?: string; childre
 
       <div className="main">
         <header className="topbar">
-          <button type="button" className="tgl" onClick={toggleSide} title="사이드바 열기/닫기" aria-label="사이드바 열기/닫기">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="16" rx="2.5" />
-              <path d="M9.5 4v16" />
-            </svg>
-          </button>
           <div className="crumb">{crumb ? `홈 / ${crumb}` : '홈'}</div>
           <div className="sp" />
         </header>

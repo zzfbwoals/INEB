@@ -191,7 +191,7 @@ a {
   min-height: 100vh;
   transition: grid-template-columns 0.18s;
 }
-body.collapsed .shell {
+html.collapsed .shell {
   grid-template-columns: 66px 1fr;
 }
 .side {
@@ -212,16 +212,47 @@ body.collapsed .shell {
   gap: 9px;
   padding: 4px 8px 18px;
   min-height: 44px;
+  position: relative;
 }
-body.collapsed .side .brand svg.full {
+.side .brand .side-tgl {
+  margin-left: auto;
+  flex: none;
+}
+html.collapsed .side .brand svg.full {
   display: none;
 }
 .side .brand svg.mark {
   display: none;
 }
-body.collapsed .side .brand svg.mark {
+/* 축소 시: 마크 자리에 호버하면 마크 → 확대 버튼으로 교체 */
+html.collapsed .side .brand {
+  justify-content: center;
+  padding: 4px 0 18px;
+}
+html.collapsed .side .brand svg.mark {
   display: block;
   margin: 0 auto;
+  transition: opacity 0.15s;
+}
+html.collapsed .side .brand .side-tgl {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) translateY(-7px);
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+html.collapsed .side .brand:hover svg.mark {
+  opacity: 0;
+}
+html.collapsed .side .brand:hover .side-tgl {
+  opacity: 1;
+  pointer-events: auto;
+}
+html.collapsed .side .brand .side-tgl svg {
+  transform: scaleX(-1);
 }
 .nav-sec {
   font-size: 10.5px;
@@ -232,12 +263,12 @@ body.collapsed .side .brand svg.mark {
   text-transform: uppercase;
   white-space: nowrap;
 }
-body.collapsed .nav-sec {
+html.collapsed .nav-sec {
   padding: 12px 0 4px;
   text-align: center;
   font-size: 0;
 }
-body.collapsed .nav-sec::after {
+html.collapsed .nav-sec::after {
   content: '···';
   font-size: 11px;
   letter-spacing: 0.2em;
@@ -273,12 +304,40 @@ body.collapsed .nav-sec::after {
   background: var(--blue-bg);
   color: var(--blue);
 }
-body.collapsed .nav-it {
+html.collapsed .nav-it {
   justify-content: center;
   padding: 10px 0;
+  position: relative;
 }
-body.collapsed .nav-it span {
+html.collapsed .nav-it span {
   display: none;
+}
+/* 축소 시: 아이콘 호버 툴팁(메뉴 이름) */
+html.collapsed .nav-it::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--modal-shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.14s,
+    transform 0.14s;
+  z-index: 130;
+}
+html.collapsed .nav-it:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 .main {
@@ -394,12 +453,12 @@ body.collapsed .nav-it span {
 .sp-btn[data-state='open'] .sp-chev {
   transform: rotate(180deg);
 }
-body.collapsed .sp-btn {
+html.collapsed .sp-btn {
   justify-content: center;
   padding: 7px 0;
 }
-body.collapsed .sp-who,
-body.collapsed .sp-chev {
+html.collapsed .sp-who,
+html.collapsed .sp-chev {
   display: none;
 }
 
@@ -526,22 +585,73 @@ body.collapsed .sp-chev {
   .shell {
     grid-template-columns: 66px 1fr;
   }
-  body:not(.collapsed) .side {
+  html:not(.collapsed) .side {
     width: 66px;
   }
-  body:not(.collapsed) .nav-it span {
+  html:not(.collapsed) .nav-it span {
     display: none;
   }
-  body:not(.collapsed) .nav-it {
+  html:not(.collapsed) .nav-it {
     justify-content: center;
     padding: 10px 0;
   }
-  body:not(.collapsed) .side .brand svg.full {
+  html:not(.collapsed) .side .brand svg.full {
     display: none;
   }
-  body:not(.collapsed) .side .brand svg.mark {
+  html:not(.collapsed) .side .brand svg.mark {
     display: block;
     margin: 0 auto;
+  }
+  html:not(.collapsed) .side .brand {
+    justify-content: center;
+    padding: 4px 0 18px;
+  }
+  html:not(.collapsed) .side .brand .side-tgl {
+    display: none;
+  }
+  html:not(.collapsed) .nav-sec {
+    padding: 12px 0 4px;
+    text-align: center;
+    font-size: 0;
+  }
+  html:not(.collapsed) .nav-sec::after {
+    content: '···';
+    font-size: 11px;
+    letter-spacing: 0.2em;
+  }
+  html:not(.collapsed) .sp-btn {
+    justify-content: center;
+    padding: 7px 0;
+  }
+  html:not(.collapsed) .sp-who,
+  html:not(.collapsed) .sp-chev {
+    display: none;
+  }
+  html:not(.collapsed) .nav-it {
+    position: relative;
+  }
+  html:not(.collapsed) .nav-it::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + 14px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: var(--modal-shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.14s;
+    z-index: 130;
+  }
+  html:not(.collapsed) .nav-it:hover::after {
+    opacity: 1;
   }
 }
 @media (prefers-reduced-motion: reduce) {
