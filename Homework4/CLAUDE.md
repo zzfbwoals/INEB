@@ -81,14 +81,37 @@ npm run lint       # oxlint (ESLint 아님)
 
 ### KMS 관리 키 생명주기 (구현 2주차)
 
-상태 7종: CREATED / ACTIVE / DISTRIBUTED / RENEWED / EXPIRED / INACTIVE / DESTROYED
-(설계 문서가 안내서의 5종에 DISTRIBUTED·RENEWED를 추가함)
+**2026-08-28 재확정: KMIP 4종 상태 + 네이버 클라우드 KMS 방식의 버전 운영.** (08-26 안에서 "회전 시 구 버전 자동 DEACTIVATED"·"만료 예정일"을 폐기하고 네이버식으로 변경.) 설계 문서·목업(`ineb-kms-mockup`)이 이 절과 다르면 이 절이 우선한다.
 
-- 허용 전이: CREATED→ACTIVE · ACTIVE↔DISTRIBUTED · ACTIVE/EXPIRED→RENEWED · RENEWED→ACTIVE · ACTIVE→EXPIRED/INACTIVE · EXPIRED→INACTIVE · EXPIRED/INACTIVE→ACTIVE(재활성, 사유 필수) · INACTIVE/EXPIRED→DESTROYED
-- 금지 전이: DESTROYED에서 나가는 모든 전이(종단 상태), CREATED→DESTROYED 직행, 정의 외 임의 역행. 위반 시 HTTP 400/409
-- 상태 변경(PATCH `/api/keys/{id}/status`)은 사유(reason) 필수 + `key_status_history` 자동 기록
-- **암복호화 테스트는 ACTIVE(·DISTRIBUTED·RENEWED) 상태에서만 허용**, 호출은 `key_usage_log`에 기록
-- 키 값은 API로 절대 반환하지 않는다. 래핑: SecureRandom으로 생성 → 마스터키 AES-256-GCM 래핑 → Base64 → `key_material.wrapped_key` (+iv, wrap_algo). 언래핑 후 사용 즉시 zeroize
+**상태 주체는 버전(`key_material` 1행).** 키(`crypto_key`)는 논리 키(신원·메타·회전 정책), 버전은 실제 키 재료(서로 다른 난수). 키 상태는 버전에서 파생해 저장(서버만 갱신).
+
+버전 상태 4종과 허용 연산:
+
+| 상태 | 의미 | 암호화·서명 | 복호화·검증 |
+|---|---|---|---|
+| PRE_ACTIVE | 재료 생성·래핑됐으나 `activation_date` 미도래 | ✗ | ✗ |
+| ACTIVE | 정상. **암호화·서명은 최신 ACTIVE 버전(`current_version`)만**, 구 ACTIVE 버전은 복호화·검증 전용 | 최신만 ✓ | ✓ |
+| DEACTIVATED | **암·복호화, 서명·검증 전부 차단**(네이버 "버전 비활성화"). 재료는 보존 | ✗ | ✗ |
+| DESTROYED | `wrapped_key` NULL 물리 삭제, 메타·이력 보존 | ✗ | ✗ |
+
+키 상태(파생): ACTIVE 버전 있음→ACTIVE / 없고 PRE_ACTIVE 있음→PRE_ACTIVE / 모두 DEACTIVATED·DESTROYED→DEACTIVATED / 모두 DESTROYED→DESTROYED
+
+- 허용 전이: PRE_ACTIVE→ACTIVE(활성일 도래·ACTIVATE) · PRE_ACTIVE→DESTROYED · ACTIVE→DEACTIVATED(DEACTIVATE / **무결성 위반 자동**) · DEACTIVATED→DESTROYED · **DEACTIVATED→ACTIVE는 `deactivation_trigger=INTEGRITY`인 버전만 REACTIVATE 허용**(재암호화를 위해 복호화가 필요하므로)
+- 금지(400): 관리자가 수동 정지(`deactivation_trigger=OPERATION`)한 버전의 재활성화(다시 쓰려면 ROTATE) · DESTROYED 탈출 · ACTIVE→DESTROYED 직행 · PRE_ACTIVE→DEACTIVATED · **최신(current) 버전 단독 DEACTIVATE 불가**(네이버: 최신 버전은 항상 활성) — 키 전체 정지 또는 회전 후 정지. 상태 충돌 409
+- **회전(ROTATE)은 연산, 상태 아님.** 새 재료 생성·래핑 → `key_material(version=max+1)` → 새 버전 ACTIVE + `current_version` 갱신. **구 버전은 ACTIVE로 남아 복호화·검증에 계속 사용**(암호화는 최신만이므로 자동으로 복호화 전용이 됨). `activationDate`가 미래면 새 버전 PRE_ACTIVE로 예약, 도래 시 current 교체. 버전 상한 100(초과 400). 재암호화 완료된 구 버전은 관리자가 DEACTIVATE → DESTROY
+- **회전 주기(자동 회전)**: `crypto_key.auto_rotate`, `rotation_period_days`(1~730, 기본 90), `next_rotation_at`. 스케줄러가 도래 시 ROTATE(`changed_by=SYSTEM`, `trigger=SCHEDULE`), `next_rotation_at = 회전 시각 + 주기`. 수동 ROTATE는 스케줄에 영향 없음. 키 정지 시 자동 회전 중단. `PUT /api/keys/{id}`로 주기 변경 가능(감사로그)
+- **무결성 위반 자동 정지**: `key_material.integrity_hash`(HMAC, 정규화 `key_id|version|state|wrapped_key|iv|wrap_algo|activation_date`)를 언래핑·조회 시 재검증. 불일치 → 해당 버전 즉시 DEACTIVATED(`trigger=INTEGRITY`, actor SYSTEM) + `audit_log KEY_INTEGRITY_VIOLATION` + 상세·대시보드 경고. `crypto_key.integrity_hash` 위반 시 키의 모든 ACTIVE 버전 정지. 위반 버전이 current이면 암호화·서명도 차단됨. **복구(REACTIVATE)**: ADMIN + 사유 필수 → 서버가 ① 마스터키 언래핑 성공(GCM 태그 = 재료 무손상) 확인 ② 현재 메타로 `integrity_hash` 재계산·저장 ③ ACTIVE 전이(구 버전이면 복호화 전용, 최신이면 current 복귀). 언래핑 실패 시 409(재료 손상 → ROTATE만 가능). `key_material.deactivation_trigger(OPERATION|INTEGRITY)` 컬럼으로 구분, 이력 `trigger=REACTIVATE`, `audit_log KEY_REACTIVATED`
+- 활성일: 등록·ROTATE에 `activationDate?`(없거나 과거 → 즉시 ACTIVE, 미래 → PRE_ACTIVE). PRE_ACTIVE일 때 `PUT`으로 수정 가능. `deactivation_date`(만료 예정일)는 **폐기** — 수명 관리는 회전 주기로
+- 상태 변경 API `PATCH /api/keys/{id}/status`: `{ action: ACTIVATE|REACTIVATE|DEACTIVATE|ROTATE|DESTROY, reason(필수), activationDate?(ACTIVATE·ROTATE), version?(REACTIVATE 필수 · DEACTIVATE·DESTROY — 생략 시 키 전체) }`. 목표 상태 직접 지정 불가. DEACTIVATE 키 전체 = 모든 ACTIVE 버전 정지 + 자동 회전 중단. DESTROY 키 전체는 ACTIVE 존재 시 409. UI는 현재 상태에서 가능한 액션 버튼만 노출
+- 스케줄러(`@Scheduled` 60초): ① `activation_date<=now & PRE_ACTIVE`→ACTIVE(current 교체, `trigger=DATE_REACHED`) ② `next_rotation_at<=now & auto_rotate & 키 ACTIVE`→ROTATE(`trigger=SCHEDULE`) ③ 무결성 배치 검증(선택)
+- `key_status_history`: `key_id, version, from_state, to_state, reason, trigger(OPERATION|DATE_REACHED|SCHEDULE|INTEGRITY|REACTIVATE|ROTATE), changed_by, changed_at`
+- 알고리즘·용도: `algorithm` AES/ARIA/LEA/SEED(대칭, `mode` CBC/GCM/CTR/ECB) · RSA 2048/3072/4096 · ECDSA P-256/P-384 · SHA256/SHA512(HMAC). `purpose` 3종 **ENC_DEC / ENC_DEC_SIGN_VERIFY / SIGN_VERIFY** — 알고리즘이 결정(대칭→ENC_DEC, RSA→ENC_DEC_SIGN_VERIFY, ECDSA·HMAC→SIGN_VERIFY). 비대칭키는 개인키만 래핑 저장, 공개키는 상세 조회. `crypto_key`에 `mode` 컬럼 추가
+- 테스트 API: `test/encrypt`·`test/decrypt` + **`test/sign`·`test/verify`** (RSA·ECDSA·HMAC). 암호문 `{version}:{base64 iv}:{base64 ct+tag}`, 서명값 `{version}:{base64 sig}`. 암호화·서명은 current ACTIVE 버전, 복호화·검증은 접두 version으로 조회해 ACTIVE면 허용(구 버전이면 usage_log에 표시), PRE_ACTIVE·DEACTIVATED·DESTROYED·형식 오류 400. `key_usage_log(version)` + `audit_log KEY_TEST_ENCRYPT/DECRYPT/SIGN/VERIFY` 기록
+- 키 상세 응답: `versions[]`(version, state, deactivationTrigger, activationDate, lastUsedAt, usageCount, integrityValid), 회전 정책. **사용 이력은 기존 `GET /api/keys/{id}/usage`**가 통계 + `key_usage_log` 목록(version·operation·result·failReason·actor·at)을 함께 반환 — 별도 audit 엔드포인트 없음. 관리자 행위는 `key_status_history` 타임라인과 감사 로그 페이지(`GET /api/audit-logs?target=KEY#id`)에서 조회
+- 키 값은 API로 절대 반환하지 않는다. 래핑: SecureRandom → 마스터키 AES-256-GCM → Base64 → `key_material.wrapped_key`(+iv, wrap_algo). 언래핑 후 즉시 zeroize
+- 2026-08-28 확정 세부: ECB 모드 제공하되 UI "비권장" 표기 · RSA 암복호화 평문 상한(2048=190B/3072=318B/4096=446B) 서버 400 + 테스트 화면 바이트 카운터 · 스케줄러 무결성 배치는 `kms.scheduler.integrity-check=false` 기본 off · `key_usage_log`에 호출자(actor) 컬럼 없음(행위자는 3주차 audit_log). 구현 설계 원고: `D:\회사\아이넵\과제\과제4주차_구현설계_KMS키관리.md`
+- 구현: `KeyState` enum + `KeyStateMachine`(전이 표·`transition()`이 검증·이력·키 상태 재계산), `KeyRotationService`, `KeyLifecycleScheduler`, `KeyIntegrityGuard`(언래핑 전 검증·자동 정지)
+- 제약(문서화): Compromised 미채택(침해 시 DEACTIVATE+ROTATE) · 삭제 유예(72h) 미채택 · Re-encrypt API 없음(구 버전 데이터 재암호화는 외부 시스템 책임, 상세의 lastUsedAt·usageCount로 보조) · 무결성 위반 자동 정지는 메타 해시 불일치 기준이며 재료 자체는 GCM 래핑으로 보호되므로, 언래핑 검증을 통과하면 REACTIVATE로 복구해 재암호화에 사용
 
 ### 데이터 보호 3방식 (혼동 금지)
 
@@ -106,14 +129,15 @@ npm run lint       # oxlint (ESLint 아님)
 
 - 무결성 대상: `crypto_key`, `app_user`, `audit_log`. 등록/수정 시 해시 계산, 조회 시 재계산 대조 → 불일치 시 `integrityValid: false` 플래그 응답 및 대시보드 위반 건수 집계
 - **정규화 규칙 (흔들리면 전체 검증 실패하므로 엄수)**: 구분자 파이프(`|`), null은 빈 문자열, 날짜는 KST `yyyy-MM-dd HH:mm:ss`
-  - crypto_key: `key_uid|key_name|algorithm|key_size|purpose|status|version|expire_at`
+  - crypto_key: `key_uid|key_name|algorithm|key_size|mode|purpose|status|current_version|auto_rotate|rotation_period_days` (2026-08-28 개정)
+  - key_material: `key_id|version|state|wrapped_key|iv|wrap_algo|activation_date` — 위반 시 해당 버전 자동 DEACTIVATED
   - app_user: `name|password_hash|status|enc_ver`
 - `audit_log`는 **append-only** (UPDATE/DELETE 금지), 해시 체인: `row_hash = H(prev_hash + 현재 행 핵심 데이터)`, 최초 행의 prev_hash는 `"EMPTY"`. 검증 API가 행 변조와 중간 삭제/삽입을 구간으로 반환
 - 모든 관리자 행위(로그인, 키 생성/상태변경, 원문 조회, 수정 등)를 감사로그에 자동 기록 — AOP나 공통 계층으로 처리 권장
 
 ### DB 테이블 (10개)
 
-`crypto_config`(salt·kcv, 비밀 아님) · `admin_user` · `crypto_key`(키 메타, key_uid=UUID) · `key_material`(래핑 키 값) · `key_status_history` · `key_usage_log` · `app_user` · `notice` · `notice_file` · `audit_log`
+`crypto_config`(salt·kcv, 비밀 아님) · `admin_user` · `crypto_key`(논리 키: key_uid=UUID, algorithm·key_size·mode·purpose, `status`(파생)·`current_version`, `auto_rotate`·`rotation_period_days`·`next_rotation_at`, integrity_hash) · `key_material`(버전 = 상태 주체: `key_id, version, state, deactivation_trigger, wrapped_key(NULL=폐기), iv, wrap_algo, public_key(비대칭), activation_date, destroyed_at, integrity_hash`, UNIQUE(key_id, version), 1:N) · `key_status_history`(version·trigger 포함) · `key_usage_log`(version 포함, iv는 암호문에 내장) · `app_user` · `notice` · `notice_file` · `audit_log`
 
 ### API 공통 규격
 
@@ -131,7 +155,7 @@ main 푸시 → self-hosted runner(개발 서버 내)가 Gradle bootJar 빌드 �
 
 ## 주의사항
 
-- 안내서와 설계 문서가 다른 부분은 **설계 문서(류재민 설계)가 확정안**이다: Java 25/Boot 4/React 19/TS, PBKDF2 10,000회, 생명주기 7종, 암호문 Base64 문자열 저장
+- 안내서와 설계 문서가 다른 부분은 **설계 문서(류재민 설계)가 확정안**이다: Java 25/Boot 4/React 19/TS, PBKDF2 10,000회, 암호문 Base64 문자열 저장. 단 **키 생명주기는 2026-08-28 KMIP 4종+네이버식 버전 운영으로 재확정**되어 설계 문서(7종)보다 CLAUDE.md의 생명주기 절이 우선 (설계 문서 개정 예정)
 - 비밀번호는 **BCrypt** (2026-08-20 사용자 지시로 SHA-256+Salt에서 변경, password_salt 컬럼 없음 — 설계 문서 docx에는 아직 미반영일 수 있음)
 - 실제 고객 데이터·운영 키 사용 금지, 샘플 데이터만 사용
 - 범위 밖 기능 추가는 멘토 승인 후에만 진행 (심화: 코드·정책 관리 화면, `/api/keys/{id}/rotate`)
