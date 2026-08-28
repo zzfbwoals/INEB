@@ -5,6 +5,7 @@ import { ToastProvider } from '@/components/ui/toast'
 import LoginPage from '@/pages/LoginPage'
 import HomePage from '@/pages/HomePage'
 import KeyListPage from '@/pages/KeyListPage'
+import KeyDetailPage from '@/pages/KeyDetailPage'
 
 function RequireAuth({ children }: { children: ReactNode }) {
   if (!getToken()) {
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
           <Route path="/keys" element={<RequireAuth><KeyListPage /></RequireAuth>} />
+          <Route path="/keys/:keyUid" element={<RequireAuth><KeyDetailPage /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ToastProvider>

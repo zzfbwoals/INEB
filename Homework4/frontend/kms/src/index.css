@@ -1128,3 +1128,225 @@ textarea.input:focus {
 .toast.error .dot {
   background: var(--red);
 }
+
+/* ===== 키 상세 (목업 key-detail.html) ===== */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+.meta-it {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+.meta-it:nth-child(2n) {
+  border-right: none;
+}
+.meta-it.full {
+  grid-column: 1 / -1;
+  border-right: none;
+}
+.meta-it .k {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.meta-it .v {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.pubkey {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  word-break: break-all;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.usage-mini {
+  display: flex;
+  border-top: 1px solid var(--line);
+}
+.usage-mini > div {
+  flex: 1;
+  padding: 14px 20px;
+  border-right: 1px solid var(--line);
+}
+.usage-mini > div:last-child {
+  border-right: none;
+}
+.usage-mini .k {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.usage-mini .v {
+  font-size: 19px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.timeline {
+  padding: 6px 20px 18px;
+}
+.tl-it {
+  display: flex;
+  gap: 14px;
+  position: relative;
+  padding: 12px 0;
+}
+.tl-it::before {
+  content: '';
+  position: absolute;
+  left: 6.5px;
+  top: 34px;
+  bottom: -12px;
+  width: 2px;
+  background: var(--line-strong);
+}
+.tl-it:last-child::before {
+  display: none;
+}
+.tl-dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 3px solid var(--surface);
+  flex: none;
+  margin-top: 4px;
+  box-shadow: 0 0 0 1.5px var(--line-strong);
+  background: var(--text-3);
+}
+.tl-dot.now {
+  background: var(--blue);
+}
+.tl-dot.bad {
+  background: var(--red);
+}
+.tl-body b {
+  font-size: 13.5px;
+}
+.tl-body .rs {
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+.tl-body .at {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  margin-top: 3px;
+}
+.trg {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0 5px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.trg.sys {
+  color: var(--blue);
+  border-color: transparent;
+  background: var(--blue-bg);
+}
+.trg.bad {
+  color: var(--red);
+  border-color: transparent;
+  background: var(--red-bg);
+}
+.trg.ok {
+  color: var(--green);
+  border-color: transparent;
+  background: var(--green-bg);
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.tab {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tab.on {
+  color: var(--text);
+  border-color: var(--blue);
+}
+.tab:hover {
+  color: var(--text);
+}
+.tabs .hint {
+  margin-left: auto;
+  align-self: center;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.opt-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 11px 13px;
+  cursor: pointer;
+  background: var(--bg-deep);
+}
+.opt.sel {
+  border-color: var(--blue);
+  background: var(--blue-bg);
+}
+.opt.dis {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.opt input {
+  accent-color: var(--blue);
+  margin-top: 3px;
+}
+.opt b {
+  font-size: 13px;
+  display: block;
+}
+.opt span {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.acts {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.hdr-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
