@@ -23,6 +23,7 @@ public interface KeyUsageLogRepository extends JpaRepository<KeyUsageLog, Long> 
 
     long countByKeyIdAndResultAndUsedAtAfter(Long keyId, UsageResult result, Instant since);
 
-    /** 구 버전(현행이 아닌 버전)으로 처리된 호출 수 */
-    long countByKeyIdAndVersionNotAndUsedAtAfter(Long keyId, int currentVersion, Instant since);
+    /** 구 버전(현행이 아닌 버전)으로 처리된 복호화·검증 호출 수 */
+    long countByKeyIdAndVersionNotAndOperationInAndUsedAtAfter(Long keyId, int currentVersion,
+                                                               java.util.Collection<UsageOperation> operations, Instant since);
 }

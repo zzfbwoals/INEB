@@ -27,6 +27,7 @@ export interface KeySummary {
   purpose: KeyPurpose
   status: KeyState
   currentVersion: number
+  activationDate: string
   versionCount: number
   scheduledVersion: number | null
   scheduledAt: string | null

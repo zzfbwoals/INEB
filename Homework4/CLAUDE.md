@@ -63,7 +63,13 @@ npm run lint       # oxlint (ESLint 아님)
   - 틀린 패스프레이즈로 기동하면 KCV보다 앞서 DataSource 생성 단계(ENC 복호화 GCM 태그 불일치)에서 실패함
 - 로컬 개발 DB(localhost:5432)의 crypto_config에 salt/KCV가 이미 확정돼 있음 — 틀린 패스프레이즈로 기동하면 정상적으로 기동 실패함
 
-미구현: KMS 키 관리·암복호화 테스트(2주차), 사용자 관리·감사로그·무결성(3주차), 게시판·대시보드(4주차)
+구현 완료 (2주차, 2026-08-28, develop 브랜치):
+- 백엔드 `key/` 패키지: 도메인(`CryptoKey`·`KeyMaterial`·`KeyStatusHistory`·`KeyUsageLog` + enum 9종), `KeyStateMachine`(전이의 유일한 통로), `KeyIntegrityHasher/Guard`(HMAC 정규화·위반 자동 정지), `KeyMaterialFactory`(재료 생성·GCM 래핑), `KeyService`(목록·상세·등록·수정), `KeyOperationService`(ACTIVATE/REACTIVATE/DEACTIVATE/ROTATE/DESTROY), `KeyTestService`+`KeyCipherSupport`(AES/ARIA/SEED JCE, LEA는 BC 경량 API, RSA-OAEP, ECDSA, HMAC), `CipherTextFormat`, `KeyLifecycleScheduler/Worker`(활성일·갱신 주기·선택적 무결성 배치). API 15개, 단위 테스트 113개. 3주차 연결점: `AuditHook`(현재 로그 구현체)
+- 프론트: `/keys`(목록·등록), `/keys/:keyUid`(상세·모달 6종), `/keys/test`(암복호화·서명검증). `api/keys.ts`, `lib/keyRules.ts`, `ui/dialog.tsx`(Radix)·`ui/toast.tsx`. 사이드바 NAV가 NavLink로 전환됨
+- 로컬 확인 완료: 4개 테이블 자동 생성, API 스모크(전 알고리즘·규칙 위반 응답), 브라우저 목록·상세·갱신 모달·암복호화 라운드트립. 로컬 기동: `set KMS_MASTER_PASSPHRASE=<로컬 패스프레이즈>` 후 `gradlew.bat bootRun --args="--spring.profiles.active=local"`, 프론트 `npm run dev`
+- 주의: 잘못된 JSON·enum 값은 `GlobalExceptionHandler`가 400(INVALID_INPUT)으로 응답. 프론트 테스트 페이지는 접두 버전을 클라이언트에서 선판정하지만 최종 판정은 서버
+
+미구현: 사용자 관리·감사로그·무결성 검증 API(3주차), 게시판·대시보드(4주차). 2주차 산출물 설계 원고: `D:\회사\아이넵\과제\과제4주차_구현설계_KMS키관리.md`
 
 ## 핵심 아키텍처 (설계 문서 기준)
 

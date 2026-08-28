@@ -120,7 +120,7 @@ function KeyRow({ k, onClick }: { k: KeySummary; onClick: () => void }) {
   const d = dday(k.nextRotationAt)
   let rotCell: React.ReactNode
   if (k.status === 'DESTROYED' || k.status === 'DEACTIVATED') rotCell = <span style={{ color: 'var(--text-3)' }}>—</span>
-  else if (k.status === 'PRE_ACTIVE') rotCell = <span style={{ color: 'var(--blue)' }}>활성 예정 {fmtDate(k.scheduledAt ?? k.nextRotationAt)}</span>
+  else if (k.status === 'PRE_ACTIVE') rotCell = <span style={{ color: 'var(--blue)' }}>활성 예정 {fmtDate(k.activationDate)}</span>
   else if (!k.autoRotate) rotCell = <span style={{ color: 'var(--text-3)' }}>수동</span>
   else rotCell = (
     <span style={{ color: d !== null && d <= 30 ? 'var(--red)' : 'var(--text-2)' }}>

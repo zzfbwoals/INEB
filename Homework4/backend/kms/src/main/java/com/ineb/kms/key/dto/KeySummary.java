@@ -10,6 +10,7 @@ public record KeySummary(
         String purpose,
         String status,
         int currentVersion,
+        String activationDate,
         int versionCount,
         Integer scheduledVersion,
         String scheduledAt,

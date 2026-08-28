@@ -287,9 +287,10 @@ public class KeyService {
         KeyMaterial scheduled = materials.stream()
                 .filter(m -> m.getState() == KeyState.PRE_ACTIVE && m.getVersion() != key.getCurrentVersion())
                 .findFirst().orElse(null);
+        KeyMaterial current = materials.stream().filter(m -> m.getVersion() == key.getCurrentVersion()).findFirst().orElse(null);
         return new KeySummary(key.getKeyUid(), key.getKeyName(), key.getAlgorithm().name(), key.getKeySize(),
                 key.getMode() == null ? null : key.getMode().name(), key.getPurpose().name(), key.getStatus().name(),
-                key.getCurrentVersion(), materials.size(),
+                key.getCurrentVersion(), current == null ? "" : KstTime.format(current.getActivationDate()), materials.size(),
                 scheduled == null ? null : scheduled.getVersion(),
                 scheduled == null ? null : KstTime.format(scheduled.getActivationDate()),
                 key.isAutoRotate(), key.getRotationPeriodDays(), KstTime.format(key.getNextRotationAt()),
@@ -335,7 +336,8 @@ public class KeyService {
                 usageLogRepository.countByKeyIdAndOperationAndUsedAtAfter(id, UsageOperation.DECRYPT, since),
                 usageLogRepository.countByKeyIdAndOperationAndUsedAtAfter(id, UsageOperation.SIGN, since),
                 usageLogRepository.countByKeyIdAndOperationAndUsedAtAfter(id, UsageOperation.VERIFY, since),
-                usageLogRepository.countByKeyIdAndVersionNotAndUsedAtAfter(id, key.getCurrentVersion(), since),
+                usageLogRepository.countByKeyIdAndVersionNotAndOperationInAndUsedAtAfter(id, key.getCurrentVersion(),
+                        List.of(UsageOperation.DECRYPT, UsageOperation.VERIFY), since),
                 usageLogRepository.countByKeyIdAndResultAndUsedAtAfter(id, UsageResult.FAIL, since));
     }
 
