@@ -700,6 +700,22 @@ html.collapsed .sp-chev {
   font-style: normal;
   margin-left: 2px;
 }
+.input,
+select.input,
+textarea.input {
+  background: var(--bg-deep);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  color: var(--text);
+  outline: none;
+  transition: 0.15s;
+}
+.input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-bg);
+}
 select.input {
   appearance: none;
   background-color: var(--bg-deep);

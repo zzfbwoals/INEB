@@ -57,7 +57,6 @@ export default function KeyTestPage() {
   const sig = mode === 'sig'
   const current = detail?.versions.find((v) => v.version === detail.currentVersion)
   const curOk = !!current && current.state === 'ACTIVE'
-  const decable = detail?.versions.filter((v) => v.state === 'ACTIVE').map((v) => 'v' + v.version) ?? []
   const opL = sig ? '서명' : '암호화', opR = sig ? '검증' : '복호화'
   const maxBytes = detail && !sig ? maxPlaintextBytes(detail.algorithm, detail.keySize) : null
   const inputBytes = utf8Bytes(input)
@@ -124,13 +123,9 @@ export default function KeyTestPage() {
   }
 
   return (
-    <AppLayout crumb="키 관리 / 암복호화 테스트">
+    <AppLayout crumb="키 관리 / 동작 테스트">
       <div className="page-h">
-        <div><h2>암복호화 테스트</h2><div className="desc">KMS 관리 키의 동작 검증 — 키 값은 서버 내부에서만 언래핑되며 응답에 포함되지 않습니다</div></div>
-      </div>
-      <div className="blocknote">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flex: 'none', marginTop: 1 }}><circle cx="12" cy="12" r="9" /><path d="M12 8v.1M12 11v5" /></svg>
-        <div><b>암호화·서명은 최신 버전으로만, 복호화·검증은 ACTIVE 상태인 모든 버전에서 가능합니다.</b> 준비(PRE_ACTIVE)·정지(DEACTIVATED)·폐기 버전은 차단됩니다. 암호문·서명값에 버전이 포함되므로 복호화·검증 시 버전을 자동 판별합니다.</div>
+        <div><h2>동작 테스트</h2></div>
       </div>
 
       <div className="filters">
@@ -152,18 +147,12 @@ export default function KeyTestPage() {
             <button type="button" className={mode === 'sig' ? 'on' : ''} disabled={!detail || !canSign(detail.purpose)} onClick={() => switchMode('sig')}>서명/검증</button>
           </div>
         </div>
-        {detail && (
-          <div className="keyinfo">
-            <StateBadge state={detail.status} />
-            <span>{opL}: {curOk ? <><span className="vtag cur">v{current!.version}</span> (최신)</> : <b style={{ color: 'var(--red)' }}>불가</b>}</span>
-            <span>{opR} 가능 버전: {decable.length ? decable.join(', ') : <b style={{ color: 'var(--red)' }}>없음</b>}</span>
-          </div>
-        )}
+        {detail && <div className="keyinfo"><StateBadge state={detail.status} /></div>}
       </div>
 
       <div className="test-grid">
         <div className="card test-card">
-          <div className="card-h"><h3>{sig ? '서명 생성' : '평문 암호화'}</h3><span className="hint">{detail ? (curOk ? `v${current!.version} (최신 ACTIVE)로 수행` : `최신 버전이 ${STATE_KO[current?.state ?? 'DESTROYED']} — 차단`) : ''}</span></div>
+          <div className="card-h"><h3>{sig ? '서명 생성' : '평문 암호화'}</h3><span className="hint" /></div>
           <div className="body">
             <div className="field">
               <label>{sig ? '원문 입력' : '평문 입력'}</label>
@@ -178,17 +167,14 @@ export default function KeyTestPage() {
             <div className="field">
               <label>{sig ? '서명값' : '암호문'}</label>
               <div className={`result-box ${encOut ? 'ok' : ''}`}>
-                {encOut ? <>{encOut.text}<br /><span style={{ color: 'var(--text-3)' }}>{encOut.note}</span></> : '결과가 여기에 표시됩니다'}
-              </div>
-              <div className="fmt">
-                형식: {sig ? <code>{'{version}:{base64 signature}'}</code> : <><code>{'{version}:{base64 iv}:{base64 ciphertext+tag}'}</code> — 버전과 IV가 암호문에 내장됩니다</>}
+                {encOut ? encOut.text : '결과가 여기에 표시됩니다'}
               </div>
             </div>
           </div>
         </div>
 
         <div className="card test-card">
-          <div className="card-h"><h3>{sig ? '서명 검증' : '암호문 복호화'}</h3><span className="hint">{decable.length ? `${decable.join('·')} 허용` : `${opR} 가능 버전 없음`}</span></div>
+          <div className="card-h"><h3>{sig ? '서명 검증' : '암호문 복호화'}</h3><span className="hint" /></div>
           <div className="body">
             {sig && (
               <div className="field">

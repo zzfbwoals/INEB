@@ -91,7 +91,7 @@ const NAV: { section: string | null; items: { key: string; label: string; icon: 
     section: '키 관리',
     items: [
       { key: 'keys', label: '키 목록', icon: icons.key, to: '/keys' },
-      { key: 'test', label: '암복호화 테스트', icon: icons.test, to: '/keys/test' },
+      { key: 'test', label: '동작 테스트', icon: icons.test, to: '/keys/test' },
     ],
   },
   {
@@ -176,7 +176,7 @@ export default function AppLayout({ crumb, children }: { crumb?: string; childre
                 <NavLink
                   key={item.key}
                   to={item.to}
-                  end={item.to === '/'}
+                  end
                   className={({ isActive }) => (isActive ? 'nav-it on' : 'nav-it')}
                   data-label={item.label}
                 >

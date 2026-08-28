@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { runKeyAction, type KeyAction, type KeyDetail, type VersionInfo } from '@/api/keys'
 import { BADGE, STATE_KO } from '@/lib/keyRules'
-import { fmt, fromDateTimeLocal, isFuture } from '@/lib/format'
+import { fmt, fromDateTimeLocal } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
@@ -70,7 +70,7 @@ function ActivateDialog({ detail, version, onClose, onDone }: { detail: KeyDetai
   const [reason, setReason] = useState('')
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title="활성화 (ACTIVATE)">
+      <DialogContent title="키 활성화">
         <DialogBody>
           <div className="note info">
             <div>v{version}를 지금 활성화합니다. activation_date가 현재 시각으로 설정되고 v{version}가 최신 버전(암호화·서명 담당)이 됩니다. 기존 ACTIVE 버전은 그대로 복호화·검증에 사용됩니다.</div>
@@ -100,7 +100,7 @@ function ReactivateDialog({ detail, version, onClose, onDone }: { detail: KeyDet
             {willCurrent ? <><b>최신 버전으로 복귀</b>해 암호화·서명에도 사용됩니다</> : <><b>복호화·검증 전용</b> ACTIVE가 되어 재암호화 작업에 사용할 수 있습니다</>}.</div>
           </div>
           <div className="note">
-            <div>서버 검증 순서: ① 마스터키로 언래핑 성공 확인(GCM 태그 — 키 재료 무손상) → ② 현재 메타로 integrity_hash 재계산·저장 → ③ ACTIVE 전이. 언래핑 실패 시 409(재료 손상 — 갱신만 가능).</div>
+            <div>서버 검증 순서: ① 마스터키로 언래핑 성공 확인(GCM 태그 — 키 재료 무손상) → ② 현재 메타로 integrity_hash 재계산·저장 → ③ ACTIVE 전이. 언래핑 실패 시 409(재료 손상 — 회전만 가능).</div>
           </div>
           <ReasonField value={reason} onChange={setReason} placeholder="예: DB 점검 중 활성일 컬럼 수동 수정으로 인한 오탐 확인, 재암호화 위해 복구" />
         </DialogBody>
@@ -117,19 +117,13 @@ function ReactivateDialog({ detail, version, onClose, onDone }: { detail: KeyDet
 function DeactivateDialog({ detail, version, onClose, onDone }: { detail: KeyDetail; version: number | null; onClose: () => void; onDone: () => void }) {
   const { run, pending } = useRunner(detail, onClose, onDone)
   const [reason, setReason] = useState('')
-  const actives = detail.versions.filter((v) => v.state === 'ACTIVE').map((v) => 'v' + v.version).join(', ')
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title={version ? `버전 정지 (DEACTIVATE v${version})` : '키 정지 (DEACTIVATE)'}>
+      <DialogContent title={version ? '버전 정지' : '키 정지'}>
         <DialogBody>
-          <div className="note warn">
-            <div>{version
-              ? <>v{version}를 정지합니다. 이후 이 버전으로는 <b>복호화·검증도 차단</b>되며 재활성화할 수 없습니다. 이 버전으로 암호화된 데이터가 남아 있지 않은지(재암호화 완료) 확인하세요.</>
-              : <>키의 모든 ACTIVE 버전({actives})을 정지합니다. 이후 <b>암복호화·서명검증이 전부 차단</b>되고 자동 갱신도 중단됩니다. 재활성화는 불가하며 다시 쓰려면 갱신으로 새 버전을 생성해야 합니다.</>}</div>
-          </div>
           <ReasonField value={reason} onChange={setReason} placeholder="예: 해당 버전 암호문 전량 재암호화 완료" />
         </DialogBody>
-        <DialogFooter note="관리자 정지는 재활성화 불가(갱신으로 대체) · 무결성 자동 정지만 재활성화 가능">
+        <DialogFooter>
           <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button variant="danger" disabled={pending} onClick={() => run('DEACTIVATE', reason, { version })}>정지</Button>
         </DialogFooter>
@@ -144,31 +138,19 @@ function RotateDialog({ detail, onClose, onDone }: { detail: KeyDetail; onClose:
   const [reason, setReason] = useState('')
   const [activationDate, setActivationDate] = useState('')
   const full = detail.versionCount >= detail.maxVersions
-  const scheduled = detail.versions.find((v) => v.state === 'PRE_ACTIVE')
-  const next = detail.versions.reduce((m, v) => Math.max(m, v.version), 0) + 1
-  const future = isFuture(activationDate)
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title="갱신 (ROTATE) — 새 버전 생성">
+      <DialogContent title="키 갱신">
         <DialogBody>
-          <div className="note">
-            <div>{full ? <>버전 상한({detail.maxVersions})에 도달했습니다. 사용하지 않는 구 버전을 정지·삭제한 뒤 갱신하세요.</>
-              : scheduled ? <>이미 v{scheduled.version}가 활성 예약 중입니다. 새로 갱신하면 v{scheduled.version}는 삭제되고 v{next}가 생성됩니다.</>
-                : <>새 버전 <b>v{next}</b>을 생성합니다 ({detail.algorithm}-{detail.keySize}, SecureRandom 새 재료 · 마스터키 래핑). 기존 ACTIVE 버전은 그대로 유지되어 복호화·검증에 계속 사용됩니다.</>}</div>
-          </div>
           <div className="field">
             <label>새 버전 활성일</label>
             <Input className="mono" type="datetime-local" value={activationDate} onChange={(e) => setActivationDate(e.target.value)} />
-            <div className="help">
-              {future ? <>미래 → v{next}는 <b>PRE_ACTIVE</b>로 예약, {activationDate.replace('T', ' ')} 도래 시 최신 버전으로 교체</>
-                : <>비우면 즉시 → v{next} <b>ACTIVE</b>(최신, 암호화·서명 담당). v{detail.currentVersion}은 ACTIVE 유지(복호화·검증 전용)</>}
-            </div>
           </div>
           <ReasonField value={reason} onChange={setReason} placeholder="예: 수동 갱신 — 연동 시스템 교체" />
         </DialogBody>
-        <DialogFooter note="수동 갱신은 다음 자동 갱신(갱신 주기) 스케줄에 영향을 주지 않음">
+        <DialogFooter>
           <Button variant="ghost" onClick={onClose}>취소</Button>
-          <Button disabled={pending || full} onClick={() => run('ROTATE', reason, { activationDate: fromDateTimeLocal(activationDate) })}>갱신 실행</Button>
+          <Button disabled={pending || full} onClick={() => run('ROTATE', reason, { activationDate: fromDateTimeLocal(activationDate) })}>갱신</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -194,7 +176,7 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title="삭제 (DESTROY)">
+      <DialogContent title="키 삭제">
         <DialogBody>
           <div className="note warn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flex: 'none', marginTop: 2 }}><path d="M12 3 2.5 20h19L12 3z" /><path d="M12 10v4m0 3.2v.1" /></svg>

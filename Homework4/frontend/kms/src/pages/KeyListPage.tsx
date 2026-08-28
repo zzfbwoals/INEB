@@ -48,7 +48,7 @@ export default function KeyListPage() {
       <div className="page-h">
         <div><h2>키 목록</h2></div>
         <div className="acts">
-          <Button onClick={() => setCreateOpen(true)}>키 등록</Button>
+          <Button onClick={() => setCreateOpen(true)}>등록</Button>
         </div>
       </div>
 

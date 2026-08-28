@@ -54,7 +54,6 @@ export function KeyEditDialog({ detail, open, onClose, onDone }: { detail: KeyDe
               <input className="input mono" type="number" min={ROT_MIN} max={ROT_MAX} value={rotationDays} disabled={!autoRotate} onChange={(e) => setRotationDays(Number(e.target.value))} />
               <span style={{ fontSize: 13, color: 'var(--text-2)' }}>일</span>
             </div>
-            <div className="help">1 ~ 730일. 변경 시 다음 갱신일은 현재 시각 + 새 주기로 재계산</div>
           </div>
           {editableDate && current && (
             <div className="field">
@@ -63,7 +62,6 @@ export function KeyEditDialog({ detail, open, onClose, onDone }: { detail: KeyDe
               <div className="help">과거로 변경하면 즉시 ACTIVE 전이됩니다</div>
             </div>
           )}
-          <div className="help">알고리즘·사이즈·모드·용도는 변경할 수 없습니다 (키 재료와 결합된 속성). 저장 시 integrity_hash 재계산.</div>
         </DialogBody>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>취소</Button>

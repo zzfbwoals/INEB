@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { createKey, type KeyAlgorithm, type KeyMode } from '@/api/keys'
-import { ALGOS, ALGO_GROUPS, PURPOSE_HELP, PURPOSE_KO, ROT_DEFAULT, ROT_MAX, ROT_MIN } from '@/lib/keyRules'
-import { fromDateTimeLocal, isFuture, plusDays } from '@/lib/format'
+import { ALGOS, ALGO_GROUPS, PURPOSE_KO, ROT_DEFAULT, ROT_MAX, ROT_MIN } from '@/lib/keyRules'
+import { fromDateTimeLocal, isFuture } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
@@ -71,7 +71,7 @@ export function KeyCreateDialog({ open, onOpenChange, onCreated }: { open: boole
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset() }}>
-      <DialogContent title="KMS 키 등록" wide>
+      <DialogContent title="키 등록" wide>
         <form onSubmit={handleSubmit}>
           <DialogBody>
             <div className="field">
@@ -113,7 +113,6 @@ export function KeyCreateDialog({ open, onOpenChange, onCreated }: { open: boole
                   {!purpose && <option value="">알고리즘 선택 시 결정</option>}
                   {purpose && <option value={purpose}>{PURPOSE_KO[purpose]}</option>}
                 </select>
-                <div className="help">{purpose ? PURPOSE_HELP[purpose] : '알고리즘 선택 시 가능한 용도로 자동 설정됩니다'}</div>
               </div>
             </div>
             <div className="field">
@@ -127,33 +126,22 @@ export function KeyCreateDialog({ open, onOpenChange, onCreated }: { open: boole
                 <span style={{ fontSize: 13, color: 'var(--text-2)' }}>일</span>
                 <span className="help">
                   {!autoRotate ? '수동 갱신만 — 주기적 갱신은 관리자 책임'
-                    : !rotValid ? <span style={{ color: 'var(--red)' }}>1~730 범위여야 합니다</span>
-                      : `다음 갱신 ${plusDays(rotationDays)}`}
+                    : !rotValid ? <span style={{ color: 'var(--red)' }}>1~730 범위여야 합니다</span> : ''}
                 </span>
               </div>
-              <div className="help">1 ~ 730일 (기본 90일). 주기 도래 시 새 버전이 자동 생성되어 최신 버전이 되며, 이전 버전은 복호화·검증 전용으로 유지됩니다</div>
             </div>
             <div className="field">
               <label>활성일</label>
               <Input className="mono" type="datetime-local" value={activationDate} onChange={(e) => setActivationDate(e.target.value)} />
-              <div className="help">비우거나 과거 → 즉시 <b>ACTIVE</b> / 미래 → <b>PRE_ACTIVE</b>로 등록되어 도래 시 자동 활성</div>
             </div>
             <div className="field">
               <label>설명</label>
               <Input placeholder="용도·연동 시스템 등 (선택)" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
-            <div className="result-box" style={{ minHeight: 0 }}>
-              SecureRandom으로 키 재료 생성 → 마스터키 AES-256-GCM 래핑 → Base64 저장 (key_material v1)<br />
-              key_uid(UUID) 자동 부여 · 초기 상태{' '}
-              {future ? <><b style={{ color: 'var(--blue)' }}>PRE_ACTIVE</b> ({activationDate.replace('T', ' ')} 활성 예정)</>
-                : <><b style={{ color: 'var(--green)' }}>ACTIVE</b> (즉시 활성)</>} · integrity_hash 계산<br />
-              갱신: {autoRotate ? <><b>{rotationDays}일</b>마다 자동 (SYSTEM)</> : '수동'}
-              {algo?.kind === 'ASYMMETRIC' && <><br /><span style={{ color: 'var(--text-3)' }}>비대칭키 — 개인키만 래핑 저장, 공개키는 상세에서 조회 가능</span></>}
-            </div>
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>취소</Button>
-            <Button type="submit" disabled={pending}>{pending ? '생성 중…' : '생성 및 래핑 저장'}</Button>
+            <Button type="submit" disabled={pending}>{pending ? '생성 중…' : '생성'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

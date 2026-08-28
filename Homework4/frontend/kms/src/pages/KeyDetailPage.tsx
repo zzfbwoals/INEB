@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import { getHistory, getKey, getUsage, type HistoryItem, type KeyDetail, type UsageResponse, type VersionInfo } from '@/api/keys'
-import { ALGOS, MAX_VERSIONS, PURPOSE_KO, TRIGGER_KO, canEncrypt, canSign } from '@/lib/keyRules'
+import { ALGOS, PURPOSE_KO, TRIGGER_KO, canEncrypt, canSign } from '@/lib/keyRules'
 import { dday, fmt } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
@@ -64,8 +64,8 @@ export default function KeyDetailPage() {
         </div>
         <div className="acts">
           {s !== 'DESTROYED' && <Button asChild variant="ghost"><Link to={`/keys/test?id=${detail.keyUid}`}>동작 테스트</Link></Button>}
-          {pre && <Button onClick={() => setAction({ kind: 'ACTIVATE', version: pre.version })}>활성화 v{pre.version}</Button>}
-          {actives.length > 0 && <Button variant="ghost" onClick={() => setAction({ kind: 'DEACTIVATE', version: null })}>키 정지</Button>}
+          {pre && <Button onClick={() => setAction({ kind: 'ACTIVATE', version: pre.version })}>활성화</Button>}
+          {actives.length > 0 && <Button variant="ghost" onClick={() => setAction({ kind: 'DEACTIVATE', version: null })}>정지</Button>}
           {(s === 'ACTIVE' || s === 'DEACTIVATED') && <Button onClick={() => setAction({ kind: 'ROTATE' })}>갱신</Button>}
           {s !== 'DESTROYED' && destroyable && <Button variant="danger" onClick={() => setAction({ kind: 'DESTROY', version: null })}>삭제</Button>}
         </div>
@@ -76,20 +76,20 @@ export default function KeyDetailPage() {
           <div className="card-h">
             <h3>키 메타정보</h3>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {detail.integrityValid ? <span className="badge b-ok">무결성 검증 통과</span> : <span className="badge b-bad">무결성 위반 감지 (integrityValid: false)</span>}
+              {detail.integrityValid ? <span className="badge b-ok">무결성 검증 통과</span> : <span className="badge b-bad">무결성 위반 감지</span>}
               {s !== 'DESTROYED' && <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>수정</Button>}
             </div>
           </div>
           <div className="meta-grid">
             <Meta k="알고리즘 / 사이즈" v={`${detail.algorithm} · ${rule.sizeLabel ? rule.sizeLabel(detail.keySize) : detail.keySize + ' bit'}`} />
             <Meta k="모드 / 용도" v={`${detail.mode ?? (rule.kind === 'HMAC' ? 'HMAC' : '—')} · ${PURPOSE_KO[detail.purpose]}`} />
-            <Meta k="버전" v={<>v{detail.currentVersion} <span style={{ color: 'var(--text-3)', fontWeight: 500 }}>/ 총 {detail.versionCount}개 (상한 {detail.maxVersions})</span></>} />
+            <Meta k="버전" v={`v${detail.currentVersion}`} />
             <Meta k="갱신 주기 / 다음 갱신" mono v={detail.autoRotate
               ? <>{detail.rotationPeriodDays}일 · {fmt(detail.nextRotationAt)}{d !== null && d <= 0 && s === 'ACTIVE' && <b style={{ color: 'var(--red)' }}> (지연)</b>}</>
               : '수동 갱신'} />
             <Meta k={`활성일 (v${detail.currentVersion})`} mono v={<>{fmt(current?.activationDate)}{current?.state === 'PRE_ACTIVE' && <b style={{ color: 'var(--blue)' }}> (예정)</b>}</>} />
             <Meta k="설명" v={<span style={{ fontWeight: 500 }}>{detail.description ?? '—'}</span>} />
-            <Meta k="생성일 / 래핑" mono v={`${detail.createdAt} · ${detail.wrapAlgo} (마스터키)`} />
+            <Meta k="생성일" mono v={detail.createdAt} />
             <Meta k="integrity_hash" mono v={<span style={{ fontSize: 11.5, color: detail.integrityValid ? 'var(--text-3)' : 'var(--red)' }}>{detail.integrityHashShort ?? '—'} {detail.integrityValid ? '✓' : '✕ 불일치'}</span>} />
             {detail.publicKeyPem && (
               <div className="meta-it full">
@@ -108,7 +108,7 @@ export default function KeyDetailPage() {
         </div>
 
         <div className="card">
-          <div className="card-h"><h3>상태 변경 타임라인</h3><span className="hint">key_status_history</span></div>
+          <div className="card-h"><h3>상태 변경 타임라인</h3></div>
           <div className="timeline">
             {history.length === 0 && <div className="help" style={{ padding: '12px 0' }}>이력이 없습니다</div>}
             {history.map((h, i) => (
@@ -129,10 +129,7 @@ export default function KeyDetailPage() {
       <div className="card">
         <div className="tabs">
           <button type="button" className={`tab ${tab === 'ver' ? 'on' : ''}`} onClick={() => setTab('ver')}>버전 목록</button>
-          <button type="button" className={`tab ${tab === 'usage' ? 'on' : ''}`} onClick={() => setTab('usage')}>사용 이력 (key_usage_log)</button>
-          <span className="hint">
-            {tab === 'ver' ? `총 ${detail.versionCount} / ${MAX_VERSIONS} · ${opL}는 최신 버전만, ${opR}는 ACTIVE 버전 모두` : `GET /api/keys/${detail.keyUid}/usage · 테스트 호출 기록 (관리자 행위는 감사 로그 페이지)`}
-          </span>
+          <button type="button" className={`tab ${tab === 'usage' ? 'on' : ''}`} onClick={() => setTab('usage')}>사용 이력</button>
         </div>
         {tab === 'ver' ? (
           <div className="tbl-wrap">
@@ -199,7 +196,7 @@ function VersionRow({ v, detail, onAction }: { v: VersionInfo; detail: KeyDetail
       <td className="mono">
         {fmt(v.activationDate)}
         {v.state === 'PRE_ACTIVE' && <span style={{ color: 'var(--blue)' }}> 예정</span>}
-        {v.state === 'DESTROYED' && <span style={{ color: 'var(--text-3)' }}> · 삭제 {fmt(v.destroyedAt)}</span>}
+        {v.state === 'DESTROYED' && <span style={{ color: 'var(--text-3)' }}> · 폐기 {fmt(v.destroyedAt)}</span>}
       </td>
       <td className="mono">{fmt(v.lastUsedAt)}</td>
       <td className="mono">{v.usageCount.toLocaleString()}</td>
