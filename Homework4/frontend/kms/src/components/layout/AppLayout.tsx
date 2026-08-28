@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router'
+import { NavLink, useNavigate } from 'react-router'
 import { fetchMe, logout, type Me } from '@/api/auth'
 import { clearToken } from '@/lib/auth'
 import { setThemeMode, useThemeMode, type ThemeMode } from '@/lib/theme'
@@ -84,14 +84,14 @@ const icons = {
   ),
 } as const
 
-/* 사이드바 메뉴 — 탭 전환은 추후 구현 예정이라 현재는 표시만 */
-const NAV: { section: string | null; items: { key: string; label: string; icon: ReactNode }[] }[] = [
-  { section: null, items: [{ key: 'dashboard', label: '대시보드', icon: icons.dash }] },
+/* 사이드바 메뉴 — to 가 있으면 라우팅, 없으면 미구현(추후 주차) 표시만 */
+const NAV: { section: string | null; items: { key: string; label: string; icon: ReactNode; to?: string }[] }[] = [
+  { section: null, items: [{ key: 'dashboard', label: '대시보드', icon: icons.dash, to: '/' }] },
   {
     section: '키 관리',
     items: [
-      { key: 'keys', label: 'KMS 키 목록', icon: icons.key },
-      { key: 'test', label: '암복호화 테스트', icon: icons.test },
+      { key: 'keys', label: '키 목록', icon: icons.key, to: '/keys' },
+      { key: 'test', label: '암복호화 테스트', icon: icons.test, to: '/keys/test' },
     ],
   },
   {
@@ -171,12 +171,25 @@ export default function AppLayout({ crumb, children }: { crumb?: string; childre
         {NAV.map((group) => (
           <div key={group.section ?? 'root'} className="contents">
             {group.section && <div className="nav-sec">{group.section}</div>}
-            {group.items.map((item) => (
-              <button key={item.key} type="button" className="nav-it" data-label={item.label} title="추후 제공 예정">
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
-            ))}
+            {group.items.map((item) =>
+              item.to ? (
+                <NavLink
+                  key={item.key}
+                  to={item.to}
+                  end={item.to === '/'}
+                  className={({ isActive }) => (isActive ? 'nav-it on' : 'nav-it')}
+                  data-label={item.label}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </NavLink>
+              ) : (
+                <button key={item.key} type="button" className="nav-it" data-label={item.label} title="추후 제공 예정">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ),
+            )}
           </div>
         ))}
 
