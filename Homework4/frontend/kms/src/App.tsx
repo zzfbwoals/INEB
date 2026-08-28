@@ -6,6 +6,7 @@ import LoginPage from '@/pages/LoginPage'
 import HomePage from '@/pages/HomePage'
 import KeyListPage from '@/pages/KeyListPage'
 import KeyDetailPage from '@/pages/KeyDetailPage'
+import KeyTestPage from '@/pages/KeyTestPage'
 
 function RequireAuth({ children }: { children: ReactNode }) {
   if (!getToken()) {
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
           <Route path="/keys" element={<RequireAuth><KeyListPage /></RequireAuth>} />
+          <Route path="/keys/test" element={<RequireAuth><KeyTestPage /></RequireAuth>} />
           <Route path="/keys/:keyUid" element={<RequireAuth><KeyDetailPage /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

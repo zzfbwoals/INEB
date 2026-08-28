@@ -1350,3 +1350,78 @@ textarea.input:focus {
   gap: 12px;
   flex-wrap: wrap;
 }
+
+/* ===== 암복호화 테스트 (목업 test.html) ===== */
+.test-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .test-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.test-card .body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.keyinfo {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.parse {
+  font-size: 12px;
+  color: var(--text-3);
+  min-height: 18px;
+}
+.fmt {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+.fmt code {
+  font-family: inherit;
+  color: var(--text-2);
+  background: var(--raised);
+  padding: 0 5px;
+  border-radius: 4px;
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.seg button {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.seg button.on {
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+.seg button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.blocknote {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--blue-bg);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  color: var(--blue);
+  line-height: 1.6;
+}
