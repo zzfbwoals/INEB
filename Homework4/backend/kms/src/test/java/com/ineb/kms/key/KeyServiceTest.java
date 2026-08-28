@@ -61,7 +61,7 @@ class KeyServiceTest {
         AuditHook audit = (actor, action, target, detail) -> audits.add(action);
         KeyIntegrityGuard guard = new KeyIntegrityGuard(hasher, machine, materialRepository, audit);
         service = new KeyService(keyRepository, materialRepository, usageLogRepository,
-                new KeyMaterialFactory(holder), machine, hasher, guard, audit);
+                mock(KeyStatusHistoryRepository.class), new KeyMaterialFactory(holder), machine, hasher, guard, audit);
 
         // 저장 시 id 부여, 목록 조회는 메모리 리스트
         when(keyRepository.save(any(CryptoKey.class))).thenAnswer(inv -> {

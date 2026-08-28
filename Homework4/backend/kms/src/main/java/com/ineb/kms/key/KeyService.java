@@ -13,14 +13,19 @@ import com.ineb.kms.domain.KeyPurpose;
 import com.ineb.kms.domain.KeyState;
 import com.ineb.kms.domain.UsageOperation;
 import com.ineb.kms.domain.UsageResult;
+import com.ineb.kms.domain.KeyUsageLog;
+import com.ineb.kms.key.dto.HistoryItem;
 import com.ineb.kms.key.dto.KeyCreateRequest;
 import com.ineb.kms.key.dto.KeyDetail;
 import com.ineb.kms.key.dto.KeySummary;
 import com.ineb.kms.key.dto.KeyUpdateRequest;
+import com.ineb.kms.key.dto.UsageItem;
+import com.ineb.kms.key.dto.UsageResponse;
 import com.ineb.kms.key.dto.UsageStats;
 import com.ineb.kms.key.dto.VersionInfo;
 import com.ineb.kms.repository.CryptoKeyRepository;
 import com.ineb.kms.repository.KeyMaterialRepository;
+import com.ineb.kms.repository.KeyStatusHistoryRepository;
 import com.ineb.kms.repository.KeyUsageLogRepository;
 import java.time.Duration;
 import java.time.Instant;
@@ -47,6 +52,7 @@ public class KeyService {
     private final CryptoKeyRepository keyRepository;
     private final KeyMaterialRepository materialRepository;
     private final KeyUsageLogRepository usageLogRepository;
+    private final KeyStatusHistoryRepository historyRepository;
     private final KeyMaterialFactory materialFactory;
     private final KeyStateMachine stateMachine;
     private final KeyIntegrityHasher hasher;
@@ -54,12 +60,14 @@ public class KeyService {
     private final AuditHook auditHook;
 
     public KeyService(CryptoKeyRepository keyRepository, KeyMaterialRepository materialRepository,
-                      KeyUsageLogRepository usageLogRepository, KeyMaterialFactory materialFactory,
+                      KeyUsageLogRepository usageLogRepository, KeyStatusHistoryRepository historyRepository,
+                      KeyMaterialFactory materialFactory,
                       KeyStateMachine stateMachine, KeyIntegrityHasher hasher,
                       KeyIntegrityGuard integrityGuard, AuditHook auditHook) {
         this.keyRepository = keyRepository;
         this.materialRepository = materialRepository;
         this.usageLogRepository = usageLogRepository;
+        this.historyRepository = historyRepository;
         this.materialFactory = materialFactory;
         this.stateMachine = stateMachine;
         this.hasher = hasher;
@@ -206,6 +214,29 @@ public class KeyService {
                 "name=" + key.getKeyName() + ", autoRotate=" + key.isAutoRotate()
                         + ", period=" + key.getRotationPeriodDays() + activationNote);
         return toDetail(key);
+    }
+
+    // ---------------------------------------------------------------- 이력 · 사용 이력
+
+    @Transactional(readOnly = true)
+    public List<HistoryItem> history(String keyUid) {
+        CryptoKey key = load(keyUid);
+        return historyRepository.findByKeyIdOrderByChangedAtDescIdDesc(key.getId()).stream()
+                .map(h -> new HistoryItem(h.getVersion(),
+                        h.getFromState() == null ? null : h.getFromState().name(), h.getToState().name(),
+                        h.getReason(), h.getTrigger().name(), h.getChangedBy(), KstTime.format(h.getChangedAt())))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public UsageResponse usage(String keyUid, int page, int size) {
+        CryptoKey key = load(keyUid);
+        Page<KeyUsageLog> logs = usageLogRepository.findByKeyIdOrderByUsedAtDescIdDesc(key.getId(),
+                PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100)));
+        int current = key.getCurrentVersion();
+        return new UsageResponse(usageStats(key), PageResponse.of(logs, l -> new UsageItem(l.getVersion(),
+                l.getOperation().name(), l.getResult().name(), l.getFailReason(), KstTime.format(l.getUsedAt()),
+                l.getVersion() != current)));
     }
 
     // ---------------------------------------------------------------- 검증 헬퍼
