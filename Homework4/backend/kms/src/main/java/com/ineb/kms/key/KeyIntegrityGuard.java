@@ -54,7 +54,7 @@ public class KeyIntegrityGuard {
      * 언래핑 직전 검증. 불일치면 즉시 자동 정지하고 KEY_INTEGRITY_VIOLATION 을 던진다.
      * 이미 정지된 버전은 다시 정지하지 않는다.
      */
-    @Transactional
+    @Transactional(noRollbackFor = BusinessException.class)   // 자동 정지를 커밋한 채 409 를 던진다
     public void verifyOrDeactivate(KeyMaterial material) {
         if (hasher.verify(material)) {
             return;
@@ -66,7 +66,7 @@ public class KeyIntegrityGuard {
     /**
      * 키 메타 검증. 불일치면 키의 ACTIVE 버전을 전부 자동 정지하고 예외를 던진다.
      */
-    @Transactional
+    @Transactional(noRollbackFor = BusinessException.class)
     public void verifyOrDeactivate(CryptoKey key) {
         if (hasher.verify(key)) {
             return;
