@@ -19,10 +19,10 @@ export default function KeyTestPage() {
   const [detail, setDetail] = useState<KeyDetail | null>(null)
   const [mode, setMode] = useState<Mode>('enc')
   const [input, setInput] = useState(DEFAULT_PLAIN)
-  const [encOut, setEncOut] = useState<{ text: string; note: string } | null>(null)
+  const [encOut, setEncOut] = useState<string | null>(null)
   const [decIn, setDecIn] = useState('')
   const [decMsg, setDecMsg] = useState('')
-  const [decOut, setDecOut] = useState<{ text: string; note: string; warn?: string } | null>(null)
+  const [decOut, setDecOut] = useState<{ text: string; warn?: string } | null>(null)
   const [pending, setPending] = useState(false)
 
   useEffect(() => {
@@ -75,11 +75,11 @@ export default function KeyTestPage() {
     try {
       if (sig) {
         const r = await testSign(detail.keyUid, input)
-        setEncOut({ text: r.signature, note: `사용 버전: v${r.version} (최신 ACTIVE) · 언래핑 → ${detail.algorithm === 'SHA256' || detail.algorithm === 'SHA512' ? 'HMAC 계산' : detail.algorithm + ' 서명'} → 키 재료 zeroize · key_usage_log (version=${r.version}) · audit_log KEY_TEST_SIGN` })
+        setEncOut(r.signature)
         setDecIn(r.signature); setDecMsg(input)
       } else {
         const r = await testEncrypt(detail.keyUid, input)
-        setEncOut({ text: r.ciphertext, note: `사용 버전: v${r.version} (최신 ACTIVE) · 언래핑 → ${detail.algorithm}${detail.mode ? '-' + detail.mode : ''} 암호화 → 키 재료 zeroize · key_usage_log (version=${r.version}) · audit_log KEY_TEST_ENCRYPT` })
+        setEncOut(r.ciphertext)
         setDecIn(r.ciphertext)
       }
       setDecOut(null)
@@ -101,15 +101,13 @@ export default function KeyTestPage() {
         const r = await testVerify(detail.keyUid, decMsg, decIn.trim())
         setDecOut({
           text: `verified: ${r.valid}`,
-          note: `v${r.version} ${detail.algorithm === 'SHA256' || detail.algorithm === 'SHA512' ? 'HMAC 재계산 일치 여부' : '공개키로 서명 검증'} · key_usage_log (version=${r.version}) · audit_log KEY_TEST_VERIFY`,
           warn: r.oldVersion ? 'ⓘ 구 버전으로 처리됨' : undefined,
         })
         toast(r.valid ? '서명 검증 성공' : '서명 불일치 — 검증 실패', r.valid ? 'ok' : 'error')
       } else {
         const r = await testDecrypt(detail.keyUid, decIn.trim())
         setDecOut({
-          text: `plaintext: ${r.plaintext}`,
-          note: `v${r.version}로 복호화 · 인증 태그 검증 통과 · key_usage_log (version=${r.version}) · audit_log KEY_TEST_DECRYPT`,
+          text: r.plaintext,
           warn: r.oldVersion ? 'ⓘ 구 버전으로 처리됨 — 재암호화 대상 데이터입니다' : undefined,
         })
         toast(`복호화 성공 — v${r.version}${r.oldVersion ? ' (구 버전)' : ''}`)
@@ -167,7 +165,7 @@ export default function KeyTestPage() {
             <div className="field">
               <label>{sig ? '서명값' : '암호문'}</label>
               <div className={`result-box ${encOut ? 'ok' : ''}`}>
-                {encOut ? encOut.text : '결과가 여기에 표시됩니다'}
+                {encOut ?? '결과가 여기에 표시됩니다'}
               </div>
             </div>
           </div>
@@ -185,21 +183,12 @@ export default function KeyTestPage() {
             <div className="field">
               <label>{sig ? '서명값' : '암호문'}</label>
               <textarea className="input" value={decIn} onChange={(e) => setDecIn(e.target.value)} placeholder={sig ? 'version:signature 형식' : 'version:iv:ciphertext 형식'} />
-              <div className="parse">
-                {parsed.kind === 'empty' ? '' : parsed.kind === 'error'
-                  ? <><b style={{ color: 'var(--red)' }}>{parsed.message}</b> (400)</>
-                  : <>→ <b>v{parsed.version.version}</b> <StateBadge state={parsed.version.state} />{' '}
-                    {parsed.ok
-                      ? <span style={{ color: parsed.old ? 'var(--text-2)' : undefined }}>{opR} 허용{parsed.old ? ' (구 버전 — 감사로그 기록)' : ''}</span>
-                      : <b style={{ color: 'var(--red)' }}>차단 — {STATE_KO[parsed.version.state]} 버전 (400){parsed.version.deactivationTrigger === 'INTEGRITY' ? ' · 무결성 위반 자동 정지 — 상세에서 재활성화 가능' : ''}</b>}
-                  </>}
-              </div>
             </div>
             <Button style={{ alignSelf: 'flex-start' }} disabled={pending} onClick={runRight}>{sig ? '검증 실행' : '복호화 실행'}</Button>
             <div className="field">
               <label>{sig ? '검증 결과' : '복호화 결과'}</label>
               <div className={`result-box ${decOut ? 'ok' : ''}`}>
-                {decOut ? <>{decOut.text}<br /><span style={{ color: 'var(--text-3)' }}>{decOut.note}</span>{decOut.warn && <><br /><span style={{ color: 'var(--text-2)' }}>{decOut.warn}</span></>}</> : '결과가 여기에 표시됩니다'}
+                {decOut ? <>{decOut.text}{decOut.warn && <><br /><span style={{ color: 'var(--text-2)' }}>{decOut.warn}</span></>}</> : '결과가 여기에 표시됩니다'}
               </div>
             </div>
           </div>

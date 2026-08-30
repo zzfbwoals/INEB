@@ -37,10 +37,9 @@ function DialogBody({ className, ...props }: React.ComponentProps<'div'>) {
   return <div data-slot="dialog-body" className={cn('modal-b', className)} {...props} />
 }
 
-function DialogFooter({ className, note, children, ...props }: React.ComponentProps<'div'> & { note?: string }) {
+function DialogFooter({ className, children, ...props }: React.ComponentProps<'div'>) {
   return (
     <div data-slot="dialog-footer" className={cn('modal-f', className)} {...props}>
-      {note && <span className="kmip">{note}</span>}
       {children}
     </div>
   )

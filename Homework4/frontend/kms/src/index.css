@@ -998,29 +998,6 @@ textarea.input:focus {
   border-color: var(--green);
   color: var(--green);
 }
-.note {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  border-radius: 10px;
-  padding: 11px 14px;
-  font-size: 12.5px;
-  line-height: 1.6;
-  background: var(--raised);
-  border: 1px solid var(--line-strong);
-  color: var(--text-2);
-}
-.note.warn {
-  background: var(--red-bg);
-  border-color: transparent;
-  color: var(--red);
-}
-.note.info {
-  background: var(--blue-bg);
-  border-color: transparent;
-  color: var(--blue);
-}
-
 /* 모달 (Radix Dialog 에 적용) */
 .modal-bk {
   position: fixed;
@@ -1101,13 +1078,6 @@ textarea.input:focus {
   padding: 16px 22px;
   border-top: 1px solid var(--line);
 }
-.modal-f .kmip {
-  font-size: 11px;
-  color: var(--text-3);
-  margin-right: auto;
-  align-self: center;
-}
-
 /* 토스트 */
 .toast {
   position: fixed;
@@ -1393,10 +1363,10 @@ textarea.input:focus {
   font-size: 12.5px;
   color: var(--text-2);
 }
-.parse {
-  font-size: 12px;
-  color: var(--text-3);
-  min-height: 18px;
+/* 필터 행에서는 라벨 높이만큼 내려 select·seg 컨트롤과 수평을 맞춘다 */
+.filters .keyinfo {
+  align-self: flex-end;
+  min-height: 40px;
 }
 .fmt {
   font-size: 11.5px;

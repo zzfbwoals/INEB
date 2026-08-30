@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { runKeyAction, type KeyAction, type KeyDetail, type VersionInfo } from '@/api/keys'
 import { BADGE, STATE_KO } from '@/lib/keyRules'
-import { fmt, fromDateTimeLocal } from '@/lib/format'
+import { fromDateTimeLocal } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
@@ -72,12 +72,9 @@ function ActivateDialog({ detail, version, onClose, onDone }: { detail: KeyDetai
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title="키 활성화">
         <DialogBody>
-          <div className="note info">
-            <div>v{version}를 지금 활성화합니다. activation_date가 현재 시각으로 설정되고 v{version}가 최신 버전(암호화·서명 담당)이 됩니다. 기존 ACTIVE 버전은 그대로 복호화·검증에 사용됩니다.</div>
-          </div>
           <ReasonField value={reason} onChange={setReason} placeholder="예: 연동 시스템 배포 완료로 예정보다 앞당겨 활성" />
         </DialogBody>
-        <DialogFooter note="상태는 연산의 결과로만 변경됩니다">
+        <DialogFooter>
           <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button disabled={pending} onClick={() => run('ACTIVATE', reason, { version })}>지금 활성화</Button>
         </DialogFooter>
@@ -90,21 +87,13 @@ function ActivateDialog({ detail, version, onClose, onDone }: { detail: KeyDetai
 function ReactivateDialog({ detail, version, onClose, onDone }: { detail: KeyDetail; version: number; onClose: () => void; onDone: () => void }) {
   const { run, pending } = useRunner(detail, onClose, onDone)
   const [reason, setReason] = useState('')
-  const willCurrent = version > detail.currentVersion || detail.versions.every((v) => v.state !== 'ACTIVE')
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title={`재활성화 (REACTIVATE v${version})`}>
         <DialogBody>
-          <div className="note info">
-            <div>v{version}는 무결성 위반으로 자동 정지된 버전입니다. 재활성화하면{' '}
-            {willCurrent ? <><b>최신 버전으로 복귀</b>해 암호화·서명에도 사용됩니다</> : <><b>복호화·검증 전용</b> ACTIVE가 되어 재암호화 작업에 사용할 수 있습니다</>}.</div>
-          </div>
-          <div className="note">
-            <div>서버 검증 순서: ① 마스터키로 언래핑 성공 확인(GCM 태그 — 키 재료 무손상) → ② 현재 메타로 integrity_hash 재계산·저장 → ③ ACTIVE 전이. 언래핑 실패 시 409(재료 손상 — 회전만 가능).</div>
-          </div>
           <ReasonField value={reason} onChange={setReason} placeholder="예: DB 점검 중 활성일 컬럼 수동 수정으로 인한 오탐 확인, 재암호화 위해 복구" />
         </DialogBody>
-        <DialogFooter note="무결성 위반으로 정지된 버전만 가능 · ADMIN 한정 · 감사로그 기록">
+        <DialogFooter>
           <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button disabled={pending} onClick={() => run('REACTIVATE', reason, { version })}>재활성화</Button>
         </DialogFooter>
@@ -178,10 +167,6 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title="키 삭제">
         <DialogBody>
-          <div className="note warn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flex: 'none', marginTop: 2 }}><path d="M12 3 2.5 20h19L12 3z" /><path d="M12 10v4m0 3.2v.1" /></svg>
-            <div>키 재료(wrapped_key)가 삭제되어 <b>복구할 수 없습니다.</b> 해당 버전으로 암호화된 데이터는 영구히 복호화할 수 없습니다. 메타·이력은 감사 목적으로 보존됩니다.</div>
-          </div>
           <div className="field">
             <label>삭제 대상</label>
             <div className="opt-row">
@@ -190,7 +175,6 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
                   <input type="radio" name="des" checked={target === v.version} onChange={() => setTarget(v.version)} />
                   <span>
                     <b>v{v.version}만 삭제 <span className={`badge ${BADGE[v.state]}`} style={{ marginLeft: 4 }}>{STATE_KO[v.state]}</span></b>
-                    <span>마지막 사용 {fmt(v.lastUsedAt)} · 누적 {v.usageCount.toLocaleString()}회</span>
                   </span>
                 </label>
               ))}
@@ -198,7 +182,7 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
                 <input type="radio" name="des" disabled={allDisabled} checked={target === null && !allDisabled} onChange={() => setTarget(null)} />
                 <span>
                   <b>키 전체 삭제 (준비·정지 버전 {candidates.length}개)</b>
-                  <span>{allDisabled ? `ACTIVE 버전(${actives.map((v) => 'v' + v.version).join(', ')})이 있어 불가 (409) — 먼저 키 정지` : '모든 버전 삭제 후 키 상태가 DESTROYED가 됩니다'}</span>
+                  {allDisabled && <span>{`ACTIVE 버전(${actives.map((v) => 'v' + v.version).join(', ')})이 있어 불가 (409) — 먼저 키 정지`}</span>}
                 </span>
               </label>
             </div>
@@ -209,7 +193,7 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
           </div>
           <ReasonField value={reason} onChange={setReason} placeholder="예: 해당 버전 암호문 전량 파기 확인" />
         </DialogBody>
-        <DialogFooter note="DESTROYED는 종단 상태">
+        <DialogFooter>
           <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button variant="danger" disabled={pending} onClick={submit}>삭제 실행</Button>
         </DialogFooter>
