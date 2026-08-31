@@ -173,6 +173,22 @@ export async function getUsage(keyUid: string, page = 0, size = 20): Promise<Usa
   return res.data.data
 }
 
+export interface MaterialReveal {
+  version: number
+  state: KeyState
+  algorithm: KeyAlgorithm
+  keySize: number
+  material: string
+  publicKey: string | null
+  wrapAlgo: string
+}
+
+/** 버전 키값 조회 — 사유 필수, 감사로그 기록 */
+export async function revealMaterial(keyUid: string, version: number, reason: string): Promise<{ data: MaterialReveal; message: string | null }> {
+  const res = await api.post<ApiEnvelope<MaterialReveal>>(`/api/keys/${keyUid}/versions/${version}/material`, { reason })
+  return { data: res.data.data, message: res.data.message }
+}
+
 export async function testEncrypt(keyUid: string, plaintext: string): Promise<{ ciphertext: string; version: number }> {
   const res = await api.post<ApiEnvelope<{ ciphertext: string; version: number }>>(`/api/keys/${keyUid}/test/encrypt`, { plaintext })
   return res.data.data

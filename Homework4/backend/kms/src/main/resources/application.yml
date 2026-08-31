@@ -14,9 +14,9 @@ kms:
   admin:
     # 최초 기동(admin_user 비어 있을 때)에만 사용하는 admin 초기 비밀번호 — DB 비밀번호와 같은 방식으로 암호화, 평문 금지
     init-password: ENC(Lk3r7Xpzov2ZB3MsCzvd17muDKk8CD3Os//tUmlk9Jz6o1J+uhJuIwFi8Cp7z9uRuDXZMoVH)
-  # 키 생명주기 스케줄러 — 활성일·갱신 주기 자동 전이. integrity-check 는 전 버전 해시 배치 검증(기본 off, 켜면 위반 시 자동 정지)
+  # 키 생명주기 스케줄러 — 활성일·갱신 주기 자동 전이. integrity-check 는 전 버전 해시 배치 검증(위반 버전 60초 내 자동 정지, 2026-08-31 기본 on 으로 개정)
   scheduler:
     enabled: true
     interval-ms: 60000
     initial-delay-ms: 30000
-    integrity-check: false
+    integrity-check: true

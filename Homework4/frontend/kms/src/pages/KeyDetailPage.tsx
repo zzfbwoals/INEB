@@ -9,6 +9,7 @@ import { errorMessage, useToast } from '@/components/ui/toast'
 import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
 import { KeyActionDialogs, type ActionDialogState } from '@/components/keys/KeyActionDialogs'
 import { KeyEditDialog } from '@/components/keys/KeyEditDialog'
+import { KeyRevealDialog } from '@/components/keys/KeyRevealDialog'
 
 /* 목업 key-detail.html — 키 상세 */
 export default function KeyDetailPage() {
@@ -21,6 +22,7 @@ export default function KeyDetailPage() {
   const [tab, setTab] = useState<'ver' | 'usage'>('ver')
   const [action, setAction] = useState<ActionDialogState>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [revealVersion, setRevealVersion] = useState<number | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -136,7 +138,7 @@ export default function KeyDetailPage() {
             <table>
               <thead><tr><th>버전</th><th>상태</th><th>활성일</th><th>마지막 사용</th><th>사용 횟수</th><th>{capLabel}</th><th>무결성</th><th></th></tr></thead>
               <tbody>
-                {detail.versions.map((v) => <VersionRow key={v.version} v={v} detail={detail} onAction={setAction} />)}
+                {detail.versions.map((v) => <VersionRow key={v.version} v={v} detail={detail} onAction={setAction} onReveal={setRevealVersion} />)}
               </tbody>
             </table>
           </div>
@@ -163,6 +165,7 @@ export default function KeyDetailPage() {
 
       <KeyActionDialogs detail={detail} state={action} onClose={() => setAction(null)} onDone={load} />
       {editOpen && <KeyEditDialog detail={detail} open onClose={() => setEditOpen(false)} onDone={load} />}
+      {revealVersion !== null && <KeyRevealDialog detail={detail} version={revealVersion} onClose={() => setRevealVersion(null)} />}
     </AppLayout>
   )
 }
@@ -176,7 +179,7 @@ function Meta({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean })
   )
 }
 
-function VersionRow({ v, detail, onAction }: { v: VersionInfo; detail: KeyDetail; onAction: (a: ActionDialogState) => void }) {
+function VersionRow({ v, detail, onAction, onReveal }: { v: VersionInfo; detail: KeyDetail; onAction: (a: ActionDialogState) => void; onReveal: (version: number) => void }) {
   const isCur = v.version === detail.currentVersion
   const isLatest = v.version === Math.max(...detail.versions.map((x) => x.version))
   const cap = v.state !== 'ACTIVE' ? '✗ / ✗' : v.canEncrypt ? '✓ / ✓' : '✗ / ✓'
@@ -189,8 +192,11 @@ function VersionRow({ v, detail, onAction }: { v: VersionInfo; detail: KeyDetail
     {v.deactivationTrigger === 'INTEGRITY' && <><Button size="sm" onClick={() => onAction({ kind: 'REACTIVATE', version: v.version })}>재활성화</Button> </>}
     <Button variant="ghost" size="sm" onClick={() => onAction({ kind: 'DESTROY', version: v.version })}>삭제</Button>
   </>
+  const revealable = v.state !== 'DESTROYED'
   return (
-    <tr className={isCur ? 'vcur' : ''}>
+    <tr className={`${isCur ? 'vcur' : ''} ${revealable ? 'rowlink' : ''}`.trim()}
+        title={revealable ? '클릭하여 키값 조회 — 사유 필수 · 감사로그 기록' : undefined}
+        onClick={revealable ? () => onReveal(v.version) : undefined}>
       <td><span className={`vtag ${isCur ? 'cur' : ''}`}>v{v.version}</span></td>
       <td><StateBadge state={v.state} /></td>
       <td className="mono">
@@ -202,7 +208,7 @@ function VersionRow({ v, detail, onAction }: { v: VersionInfo; detail: KeyDetail
       <td className="mono">{v.usageCount.toLocaleString()}</td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{cap}</td>
       <td>{v.state === 'DESTROYED' ? <span style={{ color: 'var(--text-3)' }}>—</span> : <IntegrityBadge valid={v.integrityValid} />}</td>
-      <td style={{ textAlign: 'right' }}>{act}</td>
+      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>{act}</td>
     </tr>
   )
 }

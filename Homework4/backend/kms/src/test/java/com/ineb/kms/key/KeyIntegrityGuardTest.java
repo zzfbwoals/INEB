@@ -129,6 +129,28 @@ class KeyIntegrityGuardTest {
     }
 
     @Test
+    @DisplayName("조회 시점 강제 — 위반 버전은 예외 없이 즉시 정지되고 정상 버전은 유지된다")
+    void enforceOnReadDeactivatesTampered() throws Exception {
+        KeyMaterial ok = material(1, KeyState.ACTIVE);
+        KeyMaterial bad = material(2, KeyState.ACTIVE);
+        key.pointCurrent(2);
+        hasher.rehash(key);
+        bad.rescheduleActivation(Instant.now().plusSeconds(1));   // 해시 재계산 없이 값 변경 = 변조
+
+        guard.enforceOnRead(key);
+
+        assertEquals(KeyState.ACTIVE, ok.getState());
+        assertEquals(KeyState.DEACTIVATED, bad.getState());
+        assertEquals(DeactivationTrigger.INTEGRITY, bad.getDeactivationTrigger());
+        assertTrue(bad.isReactivatable());
+        assertTrue(audits.stream().anyMatch(a -> a.startsWith("KEY_INTEGRITY_VIOLATION:version=2")));
+        // 두 번째 조회는 이미 정지된 버전을 건너뛴다 (감사 중복 기록 없음)
+        int before = audits.size();
+        guard.enforceOnRead(key);
+        assertEquals(before, audits.size());
+    }
+
+    @Test
     @DisplayName("배치 검증은 위반 버전만 정지하고 건수를 돌려준다")
     void sweep() throws Exception {
         KeyMaterial ok = material(1, KeyState.ACTIVE);

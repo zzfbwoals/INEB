@@ -862,6 +862,10 @@ textarea.input:focus {
 [data-theme='light'] .tbl-wrap tbody tr.vcur td {
   background: #f2f8ff;
 }
+/* 현행(vcur) 버전 행은 td 배경이 우선이라, 클릭 가능(rowlink) 행의 호버를 td 에도 적용 */
+.tbl-wrap tbody tr.rowlink.vcur:hover td {
+  background: var(--hover);
+}
 .tbl-empty {
   text-align: center;
   color: var(--text-3);

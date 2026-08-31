@@ -11,6 +11,8 @@ import com.ineb.kms.key.dto.KeyCreateRequest;
 import com.ineb.kms.key.dto.KeyDetail;
 import com.ineb.kms.key.dto.KeySummary;
 import com.ineb.kms.key.dto.KeyUpdateRequest;
+import com.ineb.kms.key.dto.MaterialRevealRequest;
+import com.ineb.kms.key.dto.MaterialRevealResponse;
 import com.ineb.kms.key.dto.UsageResponse;
 import com.ineb.kms.security.AuthPrincipal;
 import jakarta.validation.Valid;
@@ -81,6 +83,16 @@ public class KeyController {
                                                @AuthenticationPrincipal AuthPrincipal principal) {
         return ApiResponse.ok(operationService.execute(keyUid, request, principal.loginId()),
                 ACTION_MESSAGES.getOrDefault(request.action(), "처리되었습니다."));
+    }
+
+    /** 버전 키값 조회 — 사유 필수, 감사로그 기록. 부수효과(감사 기록·무결성 위반 시 자동 정지)가 있어 POST. */
+    @PostMapping("/{keyUid}/versions/{version}/material")
+    public ApiResponse<MaterialRevealResponse> revealMaterial(@PathVariable String keyUid,
+                                                              @PathVariable int version,
+                                                              @Valid @RequestBody MaterialRevealRequest request,
+                                                              @AuthenticationPrincipal AuthPrincipal principal) {
+        return ApiResponse.ok(keyService.revealMaterial(keyUid, version, request.reason(), principal.loginId()),
+                "키 값이 조회되었습니다. 감사로그에 기록됩니다.");
     }
 
     @GetMapping("/{keyUid}/history")

@@ -71,6 +71,29 @@ public class KeyIntegrityGuard {
         if (hasher.verify(key)) {
             return;
         }
+        deactivateKeyWide(key);
+        throw new BusinessException(ErrorCode.KEY_INTEGRITY_VIOLATION);
+    }
+
+    /**
+     * 조회 시점 강제 (2026-08-31 개정) — 스케줄러·사용 시점과 별개로, 상세 조회 순간
+     * 키와 전 버전을 재검증해 위반을 즉시 자동 정지한다. 예외를 던지지 않으므로
+     * 응답에는 정지된 상태(DEACTIVATED, trigger=INTEGRITY)가 그대로 실려 나간다.
+     */
+    @Transactional
+    public void enforceOnRead(CryptoKey key) {
+        for (KeyMaterial m : materialRepository.findByKeyIdOrderByVersionDesc(key.getId())) {
+            if (m.getState() == KeyState.DEACTIVATED || m.getState() == KeyState.DESTROYED || hasher.verify(m)) {
+                continue;
+            }
+            deactivateForViolation(m);
+        }
+        if (!hasher.verify(key) && !materialRepository.findByKeyIdAndState(key.getId(), KeyState.ACTIVE).isEmpty()) {
+            deactivateKeyWide(key);
+        }
+    }
+
+    private void deactivateKeyWide(CryptoKey key) {
         List<KeyMaterial> actives = materialRepository.findByKeyIdAndState(key.getId(), KeyState.ACTIVE);
         for (KeyMaterial m : actives) {
             stateMachine.transitionKeyWide(m, KeyState.DEACTIVATED, HistoryTrigger.INTEGRITY,
@@ -79,7 +102,6 @@ public class KeyIntegrityGuard {
         log.warn("crypto_key 무결성 위반: keyUid={}, 정지된 버전 수={}", key.getKeyUid(), actives.size());
         auditHook.record(KeyStatusHistory.SYSTEM_ACTOR, "KEY_INTEGRITY_VIOLATION", key.getKeyUid(),
                 "scope=KEY, deactivated=" + actives.size());
-        throw new BusinessException(ErrorCode.KEY_INTEGRITY_VIOLATION);
     }
 
     /**

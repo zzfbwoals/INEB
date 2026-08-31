@@ -19,6 +19,7 @@ import com.ineb.kms.key.dto.KeyCreateRequest;
 import com.ineb.kms.key.dto.KeyDetail;
 import com.ineb.kms.key.dto.KeySummary;
 import com.ineb.kms.key.dto.KeyUpdateRequest;
+import com.ineb.kms.key.dto.MaterialRevealResponse;
 import com.ineb.kms.key.dto.UsageItem;
 import com.ineb.kms.key.dto.UsageResponse;
 import com.ineb.kms.key.dto.UsageStats;
@@ -27,9 +28,12 @@ import com.ineb.kms.repository.CryptoKeyRepository;
 import com.ineb.kms.repository.KeyMaterialRepository;
 import com.ineb.kms.repository.KeyStatusHistoryRepository;
 import com.ineb.kms.repository.KeyUsageLogRepository;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import org.springframework.data.domain.Page;
@@ -125,9 +129,12 @@ public class KeyService {
 
     // ---------------------------------------------------------------- 상세
 
-    @Transactional(readOnly = true)
+    /** 상세 조회 — 조회 시점에 무결성을 강제한다: 위반 버전은 즉시 자동 정지된 상태로 응답 (2026-08-31 개정) */
+    @Transactional
     public KeyDetail get(String keyUid) {
-        return toDetail(load(keyUid));
+        CryptoKey key = load(keyUid);
+        integrityGuard.enforceOnRead(key);
+        return toDetail(key);
     }
 
     CryptoKey load(String keyUid) {
@@ -148,7 +155,7 @@ public class KeyService {
 
         Instant now = Instant.now();
         Instant activationDate = KstTime.parse(req.activationDate());
-        boolean immediate = activationDate == null || !activationDate.isAfter(now);
+        boolean immediate = isImmediate(activationDate, now);
         if (immediate) {
             activationDate = now;
         }
@@ -198,7 +205,7 @@ public class KeyService {
             }
             Instant newDate = KstTime.parse(req.activationDate());
             Instant now = Instant.now();
-            if (!newDate.isAfter(now)) {
+            if (isImmediate(newDate, now)) {
                 current.rescheduleActivation(now);
                 stateMachine.transition(current, KeyState.ACTIVE, HistoryTrigger.OPERATION,
                         "활성일을 과거로 수정 — 즉시 활성", actor);
@@ -239,7 +246,49 @@ public class KeyService {
                 l.getVersion() != current)));
     }
 
+    // ---------------------------------------------------------------- 키값 조회
+
+    /**
+     * 버전 키값 조회 — ADMIN 화면의 감사 통제 하 노출 기능 (2026-08-31 설계 개정: "키 값 미반환" 원칙의 유일한 예외).
+     * 사유 필수, 언래핑 직전 무결성 검증(위반 시 자동 정지·409), audit_log KEY_MATERIAL_VIEWED 기록.
+     * DESTROYED(재료 없음)는 409. 언래핑 실패(재료 손상)도 409.
+     */
+    @Transactional(noRollbackFor = BusinessException.class)
+    public MaterialRevealResponse revealMaterial(String keyUid, int version, String reason, String actor) {
+        CryptoKey key = load(keyUid);
+        KeyMaterial m = materialRepository.findByKeyIdAndVersion(key.getId(), version)
+                .orElseThrow(() -> new BusinessException(ErrorCode.KEY_VERSION_NOT_FOUND));
+        if (m.getState() == KeyState.DESTROYED || m.getWrappedKey() == null) {
+            throw new BusinessException(ErrorCode.KEY_STATE_CONFLICT);
+        }
+        integrityGuard.verifyOrDeactivate(m);
+        byte[] plain = null;
+        try {
+            plain = materialFactory.unwrap(m.getWrappedKey(), m.getIv());
+            String encoded = Base64.getEncoder().encodeToString(plain);
+            auditHook.record(actor, "KEY_MATERIAL_VIEWED", key.getKeyUid(),
+                    "version=" + version + ", reason=" + reason);
+            return new MaterialRevealResponse(version, m.getState().name(), key.getAlgorithm().name(),
+                    key.getKeySize(), encoded, m.getPublicKey(), m.getWrapAlgo());
+        } catch (GeneralSecurityException e) {
+            throw new BusinessException(ErrorCode.KEY_MATERIAL_CORRUPTED);
+        } finally {
+            if (plain != null) {
+                Arrays.fill(plain, (byte) 0);
+            }
+        }
+    }
+
     // ---------------------------------------------------------------- 검증 헬퍼
+
+    /**
+     * 즉시 활성 판정 — 활성일이 없거나, 지금 + 스케줄러 한 주기(60초) 이내면 즉시 ACTIVE.
+     * 분 단위 입력·브라우저와 서버의 시계 오차로 "현재 시각" 지정이 몇 초 미래가 되어
+     * 다음 스케줄러 틱까지 PRE_ACTIVE 로 남는 문제를 막는다.
+     */
+    static boolean isImmediate(Instant activationDate, Instant now) {
+        return activationDate == null || !activationDate.isAfter(now.plusSeconds(60));
+    }
 
     static KeyMode validateAlgorithmParams(KeyAlgorithm algorithm, Integer keySize, KeyMode mode) {
         if (keySize == null || !algorithm.supportsSize(keySize)) {

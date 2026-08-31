@@ -12,7 +12,7 @@ KMS 관리 키의 생명주기 관리 + 암복호화 테스트를 본체로 하�
 
 참고 문서 (요구사항·설계의 원본, 코드보다 우선):
 - 과제 안내서: `"D:\회사\아이넵\과제\과제4\C2_DGuardKMS_어드민웹_과제안내서.html"`
-- 설계 문서: `"D:\회사\아이넵\과제\과제4\류재민_아이넵 솔루션 어드민 웹 개발 과제 설계.docx"`
+- 설계 문서: `"D:\회사\아이넵\과제\과제4\류재민_아이넵 솔루션 어드민 웹 개발 과제 설계.pdf"`, `"https://docs.google.com/document/d/1QLSmHKCBQWlZIiI42AtCuEhpV1J9WJqAn16G1g0N7hs/edit?usp=sharing"`
 - UI 목업(정적 HTML, 화면 설계 참고용): `D:\회사\아이넵\과제\과제4\ineb-kms-mockup\`
 
 ## 저장소 구조
@@ -64,7 +64,7 @@ npm run lint       # oxlint (ESLint 아님)
 - 로컬 개발 DB(localhost:5432)의 crypto_config에 salt/KCV가 이미 확정돼 있음 — 틀린 패스프레이즈로 기동하면 정상적으로 기동 실패함
 
 구현 완료 (2주차, 2026-08-28, develop 브랜치):
-- 백엔드 `key/` 패키지: 도메인(`CryptoKey`·`KeyMaterial`·`KeyStatusHistory`·`KeyUsageLog` + enum 9종), `KeyStateMachine`(전이의 유일한 통로), `KeyIntegrityHasher/Guard`(HMAC 정규화·위반 자동 정지), `KeyMaterialFactory`(재료 생성·GCM 래핑), `KeyService`(목록·상세·등록·수정), `KeyOperationService`(ACTIVATE/REACTIVATE/DEACTIVATE/ROTATE/DESTROY), `KeyTestService`+`KeyCipherSupport`(AES/ARIA/SEED JCE, LEA는 BC 경량 API, RSA-OAEP, ECDSA, HMAC), `CipherTextFormat`, `KeyLifecycleScheduler/Worker`(활성일·갱신 주기·선택적 무결성 배치). API 15개, 단위 테스트 113개. 3주차 연결점: `AuditHook`(현재 로그 구현체)
+- 백엔드 `key/` 패키지: 도메인(`CryptoKey`·`KeyMaterial`·`KeyStatusHistory`·`KeyUsageLog` + enum 9종), `KeyStateMachine`(전이의 유일한 통로), `KeyIntegrityHasher/Guard`(HMAC 정규화·위반 자동 정지), `KeyMaterialFactory`(재료 생성·GCM 래핑), `KeyService`(목록·상세·등록·수정), `KeyOperationService`(ACTIVATE/REACTIVATE/DEACTIVATE/ROTATE/DESTROY), `KeyTestService`+`KeyCipherSupport`(AES/ARIA/SEED JCE, LEA는 BC 경량 API, RSA-OAEP, ECDSA, HMAC), `CipherTextFormat`, `KeyLifecycleScheduler/Worker`(활성일·갱신 주기·선택적 무결성 배치). API 16개(키값 조회 포함), 단위 테스트 113개. 3주차 연결점: `AuditHook`(현재 로그 구현체)
 - 프론트: `/keys`(목록·등록), `/keys/:keyUid`(상세·모달 6종), `/keys/test`(암복호화·서명검증). `api/keys.ts`, `lib/keyRules.ts`, `ui/dialog.tsx`(Radix)·`ui/toast.tsx`. 사이드바 NAV가 NavLink로 전환됨
 - 로컬 확인 완료: 4개 테이블 자동 생성, API 스모크(전 알고리즘·규칙 위반 응답), 브라우저 목록·상세·갱신 모달·암복호화 라운드트립. 로컬 기동: `set KMS_MASTER_PASSPHRASE=<로컬 패스프레이즈>` 후 `gradlew.bat bootRun --args="--spring.profiles.active=local"`, 프론트 `npm run dev`
 - 주의: 잘못된 JSON·enum 값은 `GlobalExceptionHandler`가 400(INVALID_INPUT)으로 응답. 프론트 테스트 페이지는 접두 버전을 클라이언트에서 선판정하지만 최종 판정은 서버
@@ -114,8 +114,9 @@ npm run lint       # oxlint (ESLint 아님)
 - 알고리즘·용도: `algorithm` AES/ARIA/LEA/SEED(대칭, `mode` CBC/GCM/CTR/ECB) · RSA 2048/3072/4096 · ECDSA P-256/P-384 · SHA256/SHA512(HMAC). `purpose` 3종 **ENC_DEC / ENC_DEC_SIGN_VERIFY / SIGN_VERIFY** — 알고리즘이 결정(대칭→ENC_DEC, RSA→ENC_DEC_SIGN_VERIFY, ECDSA·HMAC→SIGN_VERIFY). 비대칭키는 개인키만 래핑 저장, 공개키는 상세 조회. `crypto_key`에 `mode` 컬럼 추가
 - 테스트 API: `test/encrypt`·`test/decrypt` + **`test/sign`·`test/verify`** (RSA·ECDSA·HMAC). 암호문 `{version}:{base64 iv}:{base64 ct+tag}`, 서명값 `{version}:{base64 sig}`. 암호화·서명은 current ACTIVE 버전, 복호화·검증은 접두 version으로 조회해 ACTIVE면 허용(구 버전이면 usage_log에 표시), PRE_ACTIVE·DEACTIVATED·DESTROYED·형식 오류 400. `key_usage_log(version)` + `audit_log KEY_TEST_ENCRYPT/DECRYPT/SIGN/VERIFY` 기록
 - 키 상세 응답: `versions[]`(version, state, deactivationTrigger, activationDate, lastUsedAt, usageCount, integrityValid), 회전 정책. **사용 이력은 기존 `GET /api/keys/{id}/usage`**가 통계 + `key_usage_log` 목록(version·operation·result·failReason·actor·at)을 함께 반환 — 별도 audit 엔드포인트 없음. 관리자 행위는 `key_status_history` 타임라인과 감사 로그 페이지(`GET /api/audit-logs?target=KEY#id`)에서 조회
-- 키 값은 API로 절대 반환하지 않는다. 래핑: SecureRandom → 마스터키 AES-256-GCM → Base64 → `key_material.wrapped_key`(+iv, wrap_algo). 언래핑 후 즉시 zeroize
-- 2026-08-28 확정 세부: ECB 모드 제공하되 UI "비권장" 표기 · RSA 암복호화 평문 상한(2048=190B/3072=318B/4096=446B) 서버 400 + 테스트 화면 바이트 카운터 · 스케줄러 무결성 배치는 `kms.scheduler.integrity-check=false` 기본 off · `key_usage_log`에 호출자(actor) 컬럼 없음(행위자는 3주차 audit_log). 구현 설계 원고: `D:\회사\아이넵\과제\과제4주차_구현설계_KMS키관리.md`
+- 키 값 미반환 원칙 **개정(2026-08-31)**: 유일한 예외로 **버전 키값 조회 API** `POST /api/keys/{id}/versions/{version}/material`(body `{reason}` 필수) 허용 — 언래핑 직전 무결성 검증(위반 시 자동 정지 409), DESTROYED·재료 손상 409, `audit_log KEY_MATERIAL_VIEWED` 기록. 상세 버전 목록의 **행 클릭** → 사유 입력 모달 (버전별 액션 버튼은 stopPropagation). 그 외 응답(목록·상세·테스트)은 여전히 키 값 미포함. 래핑: SecureRandom → 마스터키 AES-256-GCM → Base64 → `key_material.wrapped_key`(+iv, wrap_algo). 언래핑 후 즉시 zeroize
+- 즉시 활성 판정(등록·ROTATE·PUT 활성일 수정): 활성일이 없거나 **now+60초(스케줄러 한 주기) 이내면 즉시 ACTIVE** (`KeyService.isImmediate`) — 분 단위 입력·시계 오차로 "현재 시각" 지정이 다음 틱까지 PRE_ACTIVE로 남는 문제 방지 (2026-08-31)
+- 2026-08-28 확정 세부: ECB 모드 제공하되 UI "비권장" 표기 · RSA 암복호화 평문 상한(2048=190B/3072=318B/4096=446B) 서버 400 + 테스트 화면 바이트 카운터 · 무결성 자동 정지는 **2026-08-31 개정: 3경로** — ① 상세 조회 시 `KeyIntegrityGuard.enforceOnRead`가 위반 버전 즉시 정지(예외 없이 정지된 상태로 응답, `KeyService.get`이 쓰기 트랜잭션) ② 사용(언래핑) 직전 verifyOrDeactivate 409 ③ 스케줄러 배치 `kms.scheduler.integrity-check=true` 기본 on(60초). created_at 은 정규화 대상 아님(목록 조회는 플래그만) · `key_usage_log`에 호출자(actor) 컬럼 없음(행위자는 3주차 audit_log). 구현 설계 원고: `D:\회사\아이넵\과제\과제4주차_구현설계_KMS키관리.md`
 - 구현: `KeyState` enum + `KeyStateMachine`(전이 표·`transition()`이 검증·이력·키 상태 재계산), `KeyRotationService`, `KeyLifecycleScheduler`, `KeyIntegrityGuard`(언래핑 전 검증·자동 정지)
 - 제약(문서화): Compromised 미채택(침해 시 DEACTIVATE+ROTATE) · 삭제 유예(72h) 미채택 · Re-encrypt API 없음(구 버전 데이터 재암호화는 외부 시스템 책임, 상세의 lastUsedAt·usageCount로 보조) · 무결성 위반 자동 정지는 메타 해시 불일치 기준이며 재료 자체는 GCM 래핑으로 보호되므로, 언래핑 검증을 통과하면 REACTIVATE로 복구해 재암호화에 사용
 

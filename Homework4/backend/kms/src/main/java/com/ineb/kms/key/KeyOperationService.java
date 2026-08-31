@@ -157,7 +157,7 @@ public class KeyOperationService {
         }
         int nextVersion = materials.stream().mapToInt(KeyMaterial::getVersion).max().orElse(0) + 1;
         Instant now = Instant.now();
-        boolean immediate = activationDate == null || !activationDate.isAfter(now);
+        boolean immediate = KeyService.isImmediate(activationDate, now);
 
         KeyMaterialFactory.Generated g = materialFactory.generate(key);
         KeyMaterial created = new KeyMaterial(key, nextVersion, immediate ? KeyState.ACTIVE : KeyState.PRE_ACTIVE,
