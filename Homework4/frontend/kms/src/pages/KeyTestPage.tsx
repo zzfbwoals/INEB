@@ -23,6 +23,7 @@ export default function KeyTestPage() {
   const [decIn, setDecIn] = useState('')
   const [decMsg, setDecMsg] = useState('')
   const [decOut, setDecOut] = useState<{ text: string; warn?: string } | null>(null)
+  const [selVersion, setSelVersion] = useState(0)
   const [pending, setPending] = useState(false)
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function KeyTestPage() {
         if (cancelled) return
         setDetail(d)
         setMode(canEncrypt(d.purpose) ? 'enc' : 'sig')
+        setSelVersion(d.currentVersion)
         setEncOut(null); setDecOut(null); setDecIn('')
         if (d.status !== 'ACTIVE') toast(`${d.keyName}은(는) ${STATE_KO[d.status]} 상태 — 호출이 차단됩니다`, 'error')
       })
@@ -70,6 +72,10 @@ export default function KeyTestPage() {
 
   async function runLeft() {
     if (!detail || !curOk) { toast('최신 버전이 ACTIVE가 아니어서 차단됩니다 (400)', 'error'); return }
+    if (selVersion !== detail.currentVersion) {
+      toast('최신 버전이 아닙니다', 'error')
+      return
+    }
     if (tooLong) { toast(`평문이 ${maxBytes}바이트를 초과했습니다 (400)`, 'error'); return }
     setPending(true)
     try {
@@ -144,6 +150,17 @@ export default function KeyTestPage() {
             <button type="button" className={mode === 'enc' ? 'on' : ''} disabled={!detail || !canEncrypt(detail.purpose)} onClick={() => switchMode('enc')}>암/복호화</button>
             <button type="button" className={mode === 'sig' ? 'on' : ''} disabled={!detail || !canSign(detail.purpose)} onClick={() => switchMode('sig')}>서명/검증</button>
           </div>
+        </div>
+        <div className="field">
+          <label>버전</label>
+          <select className="input" value={selVersion} onChange={(e) => setSelVersion(Number(e.target.value))} disabled={!detail}>
+            {!detail && <option value={0}>—</option>}
+            {detail?.versions.map((v) => (
+              <option key={v.version} value={v.version}>
+                v{v.version} · {STATE_KO[v.state]}{v.version === detail.currentVersion ? ' (최신)' : ''}
+              </option>
+            ))}
+          </select>
         </div>
         {detail && <div className="keyinfo"><StateBadge state={detail.status} /></div>}
       </div>
