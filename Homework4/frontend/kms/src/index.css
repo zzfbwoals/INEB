@@ -1002,6 +1002,11 @@ textarea.input:focus {
   border-color: var(--green);
   color: var(--green);
 }
+.result-box.bad {
+  border-style: solid;
+  border-color: var(--red);
+  color: var(--red);
+}
 /* 모달 (Radix Dialog 에 적용) */
 .modal-bk {
   position: fixed;

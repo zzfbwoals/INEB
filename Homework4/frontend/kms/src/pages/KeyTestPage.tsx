@@ -21,7 +21,7 @@ export default function KeyTestPage() {
   const [encOut, setEncOut] = useState<string | null>(null)
   const [decIn, setDecIn] = useState('')
   const [decMsg, setDecMsg] = useState('')
-  const [decOut, setDecOut] = useState<{ text: string; warn?: string } | null>(null)
+  const [decOut, setDecOut] = useState<{ text: string; tone: 'ok' | 'bad'; warn?: string } | null>(null)
   const [selVersion, setSelVersion] = useState(0)
   const [pending, setPending] = useState(false)
 
@@ -60,8 +60,8 @@ export default function KeyTestPage() {
   const curOk = !!current && current.state === 'ACTIVE'
   const opL = sig ? '서명' : '암호화', opR = sig ? '검증' : '복호화'
   const maxBytes = detail && !sig ? maxPlaintextBytes(detail.algorithm, detail.keySize) : null
-  const inputBytes = utf8Bytes(input)
-  const tooLong = maxBytes !== null && inputBytes > maxBytes
+  const tooLong = maxBytes !== null && utf8Bytes(input) > maxBytes
+  const noIv = detail?.algorithm === 'RSA' || detail?.mode === 'ECB'
 
   const parsed = parseInput(decIn, sig, detail?.versions ?? [], detail?.currentVersion ?? 0)
 
@@ -105,7 +105,8 @@ export default function KeyTestPage() {
       if (sig) {
         const r = await testVerify(detail.keyUid, decMsg, decIn.trim())
         setDecOut({
-          text: `verified: ${r.valid}`,
+          text: String(r.valid),
+          tone: r.valid ? 'ok' : 'bad',
           warn: r.oldVersion ? 'ⓘ 구 버전으로 처리됨' : undefined,
         })
         toast(r.valid ? '서명 검증 성공' : '서명 불일치 — 검증 실패', r.valid ? 'ok' : 'error')
@@ -113,6 +114,7 @@ export default function KeyTestPage() {
         const r = await testDecrypt(detail.keyUid, decIn.trim())
         setDecOut({
           text: r.plaintext,
+          tone: 'ok',
           warn: r.oldVersion ? 'ⓘ 구 버전으로 처리됨 — 재암호화 대상 데이터입니다' : undefined,
         })
         toast(`복호화 성공 — v${r.version}${r.oldVersion ? ' (구 버전)' : ''}`)
@@ -171,13 +173,8 @@ export default function KeyTestPage() {
             <div className="field">
               <label>{sig ? '원문 입력' : '평문 입력'}</label>
               <textarea className="input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="입력하세요" />
-              {maxBytes !== null && (
-                <div className="help" style={{ color: tooLong ? 'var(--red)' : undefined }}>
-                  RSA-{detail!.keySize}는 최대 {maxBytes}바이트까지 암호화 가능 (현재 {inputBytes}B){tooLong ? ' — 초과' : ''}. 실무에서는 RSA로 데이터를 직접 암호화하지 않고 대칭키만 봉인합니다.
-                </div>
-              )}
             </div>
-            <Button style={{ alignSelf: 'flex-start' }} disabled={!curOk || tooLong || pending} onClick={runLeft}>{sig ? '서명 실행' : '암호화 실행'}</Button>
+            <Button style={{ alignSelf: 'flex-start' }} disabled={!curOk || pending} onClick={runLeft}>{sig ? '서명 실행' : '암호화 실행'}</Button>
             <div className="field">
               <label>{sig ? '서명값' : '암호문'}</label>
               <div className={`result-box ${encOut ? 'ok' : ''}`}>
@@ -198,12 +195,12 @@ export default function KeyTestPage() {
             )}
             <div className="field">
               <label>{sig ? '서명값' : '암호문'}</label>
-              <textarea className="input" value={decIn} onChange={(e) => setDecIn(e.target.value)} placeholder={sig ? 'version:signature 형식' : 'version:iv:ciphertext 형식'} />
+              <textarea className="input" value={decIn} onChange={(e) => setDecIn(e.target.value)} placeholder={sig ? 'version:signature 형식' : noIv ? 'version::ciphertext 형식 (IV 없음)' : 'version:iv:ciphertext 형식'} />
             </div>
             <Button style={{ alignSelf: 'flex-start' }} disabled={pending} onClick={runRight}>{sig ? '검증 실행' : '복호화 실행'}</Button>
             <div className="field">
               <label>{sig ? '검증 결과' : '복호화 결과'}</label>
-              <div className={`result-box ${decOut ? 'ok' : ''}`}>
+              <div className={`result-box ${decOut ? decOut.tone : ''}`}>
                 {decOut ? <>{decOut.text}{decOut.warn && <><br /><span style={{ color: 'var(--text-2)' }}>{decOut.warn}</span></>}</> : '결과가 여기에 표시됩니다'}
               </div>
             </div>
