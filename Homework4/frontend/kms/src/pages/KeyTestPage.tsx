@@ -8,7 +8,6 @@ import { errorMessage, useToast } from '@/components/ui/toast'
 import { StateBadge } from '@/components/keys/StateBadge'
 
 type Mode = 'enc' | 'sig'
-const DEFAULT_PLAIN = '고객 카드번호 테스트 데이터 4111-1111-1111-1111'
 
 /* 목업 test.html — 암복호화·서명검증 테스트 */
 export default function KeyTestPage() {
@@ -18,7 +17,7 @@ export default function KeyTestPage() {
   const [selectedUid, setSelectedUid] = useState(params.get('id') ?? '')
   const [detail, setDetail] = useState<KeyDetail | null>(null)
   const [mode, setMode] = useState<Mode>('enc')
-  const [input, setInput] = useState(DEFAULT_PLAIN)
+  const [input, setInput] = useState('')
   const [encOut, setEncOut] = useState<string | null>(null)
   const [decIn, setDecIn] = useState('')
   const [decMsg, setDecMsg] = useState('')
