@@ -103,10 +103,7 @@ export default function KeyDetailPage() {
         <div className="card" ref={metaCardRef}>
           <div className="card-h">
             <h3>키 메타정보</h3>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {detail.integrityValid ? <span className="badge b-ok">무결성 검증 통과</span> : <span className="badge b-bad">무결성 위반 감지</span>}
-              {s !== 'DESTROYED' && <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>수정</Button>}
-            </div>
+            {s !== 'DESTROYED' && <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>수정</Button>}
           </div>
           <div className="meta-grid">
             <Meta k="알고리즘 / 사이즈" v={`${detail.algorithm} · ${rule.sizeLabel ? rule.sizeLabel(detail.keySize) : detail.keySize + ' bit'}`} />
@@ -118,7 +115,7 @@ export default function KeyDetailPage() {
             <Meta k={`활성일 (v${detail.currentVersion})`} mono v={<>{fmt(current?.activationDate)}{current?.state === 'PRE_ACTIVE' && <b style={{ color: 'var(--blue)' }}> (예정)</b>}</>} />
             <Meta k="설명" v={<span style={{ fontWeight: 500 }}>{detail.description ?? '—'}</span>} />
             <Meta k="생성일" mono v={detail.createdAt} />
-            <Meta k="integrity_hash" mono v={<span style={{ fontSize: 11.5, color: detail.integrityValid ? 'var(--text-3)' : 'var(--red)' }}>{detail.integrityHashShort ?? '—'} {detail.integrityValid ? '✓' : '✕ 불일치'}</span>} />
+            <Meta k="integrity_hash" mono v={<span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{detail.integrityHashShort ?? '—'} <b style={{ color: detail.integrityValid ? 'var(--green)' : 'var(--red)' }}>{detail.integrityValid ? '✓' : '✕'}</b></span>} />
             {detail.publicKeyPem && (
               <div className="meta-it full">
                 <div className="k">공개키 (v{detail.currentVersion}, PEM)</div>

@@ -83,7 +83,7 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
   </div>
   <div class="detail-grid">
     <div class="card" id="kdMetaCard">
-      <div class="card-h"><h3>키 메타정보</h3><div style="display:flex;gap:8px;align-items:center"><span id="kdIntegrity"></span><button class="btn btn-ghost btn-sm" id="btnEdit" onclick="openEdit()">수정</button></div></div>
+      <div class="card-h"><h3>키 메타정보</h3><button class="btn btn-ghost btn-sm" id="btnEdit" onclick="openEdit()">수정</button></div>
       <div class="meta-grid" id="kdMeta"></div>
       <div class="usage-mini" id="kdUsage"></div>
     </div>
@@ -250,9 +250,6 @@ function render(){
   document.getElementById('kdUid').textContent=key.uid;
   document.getElementById('kdBadge').innerHTML=stateBadge(key.status);
   document.getElementById('kdCur').textContent='v'+key.currentVersion;
-  document.getElementById('kdIntegrity').innerHTML=key.integrity
-    ?'<span class="badge b-ok">무결성 검증 통과</span>'
-    :'<span class="badge b-bad">무결성 위반 감지</span>';
   const s=key.status,pv=preV(),acts=[],cv=cur();
   if(s!=='DESTROYED')acts.push(`<a class="btn btn-ghost" href="test.html?id=${key.id}">동작 테스트</a>`);
   if(pv)acts.push(`<button class="btn btn-primary" onclick="openActivate()">활성화</button>`);
@@ -270,7 +267,7 @@ function render(){
     <div class="meta-it"><div class="k">활성일 (v${key.currentVersion})</div><div class="v mono">${fmt(cv.activationDate)}${cv.state==='PRE_ACTIVE'?' <b style="color:var(--blue)">(예정)</b>':''}</div></div>
     <div class="meta-it"><div class="k">설명</div><div class="v" style="font-weight:500">${key.desc||'—'}</div></div>
     <div class="meta-it"><div class="k">생성일</div><div class="v mono">${key.created}</div></div>
-    <div class="meta-it"><div class="k">integrity_hash</div><div class="v mono" style="font-size:11.5px;color:${key.integrity?'var(--text-3)':'var(--red)'}">a3f9c2…e81d ${key.integrity?'✓':'✕ 불일치'}</div></div>
+    <div class="meta-it"><div class="k">integrity_hash</div><div class="v mono" style="font-size:11.5px;color:var(--text-3)">a3f9c2…e81d <b style="color:${key.integrity?'var(--green)':'var(--red)'}">${key.integrity?'✓':'✕'}</b></div></div>
     ${a&&a.asym?`<div class="meta-it" style="grid-column:1/-1"><div class="k">공개키 (v${key.currentVersion}, PEM)</div><div class="pubkey">-----BEGIN PUBLIC KEY-----<br>MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2v7…(생략)…IDAQAB<br>-----END PUBLIC KEY-----</div></div>`:''}`;
   document.getElementById('kdUsage').innerHTML=`
     <div><div class="k">테스트 호출(30일)</div><div class="v">142</div></div>
