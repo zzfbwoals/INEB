@@ -52,7 +52,7 @@ export default function AuditLogPage() {
       <div className="page-h">
         <div><h2>감사 로그</h2></div>
         <div className="acts">
-          <Button variant="ghost" disabled={verifying} onClick={runVerify}>{verifying ? '검증 중…' : '체인 재검증'}</Button>
+          <Button variant="ghost" disabled={verifying} onClick={runVerify}>체인 재검증</Button>
           <Button onClick={async () => {
             try {
               await downloadAuditCsv({ actor, action, target, from, to })
@@ -83,9 +83,16 @@ export default function AuditLogPage() {
 
       <div className="card">
         <div className="tbl-wrap">
-          <table>
+          <table className="tbl-fixed">
             <thead>
-              <tr><th>ID</th><th>일시 (KST)</th><th>행위자</th><th>행위</th><th>대상</th><th>상세</th></tr>
+              <tr>
+                <th style={{ width: '7%' }}>ID</th>
+                <th style={{ width: '15%' }}>일시 (KST)</th>
+                <th style={{ width: '10%' }}>행위자</th>
+                <th style={{ width: '17%' }}>행위</th>
+                <th style={{ width: '26%' }}>대상</th>
+                <th style={{ width: '25%' }}>상세</th>
+              </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
@@ -98,7 +105,7 @@ export default function AuditLogPage() {
                   <td><b>{a.actor}</b></td>
                   <td><span className="actchip">{a.action}</span></td>
                   <td className="mono" style={{ color: 'var(--text-2)' }}>{a.target}</td>
-                  <td className="mono" style={{ color: 'var(--text-3)', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={a.detail}>{a.detail}</td>
+                  <td className="mono" style={{ color: 'var(--text-3)' }} title={a.detail}>{a.detail}</td>
                 </tr>
               ))}
             </tbody>

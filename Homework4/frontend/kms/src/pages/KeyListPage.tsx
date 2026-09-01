@@ -79,18 +79,18 @@ export default function KeyListPage() {
 
       <div className="card">
         <div className="tbl-wrap">
-          <table>
+          <table className="tbl-fixed">
             <thead>
               <tr>
-                <th className="sortable" onClick={() => toggleSort('keyName')}>키명 ↕</th>
-                <th className="sortable" onClick={() => toggleSort('algorithm')}>알고리즘 ↕</th>
-                <th>모드</th>
-                <th>용도</th>
-                <th>상태</th>
-                <th>버전</th>
-                <th>갱신 주기</th>
-                <th className="sortable" onClick={() => toggleSort('nextRotationAt')}>다음 갱신 ↕</th>
-                <th>무결성</th>
+                <th className="sortable" style={{ width: '17%' }} onClick={() => toggleSort('keyName')}>키명 ↕</th>
+                <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('algorithm')}>알고리즘 ↕</th>
+                <th style={{ width: '6%' }}>모드</th>
+                <th style={{ width: '14%' }}>용도</th>
+                <th style={{ width: '12%' }}>상태</th>
+                <th style={{ width: '12%' }}>버전</th>
+                <th style={{ width: '8%' }}>갱신 주기</th>
+                <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신 ↕</th>
+                <th style={{ width: '7%' }}>무결성</th>
               </tr>
             </thead>
             <tbody>

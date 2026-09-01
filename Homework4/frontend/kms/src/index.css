@@ -871,6 +871,14 @@ textarea.input:focus {
   color: var(--text-3);
   padding: 34px;
 }
+/* 목록 테이블 — thead 의 열 폭을 고정해 데이터 유무와 무관하게 열 위치를 일정하게 유지 */
+.tbl-wrap table.tbl-fixed {
+  table-layout: fixed;
+}
+.tbl-wrap table.tbl-fixed tbody td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .pager {
   display: flex;
   align-items: center;

@@ -82,9 +82,17 @@ export default function UserListPage() {
 
       <div className="card">
         <div className="tbl-wrap">
-          <table>
+          <table className="tbl-fixed">
             <thead>
-              <tr><th>사용자</th><th>연락처</th><th>이메일</th><th>상태</th><th>무결성</th><th>가입일</th><th></th></tr>
+              <tr>
+                <th style={{ width: '16%' }}>사용자</th>
+                <th style={{ width: '15%' }}>연락처</th>
+                <th style={{ width: '20%' }}>이메일</th>
+                <th style={{ width: '9%' }}>상태</th>
+                <th style={{ width: '8%' }}>무결성</th>
+                <th style={{ width: '11%' }}>가입일</th>
+                <th style={{ width: '21%' }}></th>
+              </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
