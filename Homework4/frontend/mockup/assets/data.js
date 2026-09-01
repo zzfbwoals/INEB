@@ -86,12 +86,13 @@ const KEYS=[
    {v:1,from:'ACTIVE',to:'DEACTIVATED',trigger:'OPERATION',reason:'서비스 종료 — 키 전체 정지',by:'admin',at:'2025-12-31 00:00:01'},
    {v:1,from:null,to:'ACTIVE',trigger:'OPERATION',reason:'키 등록',by:'admin',at:'2024-01-01 10:00:00'}]},
 ];
+/* 마스킹 규칙(2026-09-02 확정): 연락처는 앞 3자리만, 이메일은 @ 와 . 만 남긴다 */
 const USERS=[
- {id:101,name:'김민준',phone:'010-****-3421',email:'mj****@naver.com',plainPhone:'010-2847-3421',plainEmail:'mjkim88@naver.com',status:'ACTIVE',joined:'2026-03-11'},
- {id:102,name:'이서연',phone:'010-****-7788',email:'sy****@gmail.com',plainPhone:'010-9034-7788',plainEmail:'sylee0412@gmail.com',status:'ACTIVE',joined:'2026-04-02'},
- {id:103,name:'박지훈',phone:'010-****-1204',email:'jh****@ineb.co.kr',plainPhone:'010-5511-1204',plainEmail:'jhpark@ineb.co.kr',status:'ACTIVE',joined:'2026-05-19'},
- {id:104,name:'최유나',phone:'010-****-6650',email:'yn****@daum.net',plainPhone:'010-7723-6650',plainEmail:'ynchoi_c@daum.net',status:'SUSPENDED',joined:'2026-06-07'},
- {id:105,name:'정다은',phone:'010-****-9917',email:'de****@kakao.com',plainPhone:'010-3308-9917',plainEmail:'dejung95@kakao.com',status:'ACTIVE',joined:'2026-07-28'},
+ {id:101,name:'김민준',phone:'010-****-****',email:'*******@*****.***',plainPhone:'010-2847-3421',plainEmail:'mjkim88@naver.com',status:'ACTIVE',joined:'2026-03-11'},
+ {id:102,name:'이서연',phone:'010-****-****',email:'*********@*****.***',plainPhone:'010-9034-7788',plainEmail:'sylee0412@gmail.com',status:'ACTIVE',joined:'2026-04-02'},
+ {id:103,name:'박지훈',phone:'010-****-****',email:'******@****.**.**',plainPhone:'010-5511-1204',plainEmail:'jhpark@ineb.co.kr',status:'ACTIVE',joined:'2026-05-19'},
+ {id:104,name:'최유나',phone:'010-****-****',email:'********@****.***',plainPhone:'010-7723-6650',plainEmail:'ynchoi_c@daum.net',status:'SUSPENDED',joined:'2026-06-07'},
+ {id:105,name:'정다은',phone:'010-****-****',email:'********@*****.***',plainPhone:'010-3308-9917',plainEmail:'dejung95@kakao.com',status:'ACTIVE',joined:'2026-07-28'},
 ];
 /* key_usage_log — 키 상세 '사용 이력' 탭 (GET /api/keys/{id}/usage) */
 const USAGE=[

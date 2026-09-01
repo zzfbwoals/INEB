@@ -93,8 +93,8 @@ class UserServiceTest {
         UserSummary result = service.create(createRequest(), "admin");
 
         assertEquals("홍길동", result.name());
-        assertEquals("010-****-5678", result.phoneMasked());
-        assertEquals("us****@ineb.co.kr", result.emailMasked());
+        assertEquals("010-****-****", result.phoneMasked());
+        assertEquals("****@****.**.**", result.emailMasked());
         assertEquals("ACTIVE", result.status());
         assertTrue(result.integrityValid());
         assertTrue(audits.getFirst().startsWith("USER_CREATED:USER#1"));

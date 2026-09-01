@@ -6,34 +6,33 @@ public final class PrivacyMask {
     private PrivacyMask() {
     }
 
-    /** "010-1234-5678" → "010-****-5678". 하이픈 3분할 형식이 아니면 뒤 4자리만 남긴다. */
+    /** 앞 3자리(010)만 남기고 전부 마스킹, 하이픈 등 구분자는 유지: "010-1234-5678" → "010-****-****" */
     public static String phone(String plain) {
         if (plain == null || plain.isBlank()) {
             return "";
         }
-        String[] parts = plain.split("-");
-        if (parts.length == 3) {
-            return parts[0] + "-****-" + parts[2];
+        StringBuilder sb = new StringBuilder(plain.length());
+        int digitIndex = 0;
+        for (char c : plain.toCharArray()) {
+            if (Character.isDigit(c)) {
+                sb.append(digitIndex < 3 ? c : '*');
+                digitIndex++;
+            } else {
+                sb.append(c);
+            }
         }
-        String digits = plain.replaceAll("\\D", "");
-        if (digits.length() <= 4) {
-            return "****";
-        }
-        return "****" + digits.substring(digits.length() - 4);
+        return sb.toString();
     }
 
-    /** "user@ineb.co.kr" → "us****@ineb.co.kr" (로컬 2자 이하면 1자만 노출) */
+    /** '@' 와 '.' 만 남기고 전부 마스킹: "user@ineb.co.kr" → "****@****.**.**" */
     public static String email(String plain) {
         if (plain == null || plain.isBlank()) {
             return "";
         }
-        int at = plain.indexOf('@');
-        if (at <= 0) {
-            return "****";
+        StringBuilder sb = new StringBuilder(plain.length());
+        for (char c : plain.toCharArray()) {
+            sb.append(c == '@' || c == '.' ? c : '*');
         }
-        String local = plain.substring(0, at);
-        String domain = plain.substring(at);
-        int keep = local.length() > 2 ? 2 : 1;
-        return local.substring(0, keep) + "****" + domain;
+        return sb.toString();
     }
 }
