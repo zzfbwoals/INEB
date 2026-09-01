@@ -13,7 +13,7 @@ KMS 관리 키의 생명주기 관리 + 암복호화 테스트를 본체로 하�
 참고 문서 (요구사항·설계의 원본, 코드보다 우선):
 - 과제 안내서: `"D:\회사\아이넵\과제\과제4\C2_DGuardKMS_어드민웹_과제안내서.html"`
 - 설계 문서: `"D:\회사\아이넵\과제\과제4\류재민_아이넵 솔루션 어드민 웹 개발 과제 설계.pdf"`, `"https://docs.google.com/document/d/1QLSmHKCBQWlZIiI42AtCuEhpV1J9WJqAn16G1g0N7hs/edit?usp=sharing"`
-- UI 목업(정적 HTML, 화면 설계 참고용): `D:\회사\아이넵\과제\과제4\ineb-kms-mockup\`
+- UI 목업(정적 HTML, 화면 설계 참고용): `Homework4/frontend/mockup/` (2026-09-02 저장소 내로 이동, 구 경로 `D:\회사\아이넵\과제\과제4\ineb-kms-mockup\`)
 
 ## 저장소 구조
 
@@ -69,7 +69,14 @@ npm run lint       # oxlint (ESLint 아님)
 - 로컬 확인 완료: 4개 테이블 자동 생성, API 스모크(전 알고리즘·규칙 위반 응답), 브라우저 목록·상세·갱신 모달·암복호화 라운드트립. 로컬 기동: `set KMS_MASTER_PASSPHRASE=<로컬 패스프레이즈>` 후 `gradlew.bat bootRun --args="--spring.profiles.active=local"`, 프론트 `npm run dev`
 - 주의: 잘못된 JSON·enum 값은 `GlobalExceptionHandler`가 400(INVALID_INPUT)으로 응답. 프론트 테스트 페이지는 접두 버전을 클라이언트에서 선판정하지만 최종 판정은 서버
 
-미구현: 사용자 관리·감사로그·무결성 검증 API(3주차), 게시판·대시보드(4주차). 2주차 산출물 설계 원고: `D:\회사\아이넵\과제\과제4주차_구현설계_KMS키관리.md`
+구현 완료 (3주차, 2026-09-01, develop 브랜치):
+- 백엔드 `audit/` 패키지: `AuditLog`(@Immutable append-only) + `AuditHasher`(정규화 `prev_hash|actor|action|target|detail|created_at(KST)`, 무결성 HMAC 키 재사용) + `AuditChainService`(**pg_advisory_xact_lock 으로 기록 직렬화** — 동시 기록 시 체인 분기 방지; `append`는 호출자 트랜잭션 참여, 로그인 실패 등 예외 경로는 `appendDetached` REQUIRES_NEW) + `AuditChainVerifier`(TAMPERED/CHAIN_BROKEN 구간 반환, 저장 row_hash 기준으로 이어가 위반이 번지지 않음) + `DbAuditHook`(2주차 `LoggingAuditHook` 대체·삭제됨). **`AuditHook` 인터페이스는 `key/` → `audit/` 패키지로 이동**, target 형식 확정: `KEY#{keyUid}` / `USER#{id}` / `AUTH#{loginId}` / `AUDIT` (헬퍼 `AuditHook.keyTarget()` 등으로만 생성, 기존 키 호출부 8곳 일괄 적용). 로그인 성공/실패/로그아웃도 기록(`AuthService`). API: `GET /api/audit-logs`(actor·action·target·from·to 필터), `POST /api/audit-logs/verify`(부수효과 있어 GET→POST로 설계 개정), `GET /api/audit-logs/export`(CSV, UTF-8 BOM, AUDIT_EXPORTED 기록)
+- 백엔드 `user/` 패키지: `AppUser`(**iv 컬럼 없음** — `phone_enc`/`email_enc`가 `base64(iv|ct+tag)` iv 동봉 방식, 2026-09-01 확정; 필드마다 새 랜덤 IV) + `crypto/PersonalDataCodec`(암복호화 + 검색 HMAC — **무결성 키(integrityKey) 재사용 확정**, 정규화: 연락처 숫자만·이메일 소문자) + `PrivacyMask`(010-****-5678 / us****@domain) + `UserIntegrityHasher`(`name|password_hash|status|enc_ver`, 위반 시 자동 정지 없이 integrityValid 플래그만). API: 목록(이름 LIKE + 연락처/이메일 해시 정확검색)·등록·상세·수정(**PUT 하나로 상태 변경·비밀번호 재설정 포함** — 설계의 PATCH /password·/status 별도 API를 목업 모달에 맞춰 통합)·`POST /api/users/{id}/plain`(**GET→POST 개정**, 사유 필수, ADMIN 한정 `@PreAuthorize` — `SecurityConfig`에 `@EnableMethodSecurity` 추가). 비밀번호 정책: 8자 이상+특수문자(서비스 검증). `UserStatus` ACTIVE/SUSPENDED
+- 프론트: `/users`(마스킹 목록·등록/수정 모달(비밀번호 재설정 토글)·원문 보기 모달(사유 필수, ADMIN에게만 버튼)), `/audit`(필터·체인 재검증 밴드·CSV 내려받기·`?target=` 쿼리 초기 필터 — 키 상세에서 "감사 로그" 버튼으로 연결). `api/users.ts`·`api/audit.ts`, 사이드바 사용자 관리·감사 로그 NavLink 활성화, index.css에 3주차 스타일(.verify-band 등) 추가
+- 신규 단위 테스트: AuditHasher·AuditChainVerifier(변조/삭제/삽입/구간 병합)·PersonalDataCodec·UserIntegrityHasher·PrivacyMask·UserService + AuthService 감사 기록 검증
+- 주의: `KmsApplicationTests`(@SpringBootTest)는 `KMS_MASTER_PASSPHRASE`·DB 필요 — 환경 없으면 실패(코드 문제 아님). audit_log의 `detail`은 설계의 jsonb 대신 varchar(500) 문자열(초과 시 잘림), 검증 응답은 최초 오염 id 대신 위반 구간 목록 `[{fromId,toId,type}]`. audit_log 스키마는 설계의 target_type/target_id 대신 단일 `target` 컬럼
+
+미구현: 게시판·대시보드(4주차). 2주차 산출물 설계 원고: `D:\회사\아이넵\과제\과제4주차_구현설계_KMS키관리.md`
 
 ## 핵심 아키텍처 (설계 문서 기준)
 
@@ -87,7 +94,7 @@ npm run lint       # oxlint (ESLint 아님)
 
 ### KMS 관리 키 생명주기 (구현 2주차)
 
-**2026-08-28 재확정: KMIP 4종 상태 + 네이버 클라우드 KMS 방식의 버전 운영.** (08-26 안에서 "회전 시 구 버전 자동 DEACTIVATED"·"만료 예정일"을 폐기하고 네이버식으로 변경.) 설계 문서·목업(`ineb-kms-mockup`)이 이 절과 다르면 이 절이 우선한다.
+**2026-08-28 재확정: KMIP 4종 상태 + 네이버 클라우드 KMS 방식의 버전 운영.** (08-26 안에서 "회전 시 구 버전 자동 DEACTIVATED"·"만료 예정일"을 폐기하고 네이버식으로 변경.) 설계 문서·목업(`frontend/mockup`)이 이 절과 다르면 이 절이 우선한다.
 
 **상태 주체는 버전(`key_material` 1행).** 키(`crypto_key`)는 논리 키(신원·메타·회전 정책), 버전은 실제 키 재료(서로 다른 난수). 키 상태는 버전에서 파생해 저장(서버만 갱신).
 

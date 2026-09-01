@@ -1,5 +1,6 @@
 package com.ineb.kms.key;
 
+import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.domain.CryptoKey;
@@ -100,8 +101,8 @@ public class KeyIntegrityGuard {
                     KEY_VIOLATION_REASON, KeyStatusHistory.SYSTEM_ACTOR);
         }
         log.warn("crypto_key 무결성 위반: keyUid={}, 정지된 버전 수={}", key.getKeyUid(), actives.size());
-        auditHook.record(KeyStatusHistory.SYSTEM_ACTOR, "KEY_INTEGRITY_VIOLATION", key.getKeyUid(),
-                "scope=KEY, deactivated=" + actives.size());
+        auditHook.record(KeyStatusHistory.SYSTEM_ACTOR, "KEY_INTEGRITY_VIOLATION",
+                AuditHook.keyTarget(key.getKeyUid()), "scope=KEY, deactivated=" + actives.size());
     }
 
     /**
@@ -135,7 +136,7 @@ public class KeyIntegrityGuard {
             material.destroyMaterial(java.time.Instant.now());
         }
         log.warn("key_material 무결성 위반: keyUid={}, version={}", key.getKeyUid(), material.getVersion());
-        auditHook.record(KeyStatusHistory.SYSTEM_ACTOR, "KEY_INTEGRITY_VIOLATION", key.getKeyUid(),
-                "version=" + material.getVersion() + ", autoDeactivated=true");
+        auditHook.record(KeyStatusHistory.SYSTEM_ACTOR, "KEY_INTEGRITY_VIOLATION",
+                AuditHook.keyTarget(key.getKeyUid()), "version=" + material.getVersion() + ", autoDeactivated=true");
     }
 }

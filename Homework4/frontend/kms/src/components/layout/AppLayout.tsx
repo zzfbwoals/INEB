@@ -97,9 +97,9 @@ const NAV: { section: string | null; items: { key: string; label: string; icon: 
   {
     section: '운영 관리',
     items: [
-      { key: 'users', label: '사용자 관리', icon: icons.user },
+      { key: 'users', label: '사용자 관리', icon: icons.user, to: '/users' },
       { key: 'notices', label: '공지사항', icon: icons.notice },
-      { key: 'audit', label: '감사 로그', icon: icons.audit },
+      { key: 'audit', label: '감사 로그', icon: icons.audit, to: '/audit' },
     ],
   },
 ]

@@ -65,6 +65,7 @@ export default function KeyDetailPage() {
           <div className="desc mono" style={{ marginTop: 8 }}>{detail.keyUid}</div>
         </div>
         <div className="acts">
+          <Button asChild variant="ghost"><Link to={`/audit?target=${encodeURIComponent(`KEY#${detail.keyUid}`)}`}>감사 로그</Link></Button>
           {s !== 'DESTROYED' && <Button asChild variant="ghost"><Link to={`/keys/test?id=${detail.keyUid}`}>동작 테스트</Link></Button>}
           {pre && <Button onClick={() => setAction({ kind: 'ACTIVATE', version: pre.version })}>활성화</Button>}
           {actives.length > 0 && <Button variant="ghost" onClick={() => setAction({ kind: 'DEACTIVATE', version: null })}>정지</Button>}

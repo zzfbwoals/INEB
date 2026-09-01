@@ -1,5 +1,6 @@
 package com.ineb.kms.key;
 
+import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.common.KstTime;
@@ -172,7 +173,7 @@ public class KeyService {
 
         stateMachine.recordCreated(v1, HistoryTrigger.OPERATION,
                 immediate ? "키 등록 (즉시 활성)" : "키 등록 (활성일 " + KstTime.format(activationDate) + " 지정)", actor);
-        auditHook.record(actor, "KEY_CREATED", key.getKeyUid(),
+        auditHook.record(actor, "KEY_CREATED", AuditHook.keyTarget(key.getKeyUid()),
                 "algorithm=" + algorithm + ", size=" + req.keySize() + ", state=" + v1.getState());
         return toDetail(key);
     }
@@ -217,7 +218,7 @@ public class KeyService {
             }
         }
         hasher.rehash(key);
-        auditHook.record(actor, "KEY_UPDATED", key.getKeyUid(),
+        auditHook.record(actor, "KEY_UPDATED", AuditHook.keyTarget(key.getKeyUid()),
                 "name=" + key.getKeyName() + ", autoRotate=" + key.isAutoRotate()
                         + ", period=" + key.getRotationPeriodDays() + activationNote);
         return toDetail(key);
@@ -266,7 +267,7 @@ public class KeyService {
         try {
             plain = materialFactory.unwrap(m.getWrappedKey(), m.getIv());
             String encoded = Base64.getEncoder().encodeToString(plain);
-            auditHook.record(actor, "KEY_MATERIAL_VIEWED", key.getKeyUid(),
+            auditHook.record(actor, "KEY_MATERIAL_VIEWED", AuditHook.keyTarget(key.getKeyUid()),
                     "version=" + version + ", reason=" + reason);
             return new MaterialRevealResponse(version, m.getState().name(), key.getAlgorithm().name(),
                     key.getKeySize(), encoded, m.getPublicKey(), m.getWrapAlgo());

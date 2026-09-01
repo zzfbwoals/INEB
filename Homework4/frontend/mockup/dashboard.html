@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대시보드 — iNEB D'GuardKMS</title>
+<link rel="stylesheet" href="assets/common.css">
+<script src="assets/theme.js"></script>
+<style>
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.stat{padding:18px 20px;display:flex;flex-direction:column;gap:9px}
+.stat .lb{font-size:12.5px;color:var(--text-2);font-weight:600;display:flex;align-items:center;gap:8px}
+.stat .lb .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center}
+.stat .num{font-size:29px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.stat .delta{font-size:12px;color:var(--text-3)}
+.stat .delta b{font-weight:700}
+.stat.warn-ring{border-color:var(--red)}
+.grid-dash{display:grid;grid-template-columns:1.65fr 1fr;gap:16px;align-items:start}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+.card-h h3{font-size:14.5px;font-weight:700}
+.card-h .hint{font-size:12px;color:var(--text-3)}
+.chart-box{padding:18px 20px 10px}
+.legend{display:flex;gap:16px;padding:0 20px 16px;font-size:12px;color:var(--text-2)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px}
+.exp-it{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line)}
+.exp-it:last-child{border-bottom:none}
+.exp-it .kn{flex:1;min-width:0}
+.exp-it .kn b{display:block;font-size:13.5px}
+.exp-it .kn span{font-size:11.5px;color:var(--text-3)}
+.dday{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;padding:4px 9px;border-radius:7px}
+.dday.d-red{background:var(--red-bg);color:var(--red)}
+.dday.d-amber{background:var(--raised);color:var(--text-2)}
+@media (max-width:1100px){.grid4{grid-template-columns:repeat(2,1fr)}.grid-dash{grid-template-columns:1fr}}
+/* 전체화면(관제) 모드 — 사이드바·상단바 숨기고 대시보드만 표시 */
+html.dash-full .side{display:none}
+html.dash-full .topbar{display:none}
+html.dash-full .shell{grid-template-columns:1fr}
+html.dash-full .content{padding-top:26px}
+html.dash-full .page-h h2{display:none}
+</style>
+</head>
+<body>
+<div class="shell" id="shell"></div>
+<template id="page-body">
+  <div class="page-h">
+    <div><h2>대시보드</h2></div>
+    <div class="acts" style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:12.5px;color:var(--text-3)">마지막 갱신 2026-08-19 09:42 KST</span>
+      <button class="btn btn-ghost" id="fsBtn" onclick="toggleFullscreen()" title="대시보드 전체화면 (ESC로 종료)" aria-label="대시보드 전체화면" style="padding:8px 10px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="grid4">
+    <a class="card stat" href="keys.html" style="text-decoration:none;color:inherit">
+      <div class="lb"><span class="ic" style="background:var(--raised);color:var(--text-2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5"/><path d="m11 12 9.6-9.6"/><path d="m15.2 7.8 3 3L22 7l-3-3"/></svg></span>전체 KMS 키</div>
+      <div class="num">8</div>
+      <div class="delta">운영 <b>5</b> · 준비 <b>1</b> · 정지 <b>1</b> · 폐기 <b>1</b> · 무결성 위반 <b style="color:var(--red)">1</b></div>
+    </a>
+    <a class="card stat" href="users.html" style="text-decoration:none;color:inherit">
+      <div class="lb"><span class="ic" style="background:var(--raised);color:var(--text-2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg></span>서비스 사용자</div>
+      <div class="num">5</div>
+      <div class="delta">활성 <b>4</b> · 정지 <b>1</b></div>
+    </a>
+    <a class="card stat" href="notices.html" style="text-decoration:none;color:inherit">
+      <div class="lb"><span class="ic" style="background:var(--raised);color:var(--text-2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v12H8l-4 4V5z"/></svg></span>공지사항</div>
+      <div class="num">4</div>
+      <div class="delta">이번 달 등록 <b>2</b></div>
+    </a>
+    <a class="card stat warn-ring" href="keys.html" style="text-decoration:none;color:inherit">
+      <div class="lb"><span class="ic" style="background:var(--red-bg);color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4m0 3.2v.1"/></svg></span>무결성 위반</div>
+      <div class="num" style="color:var(--red)">1</div>
+      <div class="delta" style="color:var(--red)">crypto_key #7 확인 필요 →</div>
+    </a>
+  </div>
+  <div class="grid-dash">
+    <div class="card">
+      <div class="card-h"><h3>최근 30일 키 사용 추이</h3><span class="hint">key_usage_log 집계 · 일자별</span></div>
+      <div class="chart-box"><svg id="trendChart" width="100%" height="220" viewBox="0 0 640 220" preserveAspectRatio="none"></svg></div>
+      <div class="legend">
+        <span><i style="background:var(--blue)"></i>암호화 호출</span>
+        <span><i style="background:var(--blue);opacity:.35"></i>복호화 호출</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>갱신 임박 키</h3><span class="hint">30일 이내 · 지연 포함</span></div>
+      <div id="expList"></div>
+    </div>
+  </div>
+</template>
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+renderShell('dashboard','<b>대시보드</b>');
+function toggleFullscreen(){
+  if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>toast('이 브라우저에서는 전체화면을 사용할 수 없습니다'));}
+  else{document.exitFullscreen();}
+}
+document.addEventListener('fullscreenchange',()=>{
+  const on=!!document.fullscreenElement;
+  document.documentElement.classList.toggle('dash-full',on);
+  const b=document.getElementById('fsBtn');
+  if(b){
+    b.innerHTML=on
+      ?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5"/></svg>'
+      :'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>';
+    b.title=on?'전체화면 종료 (ESC)':'대시보드 전체화면 (ESC로 종료)';
+    b.setAttribute('aria-label',on?'전체화면 종료':'대시보드 전체화면');
+  }
+});
+(function drawTrend(){
+  const svg=document.getElementById('trendChart');
+  const W=640,H=220,pad={l:34,r:8,t:12,b:24};
+  const enc=[12,15,11,18,22,17,14,20,25,19,16,23,28,21,18,26,31,24,20,27,33,29,25,30,36,32,28,34,39,35];
+  const dec=[8,9,7,12,14,10,9,13,16,12,10,15,18,13,11,17,20,15,13,17,21,19,16,19,23,20,18,22,25,23];
+  const max=45,bw=(W-pad.l-pad.r)/30;let s='';
+  [45,30,15,0].forEach(v=>{const y=pad.t+(H-pad.t-pad.b)*(1-v/max);
+    s+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#888" stroke-opacity=".2"/>`;
+    s+=`<text x="${pad.l-8}" y="${y+4}" fill="#8A9096" font-size="10" text-anchor="end">${v}</text>`;});
+  enc.forEach((v,i)=>{const x=pad.l+i*bw,eh=(H-pad.t-pad.b)*v/max,dh=(H-pad.t-pad.b)*dec[i]/max;
+    s+=`<rect x="${x+bw*.14}" y="${H-pad.b-eh}" width="${bw*.34}" height="${eh}" rx="2" fill="#3B9EFF" opacity=".92"><title>${i+1}일차 · 암호화 ${v}건</title></rect>`;
+    s+=`<rect x="${x+bw*.52}" y="${H-pad.b-dh}" width="${bw*.34}" height="${dh}" rx="2" fill="#3B9EFF" opacity=".35"><title>${i+1}일차 · 복호화 ${dec[i]}건</title></rect>`;});
+  [['07/21',0],['07/31',10],['08/10',20],['08/19',29]].forEach(([d,i])=>{
+    s+=`<text x="${pad.l+i*bw+bw/2}" y="${H-7}" fill="#8A9096" font-size="10" text-anchor="middle">${d}</text>`;});
+  svg.innerHTML=s;
+})();
+document.getElementById('expList').innerHTML=KEYS.filter(k=>k.status==='ACTIVE'&&k.autoRotate&&k.dday<=30).sort((a,b)=>a.dday-b.dday).map(k=>`
+  <a class="exp-it" href="key-detail.html?id=${k.id}" style="text-decoration:none;color:inherit">
+    <svg width="14" height="20" viewBox="0 0 14 20"><circle cx="7" cy="6" r="5.5" style="fill:${k.dday<=15?'var(--red)':'var(--text-3)'}" opacity=".85"/><rect x="4.6" y="9" width="4.8" height="10" rx="1" style="fill:${k.dday<=15?'var(--red)':'var(--text-3)'}" opacity=".85"/></svg>
+    <div class="kn"><b>${k.name}</b><span class="mono">${k.algo} · v${k.currentVersion} · ${k.expire} 갱신 예정</span></div>
+    <span class="dday ${k.dday<=15?'d-red':'d-amber'}">${k.dday<=0?'지연':'D-'+k.dday}</span>
+  </a>`).join('');
+</script>
+</body>
+</html>
