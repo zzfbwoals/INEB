@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import { getHistory, getKey, getUsage, type HistoryItem, type KeyDetail, type UsageResponse, type VersionInfo } from '@/api/keys'
 import { ALGOS, PURPOSE_KO, TRIGGER_KO, canEncrypt, canSign } from '@/lib/keyRules'
 import { dday, fmt } from '@/lib/format'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
 import { KeyActionDialogs, type ActionDialogState } from '@/components/keys/KeyActionDialogs'
@@ -23,6 +24,30 @@ export default function KeyDetailPage() {
   const [action, setAction] = useState<ActionDialogState>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [revealVersion, setRevealVersion] = useState<number | null>(null)
+  const [tlModal, setTlModal] = useState(false)
+  const [tlMax, setTlMax] = useState<number | null>(null)
+  const [tlOverflow, setTlOverflow] = useState(false)
+  const metaCardRef = useRef<HTMLDivElement>(null)
+  const tlCardRef = useRef<HTMLDivElement>(null)
+
+  // 타임라인 카드는 왼쪽 메타 카드 높이까지만 — 넘치면 하단 페이드 + 더보기(모달). 1열 레이아웃(<=1100px)에서는 제한하지 않는다.
+  useLayoutEffect(() => {
+    function measure() {
+      const meta = metaCardRef.current
+      const card = tlCardRef.current
+      if (!meta || !card || window.innerWidth <= 1100) {
+        setTlMax(null)
+        setTlOverflow(false)
+        return
+      }
+      const h = meta.offsetHeight
+      setTlMax(h)
+      setTlOverflow(card.scrollHeight > h + 1)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  })
 
   const load = useCallback(async () => {
     try {
@@ -75,7 +100,7 @@ export default function KeyDetailPage() {
       </div>
 
       <div className="detail-grid">
-        <div className="card">
+        <div className="card" ref={metaCardRef}>
           <div className="card-h">
             <h3>키 메타정보</h3>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -110,22 +135,14 @@ export default function KeyDetailPage() {
           </div>
         </div>
 
-        <div className="card">
+        <div className="card tl-card" ref={tlCardRef} style={tlMax !== null ? { maxHeight: tlMax } : undefined}>
           <div className="card-h"><h3>상태 변경 타임라인</h3></div>
-          <div className="timeline">
-            {history.length === 0 && <div className="help" style={{ padding: '12px 0' }}>이력이 없습니다</div>}
-            {history.map((h, i) => (
-              <div key={i} className="tl-it">
-                <span className={`tl-dot ${h.trigger === 'INTEGRITY' ? 'bad' : i === 0 ? 'now' : ''}`} />
-                <div className="tl-body">
-                  <b><span className="vtag">v{h.version}</span> {h.fromState ? `${h.fromState} → ` : '생성 → '}{h.toState}</b>
-                  <span className={`trg ${h.trigger === 'INTEGRITY' ? 'bad' : h.trigger === 'DATE_REACHED' || h.trigger === 'SCHEDULE' ? 'sys' : h.trigger === 'REACTIVATE' ? 'ok' : ''}`}>{TRIGGER_KO[h.trigger]}</span>
-                  <div className="rs">사유: {h.reason}</div>
-                  <div className="at">{h.changedAt} · {h.changedBy}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <div className="timeline"><TimelineItems history={history} /></div>
+          {tlOverflow && (
+            <div className="tl-more">
+              <Button variant="ghost" size="sm" onClick={() => setTlModal(true)}>더보기</Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -164,10 +181,41 @@ export default function KeyDetailPage() {
         )}
       </div>
 
+      {/* 전체 타임라인 — 페이지 대신 모달 본문이 스크롤된다 */}
+      <Dialog open={tlModal} onOpenChange={(o) => !o && setTlModal(false)}>
+        <DialogContent title="상태 변경 타임라인">
+          <DialogBody style={{ maxHeight: '62vh', overflowY: 'auto' }}>
+            <div className="timeline" style={{ padding: 0 }}><TimelineItems history={history} /></div>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setTlModal(false)}>닫기</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <KeyActionDialogs detail={detail} state={action} onClose={() => setAction(null)} onDone={load} />
       {editOpen && <KeyEditDialog detail={detail} open onClose={() => setEditOpen(false)} onDone={load} />}
       {revealVersion !== null && <KeyRevealDialog detail={detail} version={revealVersion} onClose={() => setRevealVersion(null)} />}
     </AppLayout>
+  )
+}
+
+function TimelineItems({ history }: { history: HistoryItem[] }) {
+  return (
+    <>
+      {history.length === 0 && <div className="help" style={{ padding: '12px 0' }}>이력이 없습니다</div>}
+      {history.map((h, i) => (
+        <div key={i} className="tl-it">
+          <span className={`tl-dot ${h.trigger === 'INTEGRITY' ? 'bad' : i === 0 ? 'now' : ''}`} />
+          <div className="tl-body">
+            <b><span className="vtag">v{h.version}</span> {h.fromState ? `${h.fromState} → ` : '생성 → '}{h.toState}</b>
+            <span className={`trg ${h.trigger === 'INTEGRITY' ? 'bad' : h.trigger === 'DATE_REACHED' || h.trigger === 'SCHEDULE' ? 'sys' : h.trigger === 'REACTIVATE' ? 'ok' : ''}`}>{TRIGGER_KO[h.trigger]}</span>
+            <div className="rs">사유: {h.reason}</div>
+            <div className="at">{h.changedAt} · {h.changedBy}</div>
+          </div>
+        </div>
+      ))}
+    </>
   )
 }
 

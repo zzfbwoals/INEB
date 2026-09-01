@@ -1206,6 +1206,21 @@ textarea.input:focus {
 .timeline {
   padding: 6px 20px 18px;
 }
+/* 타임라인 카드 — 메타 카드 높이 초과분은 숨기고 하단 페이드 + 더보기(모달) */
+.tl-card {
+  position: relative;
+  overflow: hidden;
+}
+.tl-more {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  padding: 46px 0 14px;
+  background: linear-gradient(to bottom, transparent, var(--surface) 72%);
+}
 .tl-it {
   display: flex;
   gap: 14px;
