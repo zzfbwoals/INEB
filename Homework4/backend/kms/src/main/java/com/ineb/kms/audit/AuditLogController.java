@@ -65,6 +65,12 @@ public class AuditLogController {
                 .body(withBom);
     }
 
+    /** 체인 상태 조회 — 검증만 수행하고 감사 기록은 남기지 않는다 (감사 로그 화면 진입 시 자동 호출) */
+    @GetMapping("/chain-status")
+    public ApiResponse<AuditVerifyResponse> chainStatus() {
+        return ApiResponse.ok(auditLogService.status());
+    }
+
     /** 전체 해시 체인 재검증 — 검증 실행도 감사 기록(AUDIT_CHAIN_VERIFIED)되므로 POST */
     @PostMapping("/verify")
     public ApiResponse<AuditVerifyResponse> verify(@AuthenticationPrincipal AuthPrincipal principal) {

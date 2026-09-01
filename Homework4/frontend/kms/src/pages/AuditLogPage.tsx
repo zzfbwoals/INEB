@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
-import { AUDIT_ACTIONS, downloadAuditCsv, listAuditLogs, verifyAuditChain, type AuditLogItem } from '@/api/audit'
+import { AUDIT_ACTIONS, downloadAuditCsv, fetchChainStatus, listAuditLogs, verifyAuditChain, type AuditLogItem, type AuditVerifyResult } from '@/api/audit'
 import type { PageResponse } from '@/api/keys'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
@@ -21,6 +21,12 @@ export default function AuditLogPage() {
   const [data, setData] = useState<PageResponse<AuditLogItem> | null>(null)
   const [loading, setLoading] = useState(true)
   const [verifying, setVerifying] = useState(false)
+  const [chain, setChain] = useState<AuditVerifyResult | null>(null)
+
+  // 화면 진입 시 체인 상태 자동 검증 (읽기 전용 — 감사 기록 없음)
+  useEffect(() => {
+    fetchChainStatus().then(setChain).catch(() => {})
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -36,6 +42,7 @@ export default function AuditLogPage() {
     setVerifying(true)
     try {
       const { data: result, message } = await verifyAuditChain()
+      setChain(result)
       toast(message ?? (result.valid ? '해시 체인 검증을 통과했습니다.' : '해시 체인 위반이 감지되었습니다.'),
         result.valid ? 'ok' : 'error')
     } catch (err) {
@@ -50,7 +57,12 @@ export default function AuditLogPage() {
   return (
     <AppLayout crumb="운영 관리 / 감사 로그">
       <div className="page-h">
-        <div><h2>감사 로그</h2></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h2>감사 로그</h2>
+          {chain && (chain.valid
+            ? <span className="badge b-ok">체인 정상</span>
+            : <span className="badge b-bad">체인 위반 {chain.violations.length}건</span>)}
+        </div>
         <div className="acts">
           <Button variant="ghost" disabled={verifying} onClick={runVerify}>체인 재검증</Button>
           <Button onClick={async () => {

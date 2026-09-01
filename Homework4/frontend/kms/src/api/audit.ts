@@ -53,6 +53,12 @@ export async function listAuditLogs(params: AuditListParams): Promise<PageRespon
   return res.data.data
 }
 
+/** 체인 상태 조회 — 감사 기록 없는 읽기 전용 검증 (감사 로그 화면 진입 시 자동 호출) */
+export async function fetchChainStatus(): Promise<AuditVerifyResult> {
+  const res = await api.get<ApiEnvelope<AuditVerifyResult>>('/api/audit-logs/chain-status')
+  return res.data.data
+}
+
 /** 전체 해시 체인 재검증 — 검증 실행도 AUDIT_CHAIN_VERIFIED 로 기록되므로 POST */
 export async function verifyAuditChain(): Promise<{ data: AuditVerifyResult; message: string | null }> {
   const res = await api.post<ApiEnvelope<AuditVerifyResult>>('/api/audit-logs/verify')

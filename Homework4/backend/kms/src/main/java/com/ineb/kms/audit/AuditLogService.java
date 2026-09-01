@@ -74,6 +74,16 @@ public class AuditLogService {
         chainService.append(actor, "AUDIT_CHAIN_VERIFIED", "AUDIT",
                 "rows=" + result.totalRows() + ", valid=" + result.valid()
                         + (result.valid() ? "" : ", violations=" + result.violations().size()));
+        return toResponse(result);
+    }
+
+    /** 조회 전용 체인 상태 — 같은 검증을 수행하되 감사 기록은 남기지 않는다 (화면 진입 시 자동 표시용) */
+    @Transactional(readOnly = true)
+    public AuditVerifyResponse status() {
+        return toResponse(verifier.verify(this::iterateAll));
+    }
+
+    private static AuditVerifyResponse toResponse(AuditChainVerifier.Result result) {
         return new AuditVerifyResponse(result.valid(), result.totalRows(), KstTime.format(Instant.now()),
                 result.violations().stream()
                         .map(v -> new AuditVerifyResponse.ViolationRange(v.fromId(), v.toId(), v.type().name()))
