@@ -4,6 +4,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import { listKeys, type KeyAlgorithm, type KeyListParams, type KeyPurpose, type KeySummary, type PageResponse } from '@/api/keys'
 import { PURPOSE_KO, algoLabel } from '@/lib/keyRules'
 import { dday, fmtDate } from '@/lib/format'
+import { subscribeUiEvents } from '@/lib/events'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
@@ -35,6 +36,13 @@ export default function KeyListPage() {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [keyword, algorithm, status, purpose, page, sort, reloadTick, toast])
+
+  // 실시간 갱신 — 키 관련 행위(생성·상태 변경·테스트·스케줄러)가 커밋되면 목록 refetch
+  useEffect(() => {
+    return subscribeUiEvents((e) => {
+      if (e.action.startsWith('KEY')) setReloadTick((t) => t + 1)
+    })
+  }, [])
 
   function toggleSort(field: string) {
     setPage(0)

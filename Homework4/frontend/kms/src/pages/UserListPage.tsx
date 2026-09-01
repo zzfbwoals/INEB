@@ -4,6 +4,7 @@ import { fetchMe } from '@/api/auth'
 import { listUsers, type UserListParams, type UserStatus, type UserSummary } from '@/api/users'
 import type { PageResponse } from '@/api/keys'
 import { fmtDate } from '@/lib/format'
+import { subscribeUiEvents } from '@/lib/events'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { IntegrityBadge } from '@/components/keys/StateBadge'
@@ -42,6 +43,13 @@ export default function UserListPage() {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [keyword, phone, status, page, reloadTick, toast])
+
+  // 실시간 갱신 — 사용자 관련 행위가 커밋되면 목록 refetch
+  useEffect(() => {
+    return subscribeUiEvents((e) => {
+      if (e.action.startsWith('USER')) setReloadTick((t) => t + 1)
+    })
+  }, [])
 
   function phoneExact() {
     if (!phoneInput.trim()) {

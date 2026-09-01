@@ -30,11 +30,14 @@ public class AuditChainService {
     private final AuditLogRepository repository;
     private final AuditHasher hasher;
     private final EntityManager entityManager;
+    private final AuditEventStream eventStream;
 
-    public AuditChainService(AuditLogRepository repository, AuditHasher hasher, EntityManager entityManager) {
+    public AuditChainService(AuditLogRepository repository, AuditHasher hasher,
+                             EntityManager entityManager, AuditEventStream eventStream) {
         this.repository = repository;
         this.hasher = hasher;
         this.entityManager = entityManager;
+        this.eventStream = eventStream;
     }
 
     @Transactional
@@ -59,5 +62,6 @@ public class AuditChainService {
         Instant now = Instant.now();
         String rowHash = hasher.rowHash(prevHash, safeActor, action, target, safeDetail, now);
         repository.save(new AuditLog(safeActor, action, target, safeDetail, prevHash, rowHash, now));
+        eventStream.publish(action, target);   // 커밋 후 접속 중인 화면에 실시간 브로드캐스트
     }
 }

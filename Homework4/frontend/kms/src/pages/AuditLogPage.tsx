@@ -5,6 +5,7 @@ import { AUDIT_ACTIONS, downloadAuditCsv, fetchChainStatus, listAuditLogs, verif
 import type { PageResponse } from '@/api/keys'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
+import { subscribeUiEvents } from '@/lib/events'
 
 const PAGE_SIZE = 20
 
@@ -22,10 +23,19 @@ export default function AuditLogPage() {
   const [loading, setLoading] = useState(true)
   const [verifying, setVerifying] = useState(false)
   const [chain, setChain] = useState<AuditVerifyResult | null | 'unavailable'>(null)
+  const [reloadTick, setReloadTick] = useState(0)
 
   // 화면 진입 시 체인 상태 자동 검증 (읽기 전용 — 감사 기록 없음)
   useEffect(() => {
     fetchChainStatus().then(setChain).catch(() => setChain('unavailable'))
+  }, [])
+
+  // 실시간 갱신 — 모든 행위는 감사 기록되므로 이벤트가 오면 목록·체인 상태를 refetch
+  useEffect(() => {
+    return subscribeUiEvents(() => {
+      setReloadTick((t) => t + 1)
+      fetchChainStatus().then(setChain).catch(() => {})
+    })
   }, [])
 
   useEffect(() => {
@@ -36,7 +46,7 @@ export default function AuditLogPage() {
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [actor, action, target, from, to, page, toast])
+  }, [actor, action, target, from, to, page, reloadTick, toast])
 
   async function runVerify() {
     setVerifying(true)

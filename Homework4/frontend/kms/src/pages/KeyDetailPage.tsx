@@ -4,6 +4,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import { getHistory, getKey, getUsage, type HistoryItem, type KeyDetail, type UsageResponse, type VersionInfo } from '@/api/keys'
 import { ALGOS, PURPOSE_KO, TRIGGER_KO, canEncrypt, canSign } from '@/lib/keyRules'
 import { dday, fmt } from '@/lib/format'
+import { subscribeUiEvents } from '@/lib/events'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
 import { errorMessage, useToast } from '@/components/ui/toast'
@@ -60,6 +61,13 @@ export default function KeyDetailPage() {
   }, [keyUid, navigate, toast])
 
   useEffect(() => { load() }, [load])
+
+  // 실시간 갱신 — 이 키를 대상으로 한 행위(테스트·상태 변경·스케줄러 등)가 커밋되면 즉시 refetch
+  useEffect(() => {
+    return subscribeUiEvents((e) => {
+      if (e.target === `KEY#${keyUid}`) load()
+    })
+  }, [keyUid, load])
 
   if (!detail) {
     return <AppLayout crumb="키 관리 / 키 목록 / 키 상세"><div className="help">불러오는 중…</div></AppLayout>
