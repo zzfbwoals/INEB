@@ -17,11 +17,12 @@ class PrivacyMaskTest {
     }
 
     @Test
-    @DisplayName("이메일은 @ 와 . 만 남기고 전부 마스킹한다")
+    @DisplayName("이메일은 @ 와 . 만 남기고 고정 개수 별표로 마스킹한다 (글자 수 비노출)")
     void email() {
         assertEquals("****@****.**.**", PrivacyMask.email("user@ineb.co.kr"));
-        assertEquals("**@*.***", PrivacyMask.email("ab@x.com"));
-        assertEquals("*****", PrivacyMask.email("이메일아님"));
+        assertEquals("****@****.**", PrivacyMask.email("ab@x.com"));
+        assertEquals("****@****.**", PrivacyMask.email("veryverylonglocal@gmail.com"));   // 길이가 달라도 동일
+        assertEquals("****", PrivacyMask.email("이메일아님"));
         assertEquals("", PrivacyMask.email(""));
     }
 }

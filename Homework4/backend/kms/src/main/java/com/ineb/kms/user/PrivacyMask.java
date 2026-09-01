@@ -24,14 +24,25 @@ public final class PrivacyMask {
         return sb.toString();
     }
 
-    /** '@' 와 '.' 만 남기고 전부 마스킹: "user@ineb.co.kr" → "****@****.**.**" */
+    /**
+     * '@' 와 '.' 만 남기고 전부 마스킹하되, 별표는 글자 수와 무관한 고정 개수(로컬 ****, 도메인 첫 구간 ****, 이후 구간 **)
+     * — 글자 수가 별표 개수로 드러나지 않는다: "user@ineb.co.kr" → "****@****.**.**"
+     */
     public static String email(String plain) {
         if (plain == null || plain.isBlank()) {
             return "";
         }
-        StringBuilder sb = new StringBuilder(plain.length());
-        for (char c : plain.toCharArray()) {
-            sb.append(c == '@' || c == '.' ? c : '*');
+        int at = plain.indexOf('@');
+        if (at < 0) {
+            return "****";
+        }
+        StringBuilder sb = new StringBuilder("****@");
+        String[] labels = plain.substring(at + 1).split("\\.", -1);
+        for (int i = 0; i < labels.length; i++) {
+            if (i > 0) {
+                sb.append('.');
+            }
+            sb.append(i == 0 ? "****" : "**");
         }
         return sb.toString();
     }
