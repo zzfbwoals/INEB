@@ -46,7 +46,7 @@ export default function UserListPage() {
   function phoneExact() {
     if (!phoneInput.trim()) {
       setPhone('')
-      toast('연락처 전체를 입력해야 해시 정확검색이 가능합니다')
+      toast('연락처 전체를 입력해주세요')
       return
     }
     setPage(0)
@@ -103,9 +103,11 @@ export default function UserListPage() {
                     : <span className="badge b-deact">정지</span>}</td>
                   <td><IntegrityBadge valid={u.integrityValid} /></td>
                   <td className="mono" style={{ color: 'var(--text-2)' }}>{fmtDate(u.createdAt)}</td>
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    {isAdmin && <Button variant="ghost" size="sm" onClick={() => setPlainTarget(u)}>원문 보기</Button>}
-                    <Button variant="ghost" size="sm" onClick={() => { setEditTarget(u); setFormOpen(true) }}>수정</Button>
+                  <td>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      {isAdmin && <Button variant="ghost" size="sm" onClick={() => setPlainTarget(u)}>원문 보기</Button>}
+                      <Button variant="ghost" size="sm" onClick={() => { setEditTarget(u); setFormOpen(true) }}>수정</Button>
+                    </div>
                   </td>
                 </tr>
               ))}

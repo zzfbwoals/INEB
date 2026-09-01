@@ -92,7 +92,7 @@ public class KeyController {
                                                               @Valid @RequestBody MaterialRevealRequest request,
                                                               @AuthenticationPrincipal AuthPrincipal principal) {
         return ApiResponse.ok(keyService.revealMaterial(keyUid, version, request.reason(), principal.loginId()),
-                "키 값이 조회되었습니다. 감사로그에 기록됩니다.");
+                "키 값이 조회되었습니다.");
     }
 
     @GetMapping("/{keyUid}/history")
@@ -109,8 +109,8 @@ public class KeyController {
 
     private static final Map<KeyAction, String> ACTION_MESSAGES = Map.of(
             KeyAction.ACTIVATE, "활성화되었습니다.",
-            KeyAction.REACTIVATE, "재활성화되었습니다. 언래핑 검증을 통과했고 무결성 해시를 재계산했습니다.",
+            KeyAction.REACTIVATE, "재활성화되었습니다.",
             KeyAction.DEACTIVATE, "정지되었습니다.",
-            KeyAction.ROTATE, "갱신되었습니다. 새 버전이 생성되었습니다.",
-            KeyAction.DESTROY, "삭제되었습니다. 키 재료가 파기되었으며 이력은 보존됩니다.");
+            KeyAction.ROTATE, "갱신되었습니다.",
+            KeyAction.DESTROY, "삭제되었습니다.");
 }

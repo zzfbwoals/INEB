@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { createUser, updateUser, type UserStatus, type UserSummary } from '@/api/users'
+import { createUser, updateUser, viewUserPlain, type UserStatus, type UserSummary } from '@/api/users'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
 import { errorMessage, useToast } from '@/components/ui/toast'
 
 /* 목업 사용자 등록/수정 모달 — 등록: 초기 비밀번호 필수 / 수정: "비밀번호 재설정" 토글로만 입력 노출.
-   수정 폼의 연락처·이메일은 마스킹 값이 아니라 새로 입력받는다 (원문은 ADMIN 원문 조회로만 확인). */
+   수정 폼의 연락처·이메일은 원문 조회 API로 미리 채운다 (감사 기록됨, ADMIN 아니면 빈 값). */
 export function UserFormDialog({ edit, open, onClose, onDone }: {
   edit: UserSummary | null
   open: boolean
@@ -32,6 +32,13 @@ export function UserFormDialog({ edit, open, onClose, onDone }: {
     setPassword('')
     setPassword2('')
     setPwReset(false)
+    if (edit) {
+      // 수정 폼에는 현재 연락처·이메일 원문을 미리 채운다 — 원문 노출이므로 감사로그(USER_PLAIN_VIEWED)에 남는다.
+      // ADMIN이 아니면(403) 빈 값으로 두고 직접 입력받는다.
+      viewUserPlain(edit.id, '사용자 정보 수정 화면 조회')
+        .then(({ data }) => { setPhone(data.phone); setEmail(data.email) })
+        .catch(() => {})
+    }
   }, [open, edit])
 
   const needPassword = !edit || pwReset
@@ -69,8 +76,7 @@ export function UserFormDialog({ edit, open, onClose, onDone }: {
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="홍길동" /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div className="field"><label>연락처 <em>*</em></label>
-              <Input className="mono" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-0000-0000" />
-              {edit && <div className="help">현재 {edit.phoneMasked} — 새 값으로 다시 입력</div>}</div>
+              <Input className="mono" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-0000-0000" /></div>
             <div className="field"><label>상태</label>
               <select className="input" value={status} onChange={(e) => setStatus(e.target.value as UserStatus)}>
                 <option value="ACTIVE">활성</option>
@@ -78,8 +84,7 @@ export function UserFormDialog({ edit, open, onClose, onDone }: {
               </select></div>
           </div>
           <div className="field"><label>이메일 <em>*</em></label>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@ineb.co.kr" />
-            {edit && <div className="help">현재 {edit.emailMasked} — 새 값으로 다시 입력</div>}</div>
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@ineb.co.kr" /></div>
           {needPassword && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div className="field"><label>{edit ? '새 비밀번호' : '초기 비밀번호'} <em>*</em></label>

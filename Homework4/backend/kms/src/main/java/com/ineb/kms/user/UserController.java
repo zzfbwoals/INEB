@@ -46,8 +46,7 @@ public class UserController {
     @PostMapping
     public ApiResponse<UserSummary> create(@Valid @RequestBody UserCreateRequest request,
                                            @AuthenticationPrincipal AuthPrincipal principal) {
-        return ApiResponse.ok(userService.create(request, principal.loginId()),
-                "사용자가 등록되었습니다. 연락처·이메일은 마스터키로 암호화 저장됩니다.");
+        return ApiResponse.ok(userService.create(request, principal.loginId()), "사용자가 등록되었습니다.");
     }
 
     @GetMapping("/{id}")
@@ -59,8 +58,7 @@ public class UserController {
     public ApiResponse<UserSummary> update(@PathVariable Long id,
                                            @Valid @RequestBody UserUpdateRequest request,
                                            @AuthenticationPrincipal AuthPrincipal principal) {
-        return ApiResponse.ok(userService.update(id, request, principal.loginId()),
-                "사용자 정보가 수정되었습니다. 재암호화 및 무결성 해시를 재계산했습니다.");
+        return ApiResponse.ok(userService.update(id, request, principal.loginId()), "사용자 정보가 수정되었습니다.");
     }
 
     /** 개인정보 원문 조회 — ADMIN 한정, 사유 필수. 부수효과(감사 기록)가 있어 POST. */
@@ -70,6 +68,6 @@ public class UserController {
                                                     @Valid @RequestBody PlainViewRequest request,
                                                     @AuthenticationPrincipal AuthPrincipal principal) {
         return ApiResponse.ok(userService.viewPlain(id, request.reason(), principal.loginId()),
-                "원문이 조회되었습니다. 감사로그에 기록됩니다.");
+                "원문이 조회되었습니다.");
     }
 }

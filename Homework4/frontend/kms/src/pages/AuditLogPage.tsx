@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
-import { AUDIT_ACTIONS, downloadAuditCsv, listAuditLogs, verifyAuditChain, type AuditLogItem, type AuditVerifyResult } from '@/api/audit'
+import { AUDIT_ACTIONS, downloadAuditCsv, listAuditLogs, verifyAuditChain, type AuditLogItem } from '@/api/audit'
 import type { PageResponse } from '@/api/keys'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
 
 const PAGE_SIZE = 20
 
-/* 목업 audit.html — 감사 로그. append-only 해시 체인 + 재검증 (CSV 내려받기는 4주차) */
+/* 목업 audit.html — 감사 로그. append-only 해시 체인 + 재검증 + CSV 내려받기 */
 export default function AuditLogPage() {
   const toast = useToast()
   const [searchParams] = useSearchParams()
@@ -20,7 +20,6 @@ export default function AuditLogPage() {
   const [page, setPage] = useState(0)
   const [data, setData] = useState<PageResponse<AuditLogItem> | null>(null)
   const [loading, setLoading] = useState(true)
-  const [verify, setVerify] = useState<AuditVerifyResult | null>(null)
   const [verifying, setVerifying] = useState(false)
 
   useEffect(() => {
@@ -37,8 +36,8 @@ export default function AuditLogPage() {
     setVerifying(true)
     try {
       const { data: result, message } = await verifyAuditChain()
-      setVerify(result)
-      toast(message ?? '검증이 완료되었습니다.', result.valid ? 'ok' : 'error')
+      toast(message ?? (result.valid ? '해시 체인 검증을 통과했습니다.' : '해시 체인 위반이 감지되었습니다.'),
+        result.valid ? 'ok' : 'error')
     } catch (err) {
       toast(errorMessage(err), 'error')
     } finally {
@@ -57,7 +56,7 @@ export default function AuditLogPage() {
           <Button onClick={async () => {
             try {
               await downloadAuditCsv({ actor, action, target, from, to })
-              toast('CSV 다운로드를 시작합니다. 내려받기도 감사로그에 기록됩니다.')
+              toast('CSV 다운로드를 시작합니다.')
             } catch (err) {
               toast(errorMessage(err), 'error')
             }
@@ -67,28 +66,6 @@ export default function AuditLogPage() {
           </Button>
         </div>
       </div>
-
-      {verify && (
-        <div className={`verify-band ${verify.valid ? '' : 'bad'}`}>
-          <span className="ic">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 3 4.5 6v5c0 5 3.2 8.6 7.5 10 4.3-1.4 7.5-5 7.5-10V6L12 3z" />
-              {verify.valid ? <path d="m9 11.5 2.2 2.2L15.5 9" /> : <path d="M12 8v5m0 3v.01" />}
-            </svg>
-          </span>
-          <div>
-            <b>{verify.valid ? '해시 체인 무결성 검증 통과' : `해시 체인 위반 ${verify.violations.length}개 구간 감지`}</b><br />
-            <span>
-              {verify.totalRows.toLocaleString()}건 전체 순차 검증
-              {verify.valid
-                ? ' · 삭제/삽입/변조 구간 없음'
-                : ' · ' + verify.violations.map((v) =>
-                    `#${v.fromId}${v.toId !== v.fromId ? `~#${v.toId}` : ''} ${v.type === 'TAMPERED' ? '행 변조' : '체인 단절(삭제·삽입)'}`).join(' · ')}
-              {' · '}{verify.verifiedAt} KST
-            </span>
-          </div>
-        </div>
-      )}
 
       <div className="filters">
         <input className="input" type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0) }} />

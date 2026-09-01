@@ -70,7 +70,7 @@ public class AuditLogController {
     public ApiResponse<AuditVerifyResponse> verify(@AuthenticationPrincipal AuthPrincipal principal) {
         AuditVerifyResponse result = auditLogService.verify(principal.loginId());
         return ApiResponse.ok(result, result.valid()
-                ? "해시 체인 검증 통과 — 삭제·삽입·변조 구간이 없습니다."
-                : "해시 체인 위반이 감지되었습니다. 위반 구간을 확인하세요.");
+                ? "해시 체인 검증을 통과했습니다."
+                : "해시 체인 위반이 감지되었습니다.");
     }
 }

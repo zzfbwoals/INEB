@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { createKey, type KeyAlgorithm, type KeyMode } from '@/api/keys'
 import { ALGOS, ALGO_GROUPS, PURPOSE_KO, ROT_DEFAULT, ROT_MAX, ROT_MIN } from '@/lib/keyRules'
-import { fromDateTimeLocal, isFuture } from '@/lib/format'
+import { fromDateTimeLocal } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
@@ -22,7 +22,6 @@ export function KeyCreateDialog({ open, onOpenChange, onCreated }: { open: boole
 
   const algo = algorithm ? ALGOS[algorithm] : null
   const purpose = algo?.purpose ?? null
-  const future = isFuture(activationDate)
   const rotValid = rotationDays >= ROT_MIN && rotationDays <= ROT_MAX
 
   function reset() {
@@ -58,7 +57,7 @@ export function KeyCreateDialog({ open, onOpenChange, onCreated }: { open: boole
         activationDate: fromDateTimeLocal(activationDate),
         description: description.trim() || null,
       })
-      toast(`'${name}' 생성 · 마스터키 래핑 저장 (v1 ${future ? 'PRE_ACTIVE · ' + activationDate.slice(0, 10) + ' 활성 예정' : 'ACTIVE'}${autoRotate ? ' · ' + rotationDays + '일 자동 갱신' : ''})`)
+      toast('키가 생성되었습니다')
       onOpenChange(false)
       reset()
       onCreated()
