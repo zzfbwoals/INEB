@@ -109,19 +109,19 @@ function testKeyChange(){
   document.getElementById('segEnc').disabled=!e;document.getElementById('segSig').disabled=!s;
   fillVersions();
   setMode(e?'enc':'sig');
-  if(k.status!=='ACTIVE')toast(`${k.name}은(는) ${STATE_KO[k.status]} 상태 — 호출이 차단됩니다`);
+  if(k.status!=='ACTIVE')toast('사용할 수 없는 상태의 키입니다');
 }
 function b64rand(n){const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';let s='';for(let i=0;i<n;i++)s+=c[Math.floor(Math.random()*64)];return s;}
 function runEncrypt(){
   const k=curKey(),cv=k.versions.find(v=>v.v===k.currentVersion);
-  if(!cv||cv.state!=='ACTIVE'){toast('최신 버전이 ACTIVE가 아니어서 차단됩니다 (400)');return;}
+  if(!cv||cv.state!=='ACTIVE'){toast('최신 버전이 ACTIVE가 아닙니다');return;}
   if(Number(document.getElementById('testVerSel').value)!==k.currentVersion){toast('최신 버전이 아닙니다');return;}
   const out=document.getElementById('encOut'),sig=mode==='sig';
   const ct=sig?`${cv.v}:${b64rand(86)}==`:`${cv.v}:${b64rand(16)}:${b64rand(64)}==`;
   out.classList.add('ok');
   out.innerHTML=`${ct}`;
   document.getElementById('decIn').value=ct;if(sig)document.getElementById('decMsg').value=document.getElementById('encIn').value;parseCt();
-  toast(`${sig?'서명':'암호화'} 성공 — 결과가 ${sig?'검증':'복호화'} 입력에 자동 채워졌습니다`);
+  toast(`${sig?'서명':'암호화'}되었습니다`);
 }
 function parseCt(){
   const k=curKey(),raw=document.getElementById('decIn').value.trim(),p=document.getElementById('decParse'),sig=mode==='sig';
@@ -138,13 +138,13 @@ function parseCt(){
 function runDecrypt(){
   const r=parseCt(),out=document.getElementById('decOut'),sig=mode==='sig';
   if(!r){toast('입력이 필요합니다');return;}
-  if(r.err){toast(`400 — ${r.err}`);return;}
-  if(!r.ok){toast(`400 — v${r.v.v}는 ${STATE_KO[r.v.state]} 상태라 ${sig?'검증':'복호화'}할 수 없습니다`);return;}
+  if(r.err){toast(r.err);return;}
+  if(!r.ok){toast(`해당 버전은 ${sig?'검증':'복호화'}할 수 없습니다`);return;}
   out.classList.add('ok');
   out.innerHTML=sig
     ?`verified: true<br><span style="color:var(--text-3)">v${r.v.v} 공개키로 서명 검증 통과 · key_usage_log (version=${r.v.v}) · audit_log KEY_TEST_VERIFY</span>`
     :`plaintext: 고객 카드번호 테스트 데이터 4111-1111-1111-1111<br><span style="color:var(--text-3)">v${r.v.v}로 복호화 · 인증 태그 검증 통과 · key_usage_log (version=${r.v.v}) · audit_log KEY_TEST_DECRYPT</span>${r.old?'<br><span style="color:var(--text-2)">ⓘ 구 버전으로 처리됨 — 재암호화 대상 데이터입니다</span>':''}`;
-  toast(sig?'서명 검증 성공':`복호화 성공 — v${r.v.v}${r.old?' (구 버전)':''}`);
+  toast(sig?'서명이 검증되었습니다':'복호화되었습니다');
 }
 testKeyChange();
 </script>

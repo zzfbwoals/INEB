@@ -9,7 +9,6 @@
 .mask{font-family:var(--mono);font-size:12.5px;color:var(--text-2)}
 .uavatar{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:800;margin-right:10px;vertical-align:middle}
 .meta-box{padding:12px 14px;border:1px solid var(--line-strong);border-radius:10px}
-.meta-box .k{font-size:11.5px;color:var(--text-3);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
 .meta-box .v{font-size:13.5px;font-weight:600}
 </style>
 </head>
@@ -66,18 +65,18 @@
 <!-- 개인정보 원문 보기 모달 -->
 <div class="modal-bk" id="mdPlain" onclick="bkClose(event,this)">
   <div class="modal">
-    <div class="modal-h"><h3>개인정보 원문 조회 <span class="badge b-bad" style="margin-left:6px">ADMIN 한정</span></h3><button class="x" onclick="closeModal('mdPlain')">✕</button></div>
+    <div class="modal-h"><h3>개인정보 원문 조회</h3><button class="x" onclick="closeModal('mdPlain')">✕</button></div>
     <div class="modal-b">
-      <div class="field"><label>조회 사유 <em>*</em></label><input class="input" id="plainReason" placeholder="예: CS 본인확인 요청 처리"></div>
+      <div class="field"><label>조회 사유 <em>*</em> <span class="badge b-bad" style="margin-left:6px">ADMIN 한정</span></label><input class="input" id="plainReason" placeholder="예: CS 본인확인 요청 처리"></div>
       <div id="plainResult" style="display:none;flex-direction:column;gap:10px">
-        <div class="meta-box"><div class="k">이름</div><div class="v" id="plName">-</div></div>
-        <div class="meta-box"><div class="k">연락처 (복호화됨)</div><div class="v mono" id="plPhone">-</div></div>
-        <div class="meta-box"><div class="k">이메일 (복호화됨)</div><div class="v mono" id="plEmail">-</div></div>
+        <div class="field"><label>이름</label><div class="meta-box"><div class="v" id="plName">-</div></div></div>
+        <div class="field"><label>연락처</label><div class="meta-box"><div class="v mono" id="plPhone">-</div></div></div>
+        <div class="field"><label>이메일</label><div class="meta-box"><div class="v mono" id="plEmail">-</div></div></div>
       </div>
     </div>
     <div class="modal-f">
       <button class="btn btn-ghost" onclick="closeModal('mdPlain')">닫기</button>
-      <button class="btn btn-primary" id="plainBtn" onclick="viewPlain()">복호화 조회</button>
+      <button class="btn btn-primary" id="plainBtn" onclick="viewPlain()">조회</button>
     </div>
   </div>
 </div>
@@ -98,16 +97,18 @@ function renderUsers(){
       <td>${u.status==='ACTIVE'?'<span class="badge b-active">활성</span>':'<span class="badge b-inactive">정지</span>'}</td>
       <td><span class="badge b-ok">정상</span></td>
       <td class="mono" style="color:var(--text-2)">${u.joined}</td>
-      <td style="text-align:right;white-space:nowrap">
-        <button class="btn btn-ghost btn-sm" onclick="openPlain(${u.id})">원문 보기</button>
-        <button class="btn btn-ghost btn-sm" onclick="openUserForm(${u.id})">수정</button>
+      <td>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" onclick="openPlain(${u.id})">원문 보기</button>
+          <button class="btn btn-ghost btn-sm" onclick="openUserForm(${u.id})">수정</button>
+        </div>
       </td>
     </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:34px">검색 결과가 없습니다</td></tr>';
 }
 function phoneExact(){
   const v=document.getElementById('userPhone').value.trim();
-  if(!v){toast('연락처 전체를 입력해야 해시 정확검색이 가능합니다');return;}
-  toast(v==='010-2847-3421'?'HMAC 해시 일치 — 김민준 (1건)':'HMAC 해시 일치 결과 없음 (평문 LIKE 검색은 지원하지 않습니다)');
+  if(!v){toast('연락처 전체를 입력해주세요');return;}
+  toast(v==='010-2847-3421'?'검색 결과 1건':'검색 결과가 없습니다');
 }
 let editUser=null,pwResetMode=false;
 function openUserForm(id){
@@ -144,8 +145,8 @@ function saveUser(){
   }
   closeModal('mdUser');
   toast(editUser
-    ?(pwResetMode?`${n} 비밀번호 재설정 완료 · BCrypt 해시 저장 (원문 보관 안 함)`:`${n} 정보 수정 완료 · 재암호화 및 무결성 해시 재계산`)
-    :`${n} 등록 완료 · 연락처/이메일 마스터키 암호화 저장`);
+    ?(pwResetMode?'비밀번호가 재설정되었습니다':'사용자 정보가 수정되었습니다')
+    :'사용자가 등록되었습니다');
 }
 let plainTarget=null;
 function openPlain(id){
@@ -163,7 +164,7 @@ function viewPlain(){
   document.getElementById('plEmail').textContent=plainTarget.plainEmail;
   document.getElementById('plainResult').style.display='flex';
   document.getElementById('plainBtn').disabled=true;
-  toast('원문 조회됨 — audit_log에 USER_PLAIN_VIEW 기록');
+  toast('원문이 조회되었습니다.');
 }
 renderUsers();
 </script>

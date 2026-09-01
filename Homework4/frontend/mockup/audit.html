@@ -6,12 +6,6 @@
 <link rel="stylesheet" href="assets/common.css">
 <script src="assets/theme.js"></script>
 <style>
-.verify-band{display:flex;align-items:center;gap:13px;padding:15px 20px;
-  background:var(--green-bg);border-radius:var(--radius)}
-.verify-band .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--green);flex:none}
-.verify-band b{font-size:14px;color:var(--green)}
-.verify-band span{font-size:12.5px;color:var(--text-2)}
-.verify-band .chain{margin-left:auto;font-size:11.5px;color:var(--text-3)}
 .actchip{font-size:11px;font-weight:700;letter-spacing:.02em;padding:3px 8px;border-radius:6px;
   background:var(--raised);border:1px solid var(--line-strong);color:var(--text-2)}
 </style>
@@ -20,16 +14,16 @@
 <div class="shell" id="shell"></div>
 <template id="page-body">
   <div class="page-h">
-    <div><h2>감사 로그</h2></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <h2>감사 로그</h2>
+      <!-- 진입 시 자동 검증(GET /api/audit-logs/chain-status) 결과 — 정상: b-active / 위반: b-bad "체인 위반 N건" -->
+      <span class="badge b-active">체인 정상</span>
+    </div>
     <div class="acts">
-      <button class="btn btn-ghost" onclick="toast('해시 체인 재검증 완료 — 위변조 구간 없음')">체인 재검증</button>
-      <button class="btn btn-primary" onclick="toast('audit_log_20260819.csv 다운로드를 시작합니다')">
+      <button class="btn btn-ghost" onclick="toast('해시 체인 검증을 통과했습니다.')">체인 재검증</button>
+      <button class="btn btn-primary" onclick="toast('CSV 다운로드를 시작합니다.')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M4 19h16"/></svg>CSV 내려받기</button>
     </div>
-  </div>
-  <div class="verify-band">
-    <span class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4.5 6v5c0 5 3.2 8.6 7.5 10 4.3-1.4 7.5-5 7.5-10V6L12 3z"/><path d="m9 11.5 2.2 2.2L15.5 9"/></svg></span>
-    <div><b>해시 체인 무결성 검증 통과</b><br><span>1,284건 전체 순차 검증 · 삭제/삽입/변조 구간 없음 · 2026-08-19 09:40 KST</span></div>
   </div>
   <div class="filters">
     <input class="input" type="date" value="2026-08-12">

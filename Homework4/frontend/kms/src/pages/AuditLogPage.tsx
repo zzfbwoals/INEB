@@ -21,11 +21,11 @@ export default function AuditLogPage() {
   const [data, setData] = useState<PageResponse<AuditLogItem> | null>(null)
   const [loading, setLoading] = useState(true)
   const [verifying, setVerifying] = useState(false)
-  const [chain, setChain] = useState<AuditVerifyResult | null>(null)
+  const [chain, setChain] = useState<AuditVerifyResult | null | 'unavailable'>(null)
 
   // 화면 진입 시 체인 상태 자동 검증 (읽기 전용 — 감사 기록 없음)
   useEffect(() => {
-    fetchChainStatus().then(setChain).catch(() => {})
+    fetchChainStatus().then(setChain).catch(() => setChain('unavailable'))
   }, [])
 
   useEffect(() => {
@@ -59,8 +59,9 @@ export default function AuditLogPage() {
       <div className="page-h">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <h2>감사 로그</h2>
-          {chain && (chain.valid
-            ? <span className="badge b-ok">체인 정상</span>
+          {chain === 'unavailable' && <span className="badge b-deact">체인 확인 불가</span>}
+          {chain && chain !== 'unavailable' && (chain.valid
+            ? <span className="badge b-active">체인 정상</span>
             : <span className="badge b-bad">체인 위반 {chain.violations.length}건</span>)}
         </div>
         <div className="acts">

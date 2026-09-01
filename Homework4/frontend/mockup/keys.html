@@ -172,10 +172,9 @@ function createKey(){
   if(!n){toast('키명을 입력해주세요');return;}
   if(!a){toast('알고리즘을 선택해주세요');return;}
   const on=document.getElementById('nkAutoRot').checked,d=Number(document.getElementById('nkRot').value);
-  if(on&&!(d>=ROT_MIN&&d<=ROT_MAX)){toast('갱신 주기는 1~730일이어야 합니다 (400)');return;}
-  const v=document.getElementById('nkAct').value,future=v&&new Date(v)>new Date();
+  if(on&&!(d>=ROT_MIN&&d<=ROT_MAX)){toast('갱신 주기는 1~730일이어야 합니다');return;}
   closeModal('mdKeyNew');
-  toast(`'${n}' 생성 · 마스터키 래핑 저장 (v1 ${future?'PRE_ACTIVE · '+v.slice(0,10)+' 활성 예정':'ACTIVE'}${on?' · '+d+'일 자동 갱신':''})`);
+  toast('키가 생성되었습니다');
 }
 renderKeys();
 </script>
