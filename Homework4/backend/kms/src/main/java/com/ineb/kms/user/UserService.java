@@ -47,9 +47,11 @@ public class UserService {
 
     // ---------------------------------------------------------------- 목록 · 상세
 
+    private static final java.util.Set<String> SORTABLE = java.util.Set.of("name", "createdAt");
+
     @Transactional(readOnly = true)
     public PageResponse<UserSummary> list(String keyword, String phone, String email, UserStatus status,
-                                          int page, int size) {
+                                          int page, int size, String sort, String direction) {
         String phoneHash = phone == null || phone.isBlank() ? null : codec.phoneHash(phone);
         String emailHash = email == null || email.isBlank() ? null : codec.emailHash(email);
         Specification<AppUser> spec = (root, query, cb) -> {
@@ -68,9 +70,12 @@ public class UserService {
             }
             return cb.and(ps.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
+        String field = sort != null && SORTABLE.contains(sort) ? sort : "createdAt";
+        Sort.Direction dir = sort == null ? Sort.Direction.DESC
+                : "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Page<AppUser> result = repository.findAll(spec,
                 PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100),
-                        Sort.by(Sort.Direction.DESC, "createdAt", "id")));
+                        Sort.by(dir, field).and(Sort.by(Sort.Direction.DESC, "id"))));
         return PageResponse.of(result, this::toSummary);
     }
 

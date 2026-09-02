@@ -21,6 +21,7 @@ export default function UserListPage() {
   const [phoneInput, setPhoneInput] = useState('')
   const [phone, setPhone] = useState('')
   const [status, setStatus] = useState<UserStatus | ''>('')
+  const [sort, setSort] = useState<{ field: string; dir: 'asc' | 'desc' } | null>(null)
   const [page, setPage] = useState(0)
   const [data, setData] = useState<PageResponse<UserSummary> | null>(null)
   const [loading, setLoading] = useState(true)
@@ -40,13 +41,13 @@ export default function UserListPage() {
     if (!pageSize) return
     let cancelled = false
     setLoading(true)
-    const params: UserListParams = { keyword, phone, status, page, size: pageSize }
+    const params: UserListParams = { keyword, phone, status, page, size: pageSize, sort: sort?.field, direction: sort?.dir }
     listUsers(params)
       .then((res) => { if (!cancelled) setData(res) })
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [keyword, phone, status, page, pageSize, reloadTick, toast])
+  }, [keyword, phone, status, page, pageSize, sort, reloadTick, toast])
 
   // 페이지 크기 변동(창 크기 변경)으로 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정
   useEffect(() => {
@@ -59,6 +60,11 @@ export default function UserListPage() {
       if (e.action.startsWith('USER')) setReloadTick((t) => t + 1)
     })
   }, [])
+
+  function toggleSort(field: string) {
+    setPage(0)
+    setSort((prev) => (prev?.field === field ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { field, dir: 'asc' }))
+  }
 
   function phoneExact() {
     if (!phoneInput.trim()) {
@@ -102,12 +108,12 @@ export default function UserListPage() {
           <table className="tbl-fixed">
             <thead>
               <tr>
-                <th style={{ width: '16%' }}>사용자</th>
+                <th className="sortable" style={{ width: '16%' }} onClick={() => toggleSort('name')}>사용자 ↕</th>
                 <th style={{ width: '15%' }}>연락처</th>
                 <th style={{ width: '20%' }}>이메일</th>
                 <th style={{ width: '9%' }}>상태</th>
                 <th style={{ width: '8%' }}>무결성</th>
-                <th style={{ width: '11%' }}>가입일</th>
+                <th className="sortable" style={{ width: '11%' }} onClick={() => toggleSort('createdAt')}>가입일 ↕</th>
                 <th style={{ width: '21%' }}></th>
               </tr>
             </thead>

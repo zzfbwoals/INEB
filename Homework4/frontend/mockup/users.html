@@ -32,7 +32,7 @@
   </div>
   <div class="card">
     <div class="tbl-wrap"><table class="tbl-fixed">
-      <thead><tr><th style="width:16%">사용자</th><th style="width:15%">연락처</th><th style="width:20%">이메일</th><th style="width:9%">상태</th><th style="width:8%">무결성</th><th style="width:11%">가입일</th><th style="width:21%"></th></tr></thead>
+      <thead><tr><th class="sortable" style="width:16%" onclick="sortUsers('name')">사용자 ↕</th><th style="width:15%">연락처</th><th style="width:20%">이메일</th><th style="width:9%">상태</th><th style="width:8%">무결성</th><th class="sortable" style="width:11%" onclick="sortUsers('joined')">가입일 ↕</th><th style="width:21%"></th></tr></thead>
       <tbody id="userTbody"></tbody>
     </table></div>
     <div class="pager" id="userPager"></div>
@@ -85,13 +85,15 @@
 <script src="assets/shell.js"></script>
 <script>
 renderShell('users');
-let userPage=0;
+let userPage=0,userSort={f:null,dir:1};
 function goUserPage(p){userPage=p;renderUsers();}
+function sortUsers(f){userSort.dir=userSort.f===f?-userSort.dir:1;userSort.f=f;userPage=0;renderUsers();}
 window.addEventListener('resize',()=>renderUsers());
 function renderUsers(){
   const q=document.getElementById('userSearch').value.trim();
   const fs=document.getElementById('userStatus').value;
   let rows=USERS.filter(u=>(!q||u.name.includes(q))&&(!fs||u.status===fs));
+  if(userSort.f){const f=userSort.f;rows=[...rows].sort((a,b)=>((''+(a[f]??''))>(''+(b[f]??''))?1:-1)*userSort.dir);}
   const size=autoPageSize(document.getElementById('userTbody').closest('.tbl-wrap'),58);
   const totalPages=Math.max(Math.ceil(rows.length/size),1);
   if(userPage>=totalPages)userPage=totalPages-1;

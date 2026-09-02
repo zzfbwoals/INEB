@@ -100,9 +100,9 @@ export default function KeyListPage() {
               <tr>
                 <th className="sortable" style={{ width: '17%' }} onClick={() => toggleSort('keyName')}>키명 ↕</th>
                 <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('algorithm')}>알고리즘 ↕</th>
-                <th style={{ width: '6%' }}>모드</th>
-                <th style={{ width: '13%' }}>용도</th>
-                <th style={{ width: '14%' }}>상태</th>
+                <th className="sortable" style={{ width: '6%' }} onClick={() => toggleSort('mode')}>모드 ↕</th>
+                <th className="sortable" style={{ width: '13%' }} onClick={() => toggleSort('purpose')}>용도 ↕</th>
+                <th className="sortable" style={{ width: '14%' }} onClick={() => toggleSort('status')}>상태 ↕</th>
                 <th style={{ width: '11%' }}>버전</th>
                 <th style={{ width: '8%' }}>갱신 주기</th>
                 <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신 ↕</th>

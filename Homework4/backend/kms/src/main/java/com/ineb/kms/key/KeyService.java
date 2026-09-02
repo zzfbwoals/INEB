@@ -51,7 +51,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class KeyService {
 
-    private static final Set<String> SORTABLE = Set.of("keyName", "algorithm", "nextRotationAt", "createdAt");
+    private static final Set<String> SORTABLE = Set.of("keyName", "algorithm", "mode", "purpose", "status",
+            "nextRotationAt", "createdAt");
     private static final Duration STATS_WINDOW = Duration.ofDays(30);
 
     private final CryptoKeyRepository keyRepository;

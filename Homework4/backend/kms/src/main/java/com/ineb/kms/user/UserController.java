@@ -39,8 +39,10 @@ public class UserController {
             @RequestParam(required = false) String email,
             @RequestParam(required = false) UserStatus status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.ok(userService.list(keyword, phone, email, status, page, size));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String direction) {
+        return ApiResponse.ok(userService.list(keyword, phone, email, status, page, size, sort, direction));
     }
 
     @PostMapping

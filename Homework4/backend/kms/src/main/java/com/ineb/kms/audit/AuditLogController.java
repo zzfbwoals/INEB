@@ -38,8 +38,10 @@ public class AuditLogController {
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.ok(auditLogService.list(actor, action, target, from, to, page, size));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String direction) {
+        return ApiResponse.ok(auditLogService.list(actor, action, target, from, to, page, size, sort, direction));
     }
 
     /** CSV 내려받기 — 목록과 같은 필터. 엑셀 한글 호환을 위해 UTF-8 BOM 을 붙인다. */

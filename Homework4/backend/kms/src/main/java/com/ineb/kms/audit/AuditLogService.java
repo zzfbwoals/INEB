@@ -22,6 +22,8 @@ public class AuditLogService {
     /** CSV 내려받기 상한 — 초과분은 최신순으로 잘린다 */
     private static final int EXPORT_MAX_ROWS = 100_000;
 
+    private static final java.util.Set<String> SORTABLE = java.util.Set.of("id", "createdAt", "actor", "action", "target");
+
     private final AuditLogRepository repository;
     private final AuditChainService chainService;
     private final AuditChainVerifier verifier;
@@ -39,9 +41,14 @@ public class AuditLogService {
      */
     @Transactional(readOnly = true)
     public PageResponse<AuditLogItem> list(String actor, String action, String target,
-                                           String from, String to, int page, int size) {
+                                           String from, String to, int page, int size,
+                                           String sort, String direction) {
+        String field = sort != null && SORTABLE.contains(sort) ? sort : "id";
+        Sort.Direction dir = sort == null ? Sort.Direction.DESC
+                : "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         Page<AuditLog> result = repository.findAll(spec(actor, action, target, from, to),
-                PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100), Sort.by(Sort.Direction.DESC, "id")));
+                PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100),
+                        Sort.by(dir, field).and(Sort.by(Sort.Direction.DESC, "id"))));
         return PageResponse.of(result, AuditLogService::toItem);
     }
 

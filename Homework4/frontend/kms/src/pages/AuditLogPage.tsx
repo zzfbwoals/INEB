@@ -19,6 +19,7 @@ export default function AuditLogPage() {
   const [actor, setActor] = useState('')
   const [action, setAction] = useState('')
   const [target, setTarget] = useState(() => searchParams.get('target') ?? '')
+  const [sort, setSort] = useState<{ field: string; dir: 'asc' | 'desc' } | null>(null)
   const [page, setPage] = useState(0)
   const [data, setData] = useState<PageResponse<AuditLogItem> | null>(null)
   const [loading, setLoading] = useState(true)
@@ -45,17 +46,22 @@ export default function AuditLogPage() {
     if (!pageSize) return
     let cancelled = false
     setLoading(true)
-    listAuditLogs({ actor, action, target, from, to, page, size: pageSize })
+    listAuditLogs({ actor, action, target, from, to, page, size: pageSize, sort: sort?.field, direction: sort?.dir })
       .then((res) => { if (!cancelled) setData(res) })
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [actor, action, target, from, to, page, pageSize, reloadTick, toast])
+  }, [actor, action, target, from, to, page, pageSize, sort, reloadTick, toast])
 
   // 페이지 크기 변동(창 크기 변경)으로 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정
   useEffect(() => {
     if (data && data.totalPages > 0 && page >= data.totalPages) setPage(data.totalPages - 1)
   }, [data, page])
+
+  function toggleSort(field: string) {
+    setPage(0)
+    setSort((prev) => (prev?.field === field ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { field, dir: 'asc' }))
+  }
 
   async function runVerify() {
     setVerifying(true)
@@ -118,11 +124,11 @@ export default function AuditLogPage() {
           <table className="tbl-fixed">
             <thead>
               <tr>
-                <th style={{ width: '7%' }}>ID</th>
-                <th style={{ width: '15%' }}>일시 (KST)</th>
-                <th style={{ width: '10%' }}>행위자</th>
-                <th style={{ width: '17%' }}>행위</th>
-                <th style={{ width: '26%' }}>대상</th>
+                <th className="sortable" style={{ width: '7%' }} onClick={() => toggleSort('id')}>ID ↕</th>
+                <th className="sortable" style={{ width: '15%' }} onClick={() => toggleSort('createdAt')}>일시 (KST) ↕</th>
+                <th className="sortable" style={{ width: '10%' }} onClick={() => toggleSort('actor')}>행위자 ↕</th>
+                <th className="sortable" style={{ width: '17%' }} onClick={() => toggleSort('action')}>행위 ↕</th>
+                <th className="sortable" style={{ width: '26%' }} onClick={() => toggleSort('target')}>대상 ↕</th>
                 <th style={{ width: '25%' }}>상세</th>
               </tr>
             </thead>

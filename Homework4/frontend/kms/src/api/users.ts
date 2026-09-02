@@ -46,6 +46,8 @@ export interface UserListParams {
   status?: UserStatus | ''
   page?: number
   size?: number
+  sort?: string
+  direction?: 'asc' | 'desc'
 }
 
 export async function listUsers(params: UserListParams): Promise<PageResponse<UserSummary>> {

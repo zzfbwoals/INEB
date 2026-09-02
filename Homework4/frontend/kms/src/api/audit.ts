@@ -32,6 +32,8 @@ export interface AuditListParams {
   to?: string // "yyyy-MM-dd" (그날 23:59까지)
   page?: number
   size?: number
+  sort?: string
+  direction?: 'asc' | 'desc'
 }
 
 /** 감사 대상 행위유형 — 백엔드 AuditHook 예약 목록과 동일 */

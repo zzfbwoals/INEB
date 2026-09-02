@@ -35,7 +35,7 @@
   </div>
   <div class="card">
     <div class="tbl-wrap"><table class="tbl-fixed">
-      <thead><tr><th style="width:7%">ID</th><th style="width:15%">일시 (KST)</th><th style="width:10%">행위자</th><th style="width:17%">행위</th><th style="width:26%">대상</th><th style="width:25%">상세</th></tr></thead>
+      <thead><tr><th class="sortable" style="width:7%" onclick="sortAudit('id')">ID ↕</th><th class="sortable" style="width:15%" onclick="sortAudit('at')">일시 (KST) ↕</th><th class="sortable" style="width:10%" onclick="sortAudit('actor')">행위자 ↕</th><th class="sortable" style="width:17%" onclick="sortAudit('action')">행위 ↕</th><th class="sortable" style="width:26%" onclick="sortAudit('target')">대상 ↕</th><th style="width:25%">상세</th></tr></thead>
       <tbody id="auditTbody"></tbody>
     </table></div>
     <div class="pager" id="auditPager"></div>
@@ -45,14 +45,18 @@
 <script src="assets/shell.js"></script>
 <script>
 renderShell('audit');
-let auditPage=0;
+let auditPage=0,auditSort={f:null,dir:1};
 function goAuditPage(p){auditPage=p;renderAudit();}
+function sortAudit(f){auditSort.dir=auditSort.f===f?-auditSort.dir:1;auditSort.f=f;auditPage=0;renderAudit();}
 window.addEventListener('resize',()=>renderAudit());
 function renderAudit(){
+  let list=AUDITS;
+  if(auditSort.f){const f=auditSort.f;
+    list=[...AUDITS].sort((a,b)=>(f==='id'?a.id-b.id:(''+(a[f]??''))>(''+(b[f]??''))?1:-1)*auditSort.dir);}
   const size=autoPageSize(document.getElementById('auditTbody').closest('.tbl-wrap'),46);
-  const totalPages=Math.max(Math.ceil(AUDITS.length/size),1);
+  const totalPages=Math.max(Math.ceil(list.length/size),1);
   if(auditPage>=totalPages)auditPage=totalPages-1;
-  const rows=AUDITS.slice(auditPage*size,(auditPage+1)*size);
+  const rows=list.slice(auditPage*size,(auditPage+1)*size);
   document.getElementById('auditTbody').innerHTML=rows.map(a=>`
   <tr>
     <td class="mono" style="color:var(--text-3)">#${a.id}</td>
