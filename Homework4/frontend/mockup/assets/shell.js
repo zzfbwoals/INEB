@@ -102,3 +102,30 @@ function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 function bkClose(e,el){if(e.target===el)el.classList.remove('open')}
 function qs(name){return new URLSearchParams(location.search).get(name)}
+
+/* ---- 목록 자동 페이징 — 행이 화면을 벗어나지 않게 남은 높이로 페이지 크기 계산 (React useAutoPageSize/Pager 와 동일 규칙) ---- */
+function autoPageSize(wrapEl,min=3){
+  const body=wrapEl.querySelector('tbody');
+  const top=(body||wrapEl).getBoundingClientRect().top+window.scrollY;
+  let rowH=47; // 폴백: td padding 12*2 + 한 줄 + 경계선
+  for(const r of wrapEl.querySelectorAll('tbody tr')){
+    if(!r.querySelector('[colspan]')){rowH=Math.max(r.getBoundingClientRect().height,30);break;}
+  }
+  const avail=window.innerHeight-top-52-60; // pager 높이 + content 하단 여백
+  return Math.max(min,Math.floor(avail/rowH));
+}
+function pageWindow(page,totalPages){
+  const last=Math.max(totalPages,1)-1;
+  if(last<=6)return Array.from({length:last+1},(_,i)=>i);
+  const ps=[...new Set([0,page-1,page,page+1,last].filter(p=>p>=0&&p<=last))].sort((a,b)=>a-b);
+  const out=[];let prev=-1;
+  for(const p of ps){if(prev>=0&&p-prev>1)out.push('…');out.push(p);prev=p;}
+  return out;
+}
+function renderPager(el,total,page,totalPages,goFn,unit='건'){
+  totalPages=Math.max(totalPages,1);
+  el.innerHTML=`<span class="pinfo">총 ${total}${unit} · ${page+1}/${totalPages} 페이지</span>`
+    +`<button ${page===0?'disabled':''} onclick="${goFn}(${page-1})">‹</button>`
+    +pageWindow(page,totalPages).map(p=>p==='…'?'<button disabled>…</button>':`<button class="${p===page?'on':''}" onclick="${goFn}(${p})">${p+1}</button>`).join('')
+    +`<button ${page>=totalPages-1?'disabled':''} onclick="${goFn}(${page+1})">›</button>`;
+}

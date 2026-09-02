@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import { AUDIT_ACTIONS, downloadAuditCsv, fetchChainStatus, listAuditLogs, verifyAuditChain, type AuditLogItem, type AuditVerifyResult } from '@/api/audit'
@@ -6,10 +6,11 @@ import type { PageResponse } from '@/api/keys'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { subscribeUiEvents } from '@/lib/events'
+import { useAutoPageSize } from '@/lib/usePageSize'
+import { Pager } from '@/components/ui/pager'
 
-const PAGE_SIZE = 20
-
-/* 목업 audit.html — 감사 로그. append-only 해시 체인 + 재검증 + CSV 내려받기 */
+/* 목업 audit.html — 감사 로그. append-only 해시 체인 + 재검증 + CSV 내려받기.
+   페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
 export default function AuditLogPage() {
   const toast = useToast()
   const [searchParams] = useSearchParams()
@@ -24,6 +25,8 @@ export default function AuditLogPage() {
   const [verifying, setVerifying] = useState(false)
   const [chain, setChain] = useState<AuditVerifyResult | null | 'unavailable'>(null)
   const [reloadTick, setReloadTick] = useState(0)
+  const tblRef = useRef<HTMLDivElement>(null)
+  const pageSize = useAutoPageSize(tblRef)
 
   // 화면 진입 시 체인 상태 자동 검증 (읽기 전용 — 감사 기록 없음)
   useEffect(() => {
@@ -39,14 +42,20 @@ export default function AuditLogPage() {
   }, [])
 
   useEffect(() => {
+    if (!pageSize) return
     let cancelled = false
     setLoading(true)
-    listAuditLogs({ actor, action, target, from, to, page, size: PAGE_SIZE })
+    listAuditLogs({ actor, action, target, from, to, page, size: pageSize })
       .then((res) => { if (!cancelled) setData(res) })
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [actor, action, target, from, to, page, reloadTick, toast])
+  }, [actor, action, target, from, to, page, pageSize, reloadTick, toast])
+
+  // 페이지 크기 변동(창 크기 변경)으로 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정
+  useEffect(() => {
+    if (data && data.totalPages > 0 && page >= data.totalPages) setPage(data.totalPages - 1)
+  }, [data, page])
 
   async function runVerify() {
     setVerifying(true)
@@ -105,7 +114,7 @@ export default function AuditLogPage() {
       </div>
 
       <div className="card">
-        <div className="tbl-wrap">
+        <div className="tbl-wrap" ref={tblRef}>
           <table className="tbl-fixed">
             <thead>
               <tr>
@@ -134,14 +143,7 @@ export default function AuditLogPage() {
             </tbody>
           </table>
         </div>
-        <div className="pager">
-          <span className="pinfo">총 {data?.totalElements ?? 0}건 · {(data?.page ?? 0) + 1}/{Math.max(data?.totalPages ?? 1, 1)} 페이지</span>
-          <button type="button" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>‹</button>
-          {Array.from({ length: Math.max(data?.totalPages ?? 1, 1) }, (_, i) => (
-            <button key={i} type="button" className={i === page ? 'on' : ''} onClick={() => setPage(i)}>{i + 1}</button>
-          ))}
-          <button type="button" disabled={page >= (data?.totalPages ?? 1) - 1} onClick={() => setPage((p) => p + 1)}>›</button>
-        </div>
+        <Pager page={page} data={data} onPage={setPage} />
       </div>
     </AppLayout>
   )

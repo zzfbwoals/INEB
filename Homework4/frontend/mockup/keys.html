@@ -102,14 +102,20 @@
 <script src="assets/shell.js"></script>
 <script>
 renderShell('keys','키 관리 / <b>키 목록</b>');
-let keySort={f:null,dir:1};
-function sortKeys(f){keySort.dir=keySort.f===f?-keySort.dir:1;keySort.f=f;renderKeys();}
+let keySort={f:null,dir:1},keyPage=0;
+function sortKeys(f){keySort.dir=keySort.f===f?-keySort.dir:1;keySort.f=f;keyPage=0;renderKeys();}
+function goKeyPage(p){keyPage=p;renderKeys();}
+window.addEventListener('resize',()=>renderKeys());
 function renderKeys(){
   const q=document.getElementById('keySearch').value.trim().toLowerCase();
   const fa=document.getElementById('keyAlgo').value,fs=document.getElementById('keyStatus').value,fp=document.getElementById('keyPurpose').value;
   let rows=KEYS.filter(k=>(!q||k.name.toLowerCase().includes(q))&&(!fa||k.algoName===fa)&&(!fp||k.purpose===fp)
     &&(fs===''||(fs==='LIVE'?k.status!=='DESTROYED':k.status===fs)));
   if(keySort.f){const f=keySort.f;rows=[...rows].sort((a,b)=>((a[f]>b[f])?1:-1)*keySort.dir);}
+  const size=autoPageSize(document.getElementById('keyTbody').closest('.tbl-wrap'));
+  const totalPages=Math.max(Math.ceil(rows.length/size),1);
+  if(keyPage>=totalPages)keyPage=totalPages-1;
+  const total=rows.length;rows=rows.slice(keyPage*size,(keyPage+1)*size);
   document.getElementById('keyTbody').innerHTML=rows.map(k=>{
     const cur=k.versions.find(v=>v.v===k.currentVersion);
     const sched=k.versions.find(v=>v.state==='PRE_ACTIVE'&&v.v!==k.currentVersion);
@@ -130,7 +136,7 @@ function renderKeys(){
       <td class="mono">${rotCell}</td>
       <td>${k.integrity?'<span class="badge b-ok">정상</span>':'<span class="badge b-bad">위반</span>'}</td>
     </tr>`;}).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text-3);padding:34px">조건에 맞는 키가 없습니다 — 필터를 조정해 보세요</td></tr>';
-  document.getElementById('keyPager').innerHTML=`<span class="pinfo">총 ${rows.length}건 · 1/1 페이지</span><button class="on">1</button>`;
+  renderPager(document.getElementById('keyPager'),total,keyPage,totalPages,'goKeyPage');
 }
 /* ---- 등록 모달 ---- */
 function openKeyNew(){

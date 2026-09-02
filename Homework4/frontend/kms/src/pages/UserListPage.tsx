@@ -1,19 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { fetchMe } from '@/api/auth'
 import { listUsers, type UserListParams, type UserStatus, type UserSummary } from '@/api/users'
 import type { PageResponse } from '@/api/keys'
 import { fmtDate } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
+import { useAutoPageSize } from '@/lib/usePageSize'
+import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { IntegrityBadge } from '@/components/keys/StateBadge'
 import { UserFormDialog } from '@/components/users/UserFormDialog'
 import { UserPlainDialog } from '@/components/users/UserPlainDialog'
 
-const PAGE_SIZE = 20
-
-/* 목업 users.html — 사용자 관리. 연락처·이메일은 마스킹 표시, 정확검색은 HMAC 해시(전체 값 입력) */
+/* 목업 users.html — 사용자 관리. 연락처·이메일은 마스킹 표시, 정확검색은 HMAC 해시(전체 값 입력).
+   페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
 export default function UserListPage() {
   const toast = useToast()
   const [keyword, setKeyword] = useState('')
@@ -28,21 +29,29 @@ export default function UserListPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<UserSummary | null>(null)
   const [plainTarget, setPlainTarget] = useState<UserSummary | null>(null)
+  const tblRef = useRef<HTMLDivElement>(null)
+  const pageSize = useAutoPageSize(tblRef)
 
   useEffect(() => {
     fetchMe().then((me) => setIsAdmin(me.role === 'ADMIN')).catch(() => {})
   }, [])
 
   useEffect(() => {
+    if (!pageSize) return
     let cancelled = false
     setLoading(true)
-    const params: UserListParams = { keyword, phone, status, page, size: PAGE_SIZE }
+    const params: UserListParams = { keyword, phone, status, page, size: pageSize }
     listUsers(params)
       .then((res) => { if (!cancelled) setData(res) })
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [keyword, phone, status, page, reloadTick, toast])
+  }, [keyword, phone, status, page, pageSize, reloadTick, toast])
+
+  // 페이지 크기 변동(창 크기 변경)으로 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정
+  useEffect(() => {
+    if (data && data.totalPages > 0 && page >= data.totalPages) setPage(data.totalPages - 1)
+  }, [data, page])
 
   // 실시간 갱신 — 사용자 관련 행위가 커밋되면 목록 refetch
   useEffect(() => {
@@ -89,7 +98,7 @@ export default function UserListPage() {
       </div>
 
       <div className="card">
-        <div className="tbl-wrap">
+        <div className="tbl-wrap" ref={tblRef}>
           <table className="tbl-fixed">
             <thead>
               <tr>
@@ -130,14 +139,7 @@ export default function UserListPage() {
             </tbody>
           </table>
         </div>
-        <div className="pager">
-          <span className="pinfo">총 {data?.totalElements ?? 0}명 · {(data?.page ?? 0) + 1}/{Math.max(data?.totalPages ?? 1, 1)} 페이지</span>
-          <button type="button" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>‹</button>
-          {Array.from({ length: Math.max(data?.totalPages ?? 1, 1) }, (_, i) => (
-            <button key={i} type="button" className={i === page ? 'on' : ''} onClick={() => setPage(i)}>{i + 1}</button>
-          ))}
-          <button type="button" disabled={page >= (data?.totalPages ?? 1) - 1} onClick={() => setPage((p) => p + 1)}>›</button>
-        </div>
+        <Pager page={page} data={data} unit="명" onPage={setPage} />
       </div>
 
       <UserFormDialog edit={editTarget} open={formOpen} onClose={() => setFormOpen(false)} onDone={() => setReloadTick((t) => t + 1)} />

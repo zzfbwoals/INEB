@@ -35,7 +35,7 @@
       <thead><tr><th style="width:16%">사용자</th><th style="width:15%">연락처</th><th style="width:20%">이메일</th><th style="width:9%">상태</th><th style="width:8%">무결성</th><th style="width:11%">가입일</th><th style="width:21%"></th></tr></thead>
       <tbody id="userTbody"></tbody>
     </table></div>
-    <div class="pager"><span class="pinfo">총 5명 · 1/1 페이지</span><button class="on">1</button></div>
+    <div class="pager" id="userPager"></div>
   </div>
 </template>
 
@@ -85,10 +85,18 @@
 <script src="assets/shell.js"></script>
 <script>
 renderShell('users','운영 관리 / <b>사용자 관리</b>');
+let userPage=0;
+function goUserPage(p){userPage=p;renderUsers();}
+window.addEventListener('resize',()=>renderUsers());
 function renderUsers(){
   const q=document.getElementById('userSearch').value.trim();
   const fs=document.getElementById('userStatus').value;
-  const rows=USERS.filter(u=>(!q||u.name.includes(q))&&(!fs||u.status===fs));
+  let rows=USERS.filter(u=>(!q||u.name.includes(q))&&(!fs||u.status===fs));
+  const size=autoPageSize(document.getElementById('userTbody').closest('.tbl-wrap'));
+  const totalPages=Math.max(Math.ceil(rows.length/size),1);
+  if(userPage>=totalPages)userPage=totalPages-1;
+  const total=rows.length;rows=rows.slice(userPage*size,(userPage+1)*size);
+  renderPager(document.getElementById('userPager'),total,userPage,totalPages,'goUserPage','명');
   document.getElementById('userTbody').innerHTML=rows.map(u=>`
     <tr>
       <td><span class="uavatar" style="background:var(--blue-bg);color:var(--blue)">${u.name[0]}</span><b>${u.name}</b></td>
