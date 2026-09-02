@@ -1,6 +1,7 @@
 package com.ineb.kms.config;
 
 import com.ineb.kms.security.JwtAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
 import com.ineb.kms.security.RestAccessDeniedHandler;
 import com.ineb.kms.security.RestAuthenticationEntryPoint;
 import java.util.List;
@@ -43,6 +44,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
+                        // SSE(SseEmitter) 종료 시 톰캣의 ASYNC 재디스패치 — 최초 요청에서 이미 인가됐고
+                        // JWT 필터는 재디스패치에 실행되지 않아 Access Denied 로그만 남으므로 허용 (표준 처리)
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+
                         // Swagger / OpenAPI
                         .requestMatchers(
                                 "/swagger-ui/**",
