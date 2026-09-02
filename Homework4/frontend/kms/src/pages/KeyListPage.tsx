@@ -60,7 +60,7 @@ export default function KeyListPage() {
   const rows = data?.content ?? []
 
   return (
-    <AppLayout crumb="키 관리 / 키 목록">
+    <AppLayout>
       <div className="page-h">
         <div><h2>키 목록</h2></div>
         <div className="acts">

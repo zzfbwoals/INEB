@@ -68,7 +68,7 @@
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
-renderShell('test','키 관리 / <b>동작 테스트</b>');
+renderShell('test');
 const sel=document.getElementById('testKeySel');
 sel.innerHTML=KEYS.map(k=>`<option value="${k.id}" ${k.status==='DESTROYED'?'disabled':''}>${k.name} · ${k.algo}${k.mode?'/'+k.mode:''} · ${PURPOSE[k.purpose]} · ${STATE_KO[k.status]} · v${k.currentVersion}${k.status==='DESTROYED'?' — 테스트 불가':''}</option>`).join('');
 if(qs('id'))sel.value=qs('id');

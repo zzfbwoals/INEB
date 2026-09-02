@@ -74,7 +74,7 @@ export default function AuditLogPage() {
   const rows = data?.content ?? []
 
   return (
-    <AppLayout crumb="운영 관리 / 감사 로그">
+    <AppLayout>
       <div className="page-h">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <h2>감사 로그</h2>

@@ -70,7 +70,7 @@ export default function KeyDetailPage() {
   }, [keyUid, load])
 
   if (!detail) {
-    return <AppLayout crumb="키 관리 / 키 목록 / 키 상세"><div className="help">불러오는 중…</div></AppLayout>
+    return <AppLayout><div className="help">불러오는 중…</div></AppLayout>
   }
 
   const s = detail.status
@@ -86,7 +86,7 @@ export default function KeyDetailPage() {
   const stats = usage?.stats ?? detail.usageStats
 
   return (
-    <AppLayout crumb="키 관리 / 키 목록 / 키 상세">
+    <AppLayout>
       <div className="page-h">
         <div>
           <div className="hdr-row">

@@ -225,7 +225,7 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
-renderShell('keys','키 관리 / 키 목록 / <b>키 상세</b>');
+renderShell('keys');
 const key=KEYS.find(k=>k.id===Number(qs('id')))||KEYS[0];
 const fmt=s=>s?s.slice(0,16):'—';
 const latest=()=>key.versions.reduce((m,v)=>v.v>m.v?v:m,key.versions[0]);

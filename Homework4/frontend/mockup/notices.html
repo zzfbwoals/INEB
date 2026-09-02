@@ -85,7 +85,7 @@
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
-renderShell('notices','운영 관리 / <b>공지사항</b>');
+renderShell('notices');
 function renderNotices(){
   const q=(document.getElementById('ntSearch').value||'').trim();
   const rows=NOTICES.filter(n=>!q||n.title.includes(q));

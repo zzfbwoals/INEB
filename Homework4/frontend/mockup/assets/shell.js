@@ -33,7 +33,7 @@ const NAV=[
    {href:'audit.html',key:'audit',ic:'audit',label:'감사 로그'}]},
 ];
 
-function renderShell(active,crumb){
+function renderShell(active){
   const nav=NAV.map(g=>{
     const sec=g.sec?`<div class="nav-sec">${g.sec}</div>`:'';
     const its=g.items.map(i=>`<a class="nav-it ${i.key===active?'on':''}" href="${i.href}" data-label="${i.label}">${IC[i.ic]}<span>${i.label}</span></a>`).join('');
@@ -61,10 +61,6 @@ function renderShell(active,crumb){
     </div>
   </aside>
   <div class="main">
-    <header class="topbar">
-      <div class="crumb">홈 / ${crumb}</div>
-      <div class="sp"></div>
-    </header>
     <div class="content" id="content"></div>
   </div>`;
   document.getElementById('content').append(document.getElementById('page-body').content);

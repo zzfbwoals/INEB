@@ -101,7 +101,7 @@
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
-renderShell('keys','키 관리 / <b>키 목록</b>');
+renderShell('keys');
 let keySort={f:null,dir:1},keyPage=0;
 function sortKeys(f){keySort.dir=keySort.f===f?-keySort.dir:1;keySort.f=f;keyPage=0;renderKeys();}
 function goKeyPage(p){keyPage=p;renderKeys();}

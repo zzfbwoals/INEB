@@ -73,7 +73,7 @@ export default function UserListPage() {
   const rows = data?.content ?? []
 
   return (
-    <AppLayout crumb="운영 관리 / 사용자 관리">
+    <AppLayout>
       <div className="page-h">
         <div><h2>사용자 관리</h2></div>
         <div className="acts">

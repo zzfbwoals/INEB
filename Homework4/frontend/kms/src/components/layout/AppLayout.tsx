@@ -110,7 +110,7 @@ const THEME_ITEMS: { mode: ThemeMode; label: string; icon: ReactNode }[] = [
   { mode: 'system', label: '시스템 설정', icon: icons.sys },
 ]
 
-export default function AppLayout({ crumb, children }: { crumb?: string; children: ReactNode }) {
+export default function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const themeMode = useThemeMode()
   const [me, setMe] = useState<Me | null>(null)
@@ -240,10 +240,6 @@ export default function AppLayout({ crumb, children }: { crumb?: string; childre
       </aside>
 
       <div className="main">
-        <header className="topbar">
-          <div className="crumb">{crumb ? `홈 / ${crumb}` : '홈'}</div>
-          <div className="sp" />
-        </header>
         <div className="content">{children}</div>
       </div>
     </div>

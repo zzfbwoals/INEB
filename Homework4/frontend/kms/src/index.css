@@ -345,19 +345,6 @@ html.collapsed .nav-it:hover::after {
   flex-direction: column;
   min-width: 0;
 }
-.topbar {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--line);
-  background: var(--topbar);
-  backdrop-filter: blur(10px);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
 .tgl {
   display: grid;
   place-items: center;
@@ -370,18 +357,6 @@ html.collapsed .nav-it:hover::after {
 .tgl:hover {
   background: var(--hover);
   color: var(--text);
-}
-.crumb {
-  font-size: 13px;
-  color: var(--text-3);
-  font-weight: 600;
-}
-.crumb b {
-  color: var(--text);
-  font-weight: 700;
-}
-.topbar .sp {
-  flex: 1;
 }
 
 /* 사이드바 하단 프로필 + 메뉴 */

@@ -128,7 +128,7 @@ export default function KeyTestPage() {
   }
 
   return (
-    <AppLayout crumb="키 관리 / 동작 테스트">
+    <AppLayout>
       <div className="page-h">
         <div><h2>동작 테스트</h2></div>
       </div>
