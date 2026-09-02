@@ -120,7 +120,9 @@ function pageBlock(page,totalPages){
 function renderPager(el,total,page,totalPages,goFn,unit='건'){
   totalPages=Math.max(totalPages,1);
   el.innerHTML=`<span class="pinfo">총 ${total}${unit} · ${page+1}/${totalPages} 페이지</span>`
+    +`<button ${page===0?'disabled':''} onclick="${goFn}(0)">«</button>`
     +`<button ${page===0?'disabled':''} onclick="${goFn}(${page-1})">‹</button>`
     +pageBlock(page,totalPages).map(p=>`<button class="${p===page?'on':''}" onclick="${goFn}(${p})">${p+1}</button>`).join('')
-    +`<button ${page>=totalPages-1?'disabled':''} onclick="${goFn}(${page+1})">›</button>`;
+    +`<button ${page>=totalPages-1?'disabled':''} onclick="${goFn}(${page+1})">›</button>`
+    +`<button ${page>=totalPages-1?'disabled':''} onclick="${goFn}(${totalPages-1})">»</button>`;
 }

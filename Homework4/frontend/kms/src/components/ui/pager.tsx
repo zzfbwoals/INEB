@@ -20,11 +20,13 @@ export function Pager({ page, data, unit = '건', onPage }: {
   return (
     <div className="pager">
       <span className="pinfo">총 {data?.totalElements ?? 0}{unit} · {page + 1}/{totalPages} 페이지</span>
+      <button type="button" disabled={page === 0} onClick={() => onPage(0)}>«</button>
       <button type="button" disabled={page === 0} onClick={() => onPage(page - 1)}>‹</button>
       {pageBlock(page, totalPages).map((p) => (
         <button key={p} type="button" className={p === page ? 'on' : ''} onClick={() => onPage(p)}>{p + 1}</button>
       ))}
       <button type="button" disabled={page >= totalPages - 1} onClick={() => onPage(page + 1)}>›</button>
+      <button type="button" disabled={page >= totalPages - 1} onClick={() => onPage(totalPages - 1)}>»</button>
     </div>
   )
 }
