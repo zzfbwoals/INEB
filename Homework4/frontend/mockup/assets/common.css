@@ -115,6 +115,8 @@ tbody td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:mi
 /* 목록 테이블 — thead 의 열 폭을 고정해 데이터 유무와 무관하게 열 위치를 일정하게 유지 */
 table.tbl-fixed{table-layout:fixed}
 table.tbl-fixed tbody td{overflow:hidden;text-overflow:ellipsis}
+/* 배지·태그·버튼 셀은 말줄임 제외 — 통짜 인라인 요소는 미세 오버플로에도 "…"만 덧그려진다 */
+table.tbl-fixed tbody td:has(.badge,.vtag,.actchip,button){text-overflow:clip}
 tbody tr:last-child td{border-bottom:none}
 tbody tr.rowlink{cursor:pointer;transition:.12s}
 tbody tr.rowlink:hover{background:var(--hover)}

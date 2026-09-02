@@ -854,6 +854,10 @@ textarea.input:focus {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 배지·태그·버튼 셀 — 통짜 인라인 요소는 글자처럼 잘리지 못해 미세 오버플로에도 "…"만 덧그려지므로 말줄임 제외 */
+.tbl-wrap table.tbl-fixed tbody td:has(.badge, .vtag, .actchip, button) {
+  text-overflow: clip;
+}
 .pager {
   display: flex;
   align-items: center;
