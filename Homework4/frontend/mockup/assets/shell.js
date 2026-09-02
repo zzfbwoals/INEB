@@ -99,6 +99,30 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 function bkClose(e,el){if(e.target===el)el.classList.remove('open')}
 function qs(name){return new URLSearchParams(location.search).get(name)}
 
+/* ---- 복사·다운로드 — uid·공개키·암호문 등 원클릭 (상용 KMS 콘솔 공통 관례) ---- */
+function copyText(text){
+  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject())
+    .then(()=>toast('복사되었습니다')).catch(()=>toast('복사에 실패했습니다'));
+}
+function copyEl(id){const el=document.getElementById(id);copyText((el.innerText||el.textContent).trim());}
+function downloadText(name,content,type='text/plain'){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name;a.click();URL.revokeObjectURL(a.href);
+}
+/* 상대 시간 — "3일 전" (정확 시각은 title 로) */
+function relTime(s){
+  if(!s)return '—';
+  const diff=Date.now()-new Date(s.replace(' ','T')).getTime();
+  const m=Math.floor(diff/60000);
+  if(m<1)return '방금 전';
+  if(m<60)return m+'분 전';
+  const h=Math.floor(m/60);if(h<24)return h+'시간 전';
+  const d=Math.floor(h/24);if(d<30)return d+'일 전';
+  const mo=Math.floor(d/30);if(mo<12)return mo+'개월 전';
+  return Math.floor(mo/12)+'년 전';
+}
+
 /* ---- 목록 자동 페이징 — 행이 화면을 벗어나지 않게 남은 높이로 페이지 크기 계산 (React useAutoPageSize/Pager 와 동일 규칙)
    행 높이는 화면별 고정 상수(감사 46 / 키 50 / 사용자 58) — 실측하면 데이터 전후로 값이 출렁여 결정적으로 만든다 ---- */
 function autoPageSize(wrapEl,rowH,min=3){

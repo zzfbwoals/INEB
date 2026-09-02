@@ -164,8 +164,9 @@ function rotToggle(){const on=document.getElementById('nkAutoRot').checked;docum
 function rotPreview(){
   const on=document.getElementById('nkAutoRot').checked,d=Number(document.getElementById('nkRot').value);
   const h=document.getElementById('nkRotHelp');
-  if(!on){h.textContent='수동 갱신만 — 주기적 갱신은 관리자 책임';previewState();return;}
+  if(!on){h.textContent='';previewState();return;}
   if(!(d>=ROT_MIN&&d<=ROT_MAX)){h.innerHTML='<span style="color:var(--red)">1~730 범위여야 합니다</span>';return;}
+  h.textContent='';
   previewState();
 }
 function previewState(){

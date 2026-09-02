@@ -3,11 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import { getHistory, getKey, getUsage, type HistoryItem, type KeyDetail, type UsageResponse, type VersionInfo } from '@/api/keys'
 import { ALGOS, PURPOSE_KO, TRIGGER_KO, canEncrypt, canSign } from '@/lib/keyRules'
-import { dday, fmt } from '@/lib/format'
+import { dday, downloadText, fmt, relTime } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
 import { errorMessage, useToast } from '@/components/ui/toast'
+import { CopyButton, DOWNLOAD_ICON } from '@/components/ui/copy'
 import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
 import { KeyActionDialogs, type ActionDialogState } from '@/components/keys/KeyActionDialogs'
 import { KeyEditDialog } from '@/components/keys/KeyEditDialog'
@@ -69,6 +70,17 @@ export default function KeyDetailPage() {
     })
   }, [keyUid, load])
 
+  // 상대시간("방금 전"→"1분 전")은 시간이 흐르면 달라지므로 표시 텍스트를 상태로 두고 30초마다 재계산
+  // (React Compiler가 relTime(lastUse)를 입력값 기준으로 메모이즈하므로 재렌더만으로는 갱신되지 않는다)
+  const lastUse = detail?.versions.map((v) => v.lastUsedAt).filter((x): x is string => !!x).sort().pop() ?? null
+  const [lastUseText, setLastUseText] = useState('—')
+  useEffect(() => {
+    const update = () => setLastUseText(relTime(lastUse))
+    update()
+    const t = setInterval(update, 30_000)
+    return () => clearInterval(t)
+  }, [lastUse])
+
   if (!detail) {
     return <AppLayout><div className="help">불러오는 중…</div></AppLayout>
   }
@@ -95,7 +107,10 @@ export default function KeyDetailPage() {
             <StateBadge state={s} />
             <span className="vtag cur">v{detail.currentVersion}</span>
           </div>
-          <div className="desc mono" style={{ marginTop: 8 }}>{detail.keyUid}</div>
+          <div className="desc mono" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>{detail.keyUid}</span>
+            <CopyButton text={detail.keyUid} title="UID 복사" />
+          </div>
         </div>
         <div className="acts">
           <Button asChild variant="ghost"><Link to={`/audit?target=${encodeURIComponent(`KEY#${detail.keyUid}`)}`}>감사 로그</Link></Button>
@@ -126,13 +141,21 @@ export default function KeyDetailPage() {
             <Meta k="integrity_hash" mono v={<span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{detail.integrityHashShort ?? '—'} <b style={{ color: detail.integrityValid ? 'var(--green)' : 'var(--red)' }}>{detail.integrityValid ? '✓' : '✕'}</b></span>} />
             {detail.publicKeyPem && (
               <div className="meta-it full">
-                <div className="k">공개키 (v{detail.currentVersion}, PEM)</div>
+                <div className="k" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  공개키 (v{detail.currentVersion}, PEM)
+                  <CopyButton text={detail.publicKeyPem} />
+                  <button type="button" className="copy-btn"
+                    onClick={() => downloadText(`${detail.keyName}_v${detail.currentVersion}.pem`, detail.publicKeyPem!, 'application/x-pem-file')}>
+                    {DOWNLOAD_ICON}.pem
+                  </button>
+                </div>
                 <div className="pubkey">{detail.publicKeyPem}</div>
               </div>
             )}
           </div>
           <div className="usage-mini">
-            <div><div className="k">테스트 호출(30일)</div><div className="v">{stats.total}</div></div>
+            <div><div className="k">마지막 사용</div><div className="v" style={{ fontSize: 15 }} title={lastUse ?? ''}>{lastUseText}</div></div>
+            <div><div className="k">테스트 호출</div><div className="v">{stats.total}</div></div>
             <div><div className="k">{opL}</div><div className="v">{enc ? stats.encrypt : stats.sign}</div></div>
             <div><div className="k">{opR}</div><div className="v">{enc ? stats.decrypt : stats.verify}</div></div>
             <div><div className="k">구 버전 {opR}</div><div className="v" style={{ color: 'var(--text-2)' }}>{stats.oldVersion}</div></div>
@@ -236,7 +259,9 @@ function Meta({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean })
 function VersionRow({ v, detail, onAction, onReveal }: { v: VersionInfo; detail: KeyDetail; onAction: (a: ActionDialogState) => void; onReveal: (version: number) => void }) {
   const isCur = v.version === detail.currentVersion
   const isLatest = v.version === Math.max(...detail.versions.map((x) => x.version))
-  const cap = v.state !== 'ACTIVE' ? '✗ / ✗' : v.canEncrypt ? '✓ / ✓' : '✗ / ✓'
+  const role = canEncrypt(detail.purpose) ? (canSign(detail.purpose) ? '복호화·검증' : '복호화') : '검증'
+  const cap = v.state !== 'ACTIVE' ? '✗ / ✗' : v.canEncrypt ? '✓ / ✓'
+    : <>✗ / ✓<span className="roletag">{role} 전용</span></>
   let act: React.ReactNode = null
   if (v.state === 'PRE_ACTIVE') act = <><Button variant="ghost" size="sm" onClick={() => onAction({ kind: 'ACTIVATE', version: v.version })}>활성화</Button> <Button variant="ghost" size="sm" onClick={() => onAction({ kind: 'DESTROY', version: v.version })}>삭제</Button></>
   else if (v.state === 'ACTIVE') act = isLatest

@@ -59,7 +59,6 @@ export function KeyEditDialog({ detail, open, onClose, onDone }: { detail: KeyDe
             <div className="field">
               <label>활성일 (v{current.version})</label>
               <Input className="mono" type="datetime-local" value={activationDate} onChange={(e) => setActivationDate(e.target.value)} />
-              <div className="help">과거로 변경하면 즉시 ACTIVE 전이됩니다</div>
             </div>
           )}
         </DialogBody>

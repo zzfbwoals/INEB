@@ -4,6 +4,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import { getKey, listKeys, testDecrypt, testEncrypt, testSign, testVerify, type KeyDetail, type KeySummary, type VersionInfo } from '@/api/keys'
 import { PURPOSE_KO, STATE_KO, algoLabel, canEncrypt, canSign, maxPlaintextBytes, utf8Bytes } from '@/lib/keyRules'
 import { Button } from '@/components/ui/button'
+import { CopyButton } from '@/components/ui/copy'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { StateBadge } from '@/components/keys/StateBadge'
 
@@ -62,6 +63,9 @@ export default function KeyTestPage() {
   const maxBytes = detail && !sig ? maxPlaintextBytes(detail.algorithm, detail.keySize) : null
   const tooLong = maxBytes !== null && utf8Bytes(input) > maxBytes
   const noIv = detail?.algorithm === 'RSA' || detail?.mode === 'ECB'
+  // 암호화(서명)는 최신 버전만 — 비최신 선택 시 실행 대신 버튼 비활성화 + 사유 표시
+  const latestSel = !!detail && selVersion === detail.currentVersion
+  const leftHint = !detail ? '' : !curOk ? '최신 버전이 ACTIVE가 아닙니다' : !latestSel ? `${opL}${sig ? '은' : '는'} 최신 버전(v${detail.currentVersion})만 가능` : ''
 
   const parsed = parseInput(decIn, sig, detail?.versions ?? [], detail?.currentVersion ?? 0)
 
@@ -168,18 +172,22 @@ export default function KeyTestPage() {
 
       <div className="test-grid">
         <div className="card test-card">
-          <div className="card-h"><h3>{sig ? '서명 생성' : '평문 암호화'}</h3><span className="hint" /></div>
+          <div className="card-h"><h3>{sig ? '서명 생성' : '평문 암호화'}</h3><span className="hint">{leftHint}</span></div>
           <div className="body">
             <div className="field">
               <label>{sig ? '원문 입력' : '평문 입력'}</label>
               <textarea className="input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="입력하세요" />
+              {maxBytes !== null && (
+                <div className="fmt">{utf8Bytes(input)} / {maxBytes} bytes{tooLong && <b style={{ color: 'var(--red)' }}> — 상한 초과 (400)</b>}</div>
+              )}
             </div>
-            <Button style={{ alignSelf: 'flex-start' }} disabled={!curOk || pending} onClick={runLeft}>{sig ? '서명 실행' : '암호화 실행'}</Button>
+            <Button style={{ alignSelf: 'flex-start' }} disabled={!curOk || !latestSel || pending} onClick={runLeft}>{sig ? '서명 실행' : '암호화 실행'}</Button>
             <div className="field">
               <label>{sig ? '서명값' : '암호문'}</label>
               <div className={`result-box ${encOut ? 'ok' : ''}`}>
                 {encOut ?? '결과가 여기에 표시됩니다'}
               </div>
+              {encOut && <div style={{ marginTop: 6 }}><CopyButton text={encOut} /></div>}
             </div>
           </div>
         </div>
