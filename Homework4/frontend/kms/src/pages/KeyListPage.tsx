@@ -101,12 +101,12 @@ export default function KeyListPage() {
                 <th className="sortable" style={{ width: '17%' }} onClick={() => toggleSort('keyName')}>키명 ↕</th>
                 <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('algorithm')}>알고리즘 ↕</th>
                 <th style={{ width: '6%' }}>모드</th>
-                <th style={{ width: '14%' }}>용도</th>
-                <th style={{ width: '12%' }}>상태</th>
-                <th style={{ width: '12%' }}>버전</th>
+                <th style={{ width: '13%' }}>용도</th>
+                <th style={{ width: '14%' }}>상태</th>
+                <th style={{ width: '11%' }}>버전</th>
                 <th style={{ width: '8%' }}>갱신 주기</th>
                 <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신 ↕</th>
-                <th style={{ width: '7%' }}>무결성</th>
+                <th style={{ width: '8%' }}>무결성</th>
               </tr>
             </thead>
             <tbody>
