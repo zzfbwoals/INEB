@@ -96,7 +96,7 @@ class KeyIntegrityGuardTest {
         assertEquals(KeyState.DEACTIVATED, m.getState());
         assertEquals(DeactivationTrigger.INTEGRITY, m.getDeactivationTrigger());
         assertTrue(m.isReactivatable());
-        assertTrue(hasher.verify(m));          // 정지 후 해시는 다시 정합
+        assertFalse(hasher.verify(m));         // 위반 증거 보존 — REACTIVATE 가 언래핑 검증 후 재계산한다
         assertEquals(1, audits.size());
         assertTrue(audits.get(0).startsWith("KEY_INTEGRITY_VIOLATION:version=1"));
     }
@@ -126,7 +126,26 @@ class KeyIntegrityGuardTest {
         assertEquals(KeyState.DEACTIVATED, v1.getState());
         assertEquals(KeyState.DEACTIVATED, v2.getState());
         assertEquals(KeyState.DEACTIVATED, key.getStatus());
+        assertFalse(guard.isValid(key));       // 위반 증거 보존 — 전이 재계산이 변조를 정상으로 덮지 않는다
         assertTrue(audits.stream().anyMatch(a -> a.contains("scope=KEY, deactivated=2")));
+    }
+
+    @Test
+    @DisplayName("배치 키 메타 검증(enforceKey)은 위반 키를 한 번만 정지하고 이후에는 손대지 않는다")
+    void enforceKeyDeactivatesOnce() throws Exception {
+        KeyMaterial v1 = material(1, KeyState.ACTIVE);
+        key.pointCurrent(1);
+        hasher.rehash(key);
+        assertFalse(guard.enforceKey(key));    // 정상이면 아무것도 안 함
+
+        key.rename("TAMPERED", null);
+        assertTrue(guard.enforceKey(key));
+        assertEquals(KeyState.DEACTIVATED, v1.getState());
+        assertFalse(guard.isValid(key));
+
+        int before = audits.size();
+        assertFalse(guard.enforceKey(key));    // ACTIVE 없음 — 반복 정지·감사 스팸 없음
+        assertEquals(before, audits.size());
     }
 
     @Test

@@ -71,9 +71,15 @@ public class KeyLifecycleWorker {
         return true;
     }
 
-    /** 무결성 배치 검증 — 위반 버전 자동 정지 건수 */
+    /** 무결성 배치 검증 — 위반 버전 자동 정지 + 키 메타(crypto_key) 위반 키 전체 정지 건수 */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int sweepIntegrity() {
-        return integrityGuard.sweep();
+        int violated = integrityGuard.sweep();
+        for (CryptoKey key : keyRepository.findAll()) {
+            if (integrityGuard.enforceKey(key)) {
+                violated++;
+            }
+        }
+        return violated;
     }
 }

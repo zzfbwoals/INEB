@@ -95,14 +95,35 @@ public class KeyIntegrityGuard {
     }
 
     private void deactivateKeyWide(CryptoKey key) {
+        // 위반 증거 보존 — 전이가 crypto_key 해시를 재계산하면 변조된 값 기준으로 "정상"이 되어버리므로,
+        // 위반 시점의 저장 해시를 되살려 불일치(integrityValid=false)가 화면·집계에 남게 한다.
+        // 복구는 관리자가 데이터를 바로잡고 키 수정(PUT)을 저장할 때의 재계산으로 이뤄진다.
+        String evidenceHash = key.getIntegrityHash();
         List<KeyMaterial> actives = materialRepository.findByKeyIdAndState(key.getId(), KeyState.ACTIVE);
         for (KeyMaterial m : actives) {
             stateMachine.transitionKeyWide(m, KeyState.DEACTIVATED, HistoryTrigger.INTEGRITY,
                     KEY_VIOLATION_REASON, KeyStatusHistory.SYSTEM_ACTOR);
         }
+        key.applyIntegrityHash(evidenceHash);
         log.warn("crypto_key 무결성 위반: keyUid={}, 정지된 버전 수={}", key.getKeyUid(), actives.size());
         auditHook.record(KeyStatusHistory.SYSTEM_ACTOR, "KEY_INTEGRITY_VIOLATION",
                 AuditHook.keyTarget(key.getKeyUid()), "scope=KEY, deactivated=" + actives.size());
+    }
+
+    /**
+     * 키 메타 배치 검증용 — 위반이고 운영 중(ACTIVE) 버전이 있으면 키 전체를 정지한다.
+     * ACTIVE 가 없으면 상태 변화 없이 위반 플래그만 유지된다 (반복 기록 방지).
+     */
+    @Transactional
+    public boolean enforceKey(CryptoKey key) {
+        if (key.getStatus() == KeyState.DESTROYED || hasher.verify(key)) {
+            return false;
+        }
+        if (materialRepository.findByKeyIdAndState(key.getId(), KeyState.ACTIVE).isEmpty()) {
+            return false;
+        }
+        deactivateKeyWide(key);
+        return true;
     }
 
     /**
@@ -125,6 +146,9 @@ public class KeyIntegrityGuard {
         if (material.getState() == KeyState.DEACTIVATED || material.getState() == KeyState.DESTROYED) {
             return;
         }
+        // 위반 증거 보존 — 전이의 해시 재계산이 변조된 행을 "정상"으로 재봉인하지 않도록 저장 해시를 되살린다.
+        // 복구(REACTIVATE)가 언래핑 검증 통과 후 해시를 재계산하는 것이 정식 절차 (설계 REACTIVATE ② 단계).
+        String evidenceHash = material.getIntegrityHash();
         CryptoKey key = material.getKey();
         if (material.getState() == KeyState.ACTIVE) {
             stateMachine.transitionKeyWide(material, KeyState.DEACTIVATED, HistoryTrigger.INTEGRITY,
@@ -135,6 +159,7 @@ public class KeyIntegrityGuard {
                     VIOLATION_REASON + " (준비 버전은 삭제)", KeyStatusHistory.SYSTEM_ACTOR);
             material.destroyMaterial(java.time.Instant.now());
         }
+        material.applyIntegrityHash(evidenceHash);
         log.warn("key_material 무결성 위반: keyUid={}, version={}", key.getKeyUid(), material.getVersion());
         auditHook.record(KeyStatusHistory.SYSTEM_ACTOR, "KEY_INTEGRITY_VIOLATION",
                 AuditHook.keyTarget(key.getKeyUid()), "version=" + material.getVersion() + ", autoDeactivated=true");
