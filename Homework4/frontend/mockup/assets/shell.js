@@ -111,18 +111,16 @@ function autoPageSize(wrapEl,rowH,min=3){
   const avail=window.innerHeight-top-56-60; // pager 높이 + content 하단 여백
   return Math.max(min,Math.floor(avail/rowH));
 }
-function pageWindow(page,totalPages){
+/* 5페이지 고정 블록 — 현재 페이지가 속한 블록(1~5, 6~10, …)의 번호만 표시 */
+function pageBlock(page,totalPages){
   const last=Math.max(totalPages,1)-1;
-  if(last<=6)return Array.from({length:last+1},(_,i)=>i);
-  const ps=[...new Set([0,page-1,page,page+1,last].filter(p=>p>=0&&p<=last))].sort((a,b)=>a-b);
-  const out=[];let prev=-1;
-  for(const p of ps){if(prev>=0&&p-prev>1)out.push('…');out.push(p);prev=p;}
-  return out;
+  const start=Math.floor(page/5)*5,end=Math.min(start+4,last);
+  return Array.from({length:end-start+1},(_,i)=>start+i);
 }
 function renderPager(el,total,page,totalPages,goFn,unit='건'){
   totalPages=Math.max(totalPages,1);
   el.innerHTML=`<span class="pinfo">총 ${total}${unit} · ${page+1}/${totalPages} 페이지</span>`
     +`<button ${page===0?'disabled':''} onclick="${goFn}(${page-1})">‹</button>`
-    +pageWindow(page,totalPages).map(p=>p==='…'?'<button disabled>…</button>':`<button class="${p===page?'on':''}" onclick="${goFn}(${p})">${p+1}</button>`).join('')
+    +pageBlock(page,totalPages).map(p=>`<button class="${p===page?'on':''}" onclick="${goFn}(${p})">${p+1}</button>`).join('')
     +`<button ${page>=totalPages-1?'disabled':''} onclick="${goFn}(${page+1})">›</button>`;
 }
