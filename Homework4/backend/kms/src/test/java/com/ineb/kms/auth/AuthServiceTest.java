@@ -3,9 +3,14 @@ package com.ineb.kms.auth;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.ineb.kms.audit.AuditChainService;
 import com.ineb.kms.auth.dto.LoginRequest;
 import com.ineb.kms.auth.dto.LoginResponse;
 import com.ineb.kms.common.BusinessException;
@@ -29,15 +34,18 @@ class AuthServiceTest {
 
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private AdminUserRepository adminUserRepository;
+    private AuditChainService auditChain;
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
         adminUserRepository = mock(AdminUserRepository.class);
+        auditChain = mock(AuditChainService.class);
         authService = new AuthService(
                 adminUserRepository,
                 passwordEncoder,
-                new JwtTokenProvider(SECRET, 60L * 60 * 1000));
+                new JwtTokenProvider(SECRET, 60L * 60 * 1000),
+                auditChain);
     }
 
     private AdminUser adminUser(AdminStatus status) {
@@ -45,7 +53,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("올바른 아이디와 비밀번호로 로그인하면 토큰과 정보가 반환된다")
+    @DisplayName("올바른 아이디와 비밀번호로 로그인하면 토큰과 정보가 반환되고 LOGIN_SUCCESS 가 기록된다")
     void loginSuccess() {
         when(adminUserRepository.findByLoginId("admin"))
                 .thenReturn(Optional.of(adminUser(AdminStatus.ACTIVE)));
@@ -55,10 +63,11 @@ class AuthServiceTest {
         assertNotNull(response.accessToken());
         assertEquals("관리자", response.name());
         assertEquals("ADMIN", response.role());
+        verify(auditChain).append(eq("admin"), eq("LOGIN_SUCCESS"), eq("AUTH#admin"), anyString());
     }
 
     @Test
-    @DisplayName("비밀번호가 틀리면 AUTH_INVALID_CREDENTIALS 예외가 발생한다")
+    @DisplayName("비밀번호가 틀리면 AUTH_INVALID_CREDENTIALS 예외와 함께 LOGIN_FAILED 가 별도 트랜잭션으로 기록된다")
     void loginFailsWithWrongPassword() {
         when(adminUserRepository.findByLoginId("admin"))
                 .thenReturn(Optional.of(adminUser(AdminStatus.ACTIVE)));
@@ -66,6 +75,8 @@ class AuthServiceTest {
         BusinessException e = assertThrows(BusinessException.class,
                 () -> authService.login(new LoginRequest("admin", "wrong-password")));
         assertEquals(ErrorCode.AUTH_INVALID_CREDENTIALS, e.getErrorCode());
+        verify(auditChain).appendDetached(eq("admin"), eq("LOGIN_FAILED"), eq("AUTH#admin"), anyString());
+        verify(auditChain, never()).append(anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -76,6 +87,7 @@ class AuthServiceTest {
         BusinessException e = assertThrows(BusinessException.class,
                 () -> authService.login(new LoginRequest("ghost", RAW_PASSWORD)));
         assertEquals(ErrorCode.AUTH_INVALID_CREDENTIALS, e.getErrorCode());
+        verify(auditChain).appendDetached(eq("ghost"), eq("LOGIN_FAILED"), eq("AUTH#ghost"), anyString());
     }
 
     @Test
@@ -87,5 +99,12 @@ class AuthServiceTest {
         BusinessException e = assertThrows(BusinessException.class,
                 () -> authService.login(new LoginRequest("admin", RAW_PASSWORD)));
         assertEquals(ErrorCode.AUTH_INVALID_CREDENTIALS, e.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("로그아웃은 LOGOUT 감사 기록을 남긴다")
+    void logoutRecordsAudit() {
+        authService.logout("admin");
+        verify(auditChain).append("admin", "LOGOUT", "AUTH#admin", "");
     }
 }

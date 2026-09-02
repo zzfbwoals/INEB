@@ -97,9 +97,9 @@ const NAV: { section: string | null; items: { key: string; label: string; icon: 
   {
     section: '운영 관리',
     items: [
-      { key: 'users', label: '사용자 관리', icon: icons.user },
+      { key: 'users', label: '사용자 관리', icon: icons.user, to: '/users' },
       { key: 'notices', label: '공지사항', icon: icons.notice },
-      { key: 'audit', label: '감사 로그', icon: icons.audit },
+      { key: 'audit', label: '감사 로그', icon: icons.audit, to: '/audit' },
     ],
   },
 ]
@@ -110,7 +110,7 @@ const THEME_ITEMS: { mode: ThemeMode; label: string; icon: ReactNode }[] = [
   { mode: 'system', label: '시스템 설정', icon: icons.sys },
 ]
 
-export default function AppLayout({ crumb, children }: { crumb?: string; children: ReactNode }) {
+export default function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const themeMode = useThemeMode()
   const [me, setMe] = useState<Me | null>(null)
@@ -240,10 +240,6 @@ export default function AppLayout({ crumb, children }: { crumb?: string; childre
       </aside>
 
       <div className="main">
-        <header className="topbar">
-          <div className="crumb">{crumb ? `홈 / ${crumb}` : '홈'}</div>
-          <div className="sp" />
-        </header>
         <div className="content">{children}</div>
       </div>
     </div>

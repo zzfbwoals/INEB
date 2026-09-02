@@ -1,5 +1,6 @@
 package com.ineb.kms.key;
 
+import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.common.KstTime;
@@ -229,6 +230,7 @@ public class KeyOperationService {
     }
 
     private void audit(String actor, String action, CryptoKey key, String detail) {
-        auditHook.record(actor == null ? KeyStatusHistory.SYSTEM_ACTOR : actor, action, key.getKeyUid(), detail);
+        auditHook.record(actor == null ? KeyStatusHistory.SYSTEM_ACTOR : actor, action,
+                AuditHook.keyTarget(key.getKeyUid()), detail);
     }
 }

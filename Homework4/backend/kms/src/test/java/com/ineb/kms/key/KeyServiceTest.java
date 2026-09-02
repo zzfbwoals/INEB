@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.crypto.MasterKeyHolder;

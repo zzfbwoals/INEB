@@ -33,9 +33,10 @@ public class AuthController {
         return ApiResponse.ok(new MeResponse(principal.loginId(), principal.name(), principal.role()));
     }
 
-    /** JWT 무상태 — 서버 측 무효화 없이 클라이언트가 토큰을 폐기한다. 감사로그 기록은 3주차에 연결. */
+    /** JWT 무상태 — 서버 측 무효화 없이 클라이언트가 토큰을 폐기한다. 감사로그(LOGOUT)만 기록. */
     @PostMapping("/logout")
-    public ApiResponse<Void> logout() {
+    public ApiResponse<Void> logout(@AuthenticationPrincipal AuthPrincipal principal) {
+        authService.logout(principal.loginId());
         return ApiResponse.ok(null, "로그아웃 되었습니다.");
     }
 }

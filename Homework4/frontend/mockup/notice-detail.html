@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공지 상세 — iNEB D'GuardKMS</title>
+<link rel="stylesheet" href="assets/common.css">
+<script src="assets/theme.js"></script>
+<style>
+.notice-view{padding:26px 30px;display:flex;flex-direction:column;gap:18px}
+.notice-view h2{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.notice-view .nmeta{display:flex;gap:16px;font-size:12.5px;color:var(--text-3);padding-bottom:16px;border-bottom:1px solid var(--line)}
+.notice-view .nbody{font-size:14px;line-height:1.85;color:var(--text-2);white-space:pre-line}
+.file-it{display:flex;align-items:center;gap:11px;background:var(--bg-deep);border:1px solid var(--line-strong);border-radius:10px;padding:11px 14px}
+.file-it .fic{width:32px;height:32px;border-radius:8px;background:var(--blue-bg);color:var(--blue);display:grid;place-items:center;flex:none}
+.file-it .fn{flex:1;min-width:0}
+.file-it .fn b{font-size:13px;display:block}
+.file-it .fn span{font-size:11.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.enc-tag{font-size:10.5px;font-weight:700;color:var(--blue);background:var(--blue-bg);padding:2px 7px;border-radius:5px;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div class="shell" id="shell"></div>
+<template id="page-body">
+  <div class="page-h">
+    <div style="display:flex;align-items:center;gap:12px">
+      <a class="btn btn-ghost btn-sm" href="notices.html">← 목록</a>
+    </div>
+    <div class="acts">
+      <button class="btn btn-ghost" onclick="toast('수정 화면은 등록 모달과 동일 구성입니다 (목업)')">수정</button>
+      <button class="btn btn-danger" onclick="confirmDeleteNotice()">삭제</button>
+    </div>
+  </div>
+  <div class="card notice-view">
+    <h2 id="nvTitle">-</h2>
+    <div class="nmeta">
+      <span>번호 <b class="mono" style="color:var(--text-2)" id="nvNo">-</b></span>
+      <span>작성자 <b style="color:var(--text-2)" id="nvBy">-</b></span>
+      <span>등록 <span class="mono" id="nvAt">-</span></span>
+      <span>조회수 <b style="color:var(--text-2)" id="nvViews">-</b></span>
+    </div>
+    <div class="nbody">안녕하세요, 아이넵 KMS 운영팀입니다.
+
+8월 정기 점검이 아래와 같이 진행됩니다.
+
+· 일시: 2026-08-24(월) 02:00 ~ 04:00 (KST)
+· 대상: D'GuardKMS 어드민 웹 및 API 전체
+· 영향: 점검 시간 동안 키 발급/상태 변경 및 암복호화 테스트가 일시 중단됩니다.
+
+점검 중 마스터키 재유도 및 KCV 재검증이 수행될 예정이며, enc_ver 변동은 없습니다.
+문의사항은 운영팀으로 연락 부탁드립니다. 감사합니다.</div>
+    <div id="nvFiles" style="display:flex;flex-direction:column;gap:9px">
+      <div style="font-size:12.5px;font-weight:700;color:var(--text-2)">첨부파일 <span class="enc-tag">AES-256-GCM 암호화 저장</span></div>
+      <div class="file-it">
+        <span class="fic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l5 5v13H6V3z"/><path d="M14 3v5h5"/></svg></span>
+        <div class="fn"><b>2026_08_정기점검_상세일정.pdf</b><span>412 KB · iv: mB4kTz9wQxLp0aVu · enc_ver 1</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="toast('복호화 스트리밍으로 다운로드를 시작합니다')">복호화 다운로드</button>
+      </div>
+      <div class="file-it">
+        <span class="fic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l5 5v13H6V3z"/><path d="M14 3v5h5"/></svg></span>
+        <div class="fn"><b>점검_체크리스트.xlsx</b><span>88 KB · iv: Qw7rNv2eXcKd93Ta · enc_ver 1</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="toast('복호화 스트리밍으로 다운로드를 시작합니다')">복호화 다운로드</button>
+      </div>
+    </div>
+  </div>
+</template>
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+renderShell('notices');
+const n=NOTICES.find(x=>x.id===Number(qs('id')))||NOTICES[0];
+n.views++;
+document.getElementById('nvTitle').textContent=n.title;
+document.getElementById('nvNo').textContent=n.no;
+document.getElementById('nvBy').textContent=n.by;
+document.getElementById('nvAt').textContent=n.at+' 10:12';
+document.getElementById('nvViews').textContent=n.views;
+if(!n.files)document.getElementById('nvFiles').style.display='none';
+toast('조회수가 1 증가했습니다 (view_count +1)');
+function confirmDeleteNotice(){
+  if(confirm('이 공지사항을 삭제할까요?\n암호화된 첨부파일도 함께 정리됩니다.')){location.href='notices.html';}
+}
+</script>
+</body>
+</html>

@@ -345,19 +345,6 @@ html.collapsed .nav-it:hover::after {
   flex-direction: column;
   min-width: 0;
 }
-.topbar {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--line);
-  background: var(--topbar);
-  backdrop-filter: blur(10px);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
 .tgl {
   display: grid;
   place-items: center;
@@ -370,18 +357,6 @@ html.collapsed .nav-it:hover::after {
 .tgl:hover {
   background: var(--hover);
   color: var(--text);
-}
-.crumb {
-  font-size: 13px;
-  color: var(--text-3);
-  font-weight: 600;
-}
-.crumb b {
-  color: var(--text);
-  font-weight: 700;
-}
-.topbar .sp {
-  flex: 1;
 }
 
 /* 사이드바 하단 프로필 + 메뉴 */
@@ -871,6 +846,18 @@ textarea.input:focus {
   color: var(--text-3);
   padding: 34px;
 }
+/* 목록 테이블 — thead 의 열 폭을 고정해 데이터 유무와 무관하게 열 위치를 일정하게 유지 */
+.tbl-wrap table.tbl-fixed {
+  table-layout: fixed;
+}
+.tbl-wrap table.tbl-fixed tbody td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 배지·태그·버튼 셀 — 통짜 인라인 요소는 글자처럼 잘리지 못해 미세 오버플로에도 "…"만 덧그려지므로 말줄임 제외 */
+.tbl-wrap table.tbl-fixed tbody td:has(.badge, .vtag, .actchip, button) {
+  text-overflow: clip;
+}
 .pager {
   display: flex;
   align-items: center;
@@ -1198,6 +1185,21 @@ textarea.input:focus {
 .timeline {
   padding: 6px 20px 18px;
 }
+/* 타임라인 카드 — 메타 카드 높이 초과분은 숨기고 하단 페이드 + 더보기(모달) */
+.tl-card {
+  position: relative;
+  overflow: hidden;
+}
+.tl-more {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  padding: 46px 0 14px;
+  background: linear-gradient(to bottom, transparent, var(--surface) 72%);
+}
 .tl-it {
   display: flex;
   gap: 14px;
@@ -1419,4 +1421,41 @@ textarea.input:focus {
   font-size: 12.5px;
   color: var(--blue);
   line-height: 1.6;
+}
+
+/* ---- 3주차: 사용자 관리 · 감사 로그 (목업 users.html / audit.html) ---- */
+.mask {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.uavatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+.meta-box {
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+.meta-box .v {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.actchip {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--raised);
+  border: 1px solid var(--line-strong);
+  color: var(--text-2);
 }

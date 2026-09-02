@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>감사 로그 — iNEB D'GuardKMS</title>
+<link rel="stylesheet" href="assets/common.css">
+<script src="assets/theme.js"></script>
+<style>
+.actchip{font-size:11px;font-weight:700;letter-spacing:.02em;padding:3px 8px;border-radius:6px;
+  background:var(--raised);border:1px solid var(--line-strong);color:var(--text-2)}
+</style>
+</head>
+<body>
+<div class="shell" id="shell"></div>
+<template id="page-body">
+  <div class="page-h">
+    <div style="display:flex;align-items:center;gap:10px">
+      <h2>감사 로그</h2>
+      <!-- 진입 시 자동 검증(GET /api/audit-logs/chain-status) 결과 — 정상: b-active / 위반: b-bad "체인 위반 N건" -->
+      <span class="badge b-active">체인 정상</span>
+    </div>
+    <div class="acts">
+      <button class="btn btn-ghost" onclick="toast('해시 체인 검증을 통과했습니다.')">체인 재검증</button>
+      <button class="btn btn-primary" onclick="toast('CSV 다운로드를 시작합니다.')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M4 19h16"/></svg>CSV 내려받기</button>
+    </div>
+  </div>
+  <div class="filters">
+    <input class="input" type="date" value="2026-08-12">
+    <span style="color:var(--text-3)">→</span>
+    <input class="input" type="date" value="2026-08-19">
+    <select class="input"><option value="">행위자 전체</option><option>admin (류재민)</option><option>secops (김보안)</option></select>
+    <select class="input"><option value="">행위유형 전체</option><option>LOGIN</option><option>KEY_CREATED</option><option>KEY_STATUS_CHANGED</option><option>KEY_UPDATED</option><option>KEY_ROTATED</option><option>KEY_DESTROYED</option><option>KEY_INTEGRITY_VIOLATION</option><option>KEY_REACTIVATED</option><option>KEY_TEST_ENCRYPT</option><option>KEY_TEST_DECRYPT</option><option>KEY_TEST_SIGN</option><option>KEY_TEST_VERIFY</option><option>USER_PLAIN_VIEW</option><option>USER_UPDATED</option><option>NOTICE_CREATED</option></select>
+    <button class="btn btn-ghost" onclick="toast('검색 조건이 적용되었습니다 (8건)')">검색</button>
+  </div>
+  <div class="card">
+    <div class="tbl-wrap"><table class="tbl-fixed">
+      <thead><tr><th class="sortable" style="width:7%" onclick="sortAudit('id')">ID ↕</th><th class="sortable" style="width:15%" onclick="sortAudit('at')">일시 (KST) ↕</th><th class="sortable" style="width:10%" onclick="sortAudit('actor')">행위자 ↕</th><th class="sortable" style="width:17%" onclick="sortAudit('action')">행위 ↕</th><th class="sortable" style="width:26%" onclick="sortAudit('target')">대상 ↕</th><th style="width:25%">상세</th></tr></thead>
+      <tbody id="auditTbody"></tbody>
+    </table></div>
+    <div class="pager" id="auditPager"></div>
+  </div>
+</template>
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+renderShell('audit');
+let auditPage=0,auditSort={f:null,dir:1};
+function goAuditPage(p){auditPage=p;renderAudit();}
+function sortAudit(f){auditSort.dir=auditSort.f===f?-auditSort.dir:1;auditSort.f=f;auditPage=0;renderAudit();}
+window.addEventListener('resize',()=>renderAudit());
+function renderAudit(){
+  let list=AUDITS;
+  if(auditSort.f){const f=auditSort.f;
+    list=[...AUDITS].sort((a,b)=>(f==='id'?a.id-b.id:(''+(a[f]??''))>(''+(b[f]??''))?1:-1)*auditSort.dir);}
+  const size=autoPageSize(document.getElementById('auditTbody').closest('.tbl-wrap'),46);
+  const totalPages=Math.max(Math.ceil(list.length/size),1);
+  if(auditPage>=totalPages)auditPage=totalPages-1;
+  const rows=list.slice(auditPage*size,(auditPage+1)*size);
+  document.getElementById('auditTbody').innerHTML=rows.map(a=>`
+  <tr>
+    <td class="mono" style="color:var(--text-3)">#${a.id}</td>
+    <td class="mono">${a.at}</td>
+    <td><b>${a.actor}</b></td>
+    <td><span class="actchip">${a.action}</span></td>
+    <td class="mono" style="color:var(--text-2)">${a.target}</td>
+    <td class="mono" style="color:var(--text-3)" title="${a.detail}">${a.detail}</td>
+  </tr>`).join('');
+  renderPager(document.getElementById('auditPager'),AUDITS.length,auditPage,totalPages,'goAuditPage');
+}
+renderAudit();
+</script>
+</body>
+</html>

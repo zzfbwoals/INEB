@@ -21,7 +21,7 @@ export function KeyEditDialog({ detail, open, onClose, onDone }: { detail: KeyDe
 
   async function submit() {
     if (!keyName.trim()) { toast('키명을 입력해주세요', 'error'); return }
-    if (autoRotate && (rotationDays < ROT_MIN || rotationDays > ROT_MAX)) { toast('갱신 주기는 1~730일이어야 합니다 (400)', 'error'); return }
+    if (autoRotate && (rotationDays < ROT_MIN || rotationDays > ROT_MAX)) { toast('갱신 주기는 1~730일이어야 합니다', 'error'); return }
     setPending(true)
     try {
       await updateKey(detail.keyUid, {
@@ -31,7 +31,7 @@ export function KeyEditDialog({ detail, open, onClose, onDone }: { detail: KeyDe
         rotationPeriodDays: autoRotate ? rotationDays : null,
         activationDate: editableDate && activationDate !== toDateTimeLocal(current?.activationDate) ? fromDateTimeLocal(activationDate) : null,
       })
-      toast('메타정보 저장 · integrity_hash 재계산 · audit_log KEY_UPDATED')
+      toast('키 정보가 수정되었습니다')
       onClose()
       onDone()
     } catch (err) {

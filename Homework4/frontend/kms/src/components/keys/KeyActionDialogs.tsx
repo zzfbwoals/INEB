@@ -28,7 +28,7 @@ function useRunner(detail: KeyDetail, onClose: () => void, onDone: () => void) {
   const toast = useToast()
   const [pending, setPending] = useState(false)
   async function run(action: KeyAction, reason: string, extra: { activationDate?: string | null; version?: number | null } = {}) {
-    if (!reason.trim()) { toast('사유는 필수 입력입니다 (400 Bad Request)', 'error'); return }
+    if (!reason.trim()) { toast('사유를 입력해주세요', 'error'); return }
     setPending(true)
     try {
       const { message } = await runKeyAction(detail.keyUid, { action, reason: reason.trim(), ...extra })
@@ -159,7 +159,7 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
 
   function submit() {
     if (confirm.trim() !== detail.keyName) { toast('키명이 일치하지 않습니다', 'error'); return }
-    if (target === null && allDisabled) { toast('운영 중인 버전이 있어 키 전체 삭제 불가 (409 Conflict)', 'error'); return }
+    if (target === null && allDisabled) { toast('운영 중인 버전이 있어 삭제할 수 없습니다', 'error'); return }
     run('DESTROY', reason, { version: target })
   }
 

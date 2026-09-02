@@ -48,7 +48,7 @@ export default function KeyTestPage() {
         setMode(canEncrypt(d.purpose) ? 'enc' : 'sig')
         setSelVersion(d.currentVersion)
         setEncOut(null); setDecOut(null); setDecIn('')
-        if (d.status !== 'ACTIVE') toast(`${d.keyName}은(는) ${STATE_KO[d.status]} 상태 — 호출이 차단됩니다`, 'error')
+        if (d.status !== 'ACTIVE') toast('사용할 수 없는 상태의 키입니다', 'error')
       })
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
     return () => { cancelled = true }
@@ -58,7 +58,7 @@ export default function KeyTestPage() {
   const sig = mode === 'sig'
   const current = detail?.versions.find((v) => v.version === detail.currentVersion)
   const curOk = !!current && current.state === 'ACTIVE'
-  const opL = sig ? '서명' : '암호화', opR = sig ? '검증' : '복호화'
+  const opL = sig ? '서명' : '암호화'
   const maxBytes = detail && !sig ? maxPlaintextBytes(detail.algorithm, detail.keySize) : null
   const tooLong = maxBytes !== null && utf8Bytes(input) > maxBytes
   const noIv = detail?.algorithm === 'RSA' || detail?.mode === 'ECB'
@@ -70,12 +70,12 @@ export default function KeyTestPage() {
   }
 
   async function runLeft() {
-    if (!detail || !curOk) { toast('최신 버전이 ACTIVE가 아니어서 차단됩니다 (400)', 'error'); return }
+    if (!detail || !curOk) { toast('최신 버전이 ACTIVE가 아닙니다', 'error'); return }
     if (selVersion !== detail.currentVersion) {
       toast('최신 버전이 아닙니다', 'error')
       return
     }
-    if (tooLong) { toast(`평문이 ${maxBytes}바이트를 초과했습니다 (400)`, 'error'); return }
+    if (tooLong) { toast(`평문이 ${maxBytes}바이트를 초과했습니다`, 'error'); return }
     setPending(true)
     try {
       if (sig) {
@@ -88,7 +88,7 @@ export default function KeyTestPage() {
         setDecIn(r.ciphertext)
       }
       setDecOut(null)
-      toast(`${opL} 성공 — 결과가 ${opR} 입력에 자동 채워졌습니다`)
+      toast(`${opL}되었습니다`)
     } catch (err) {
       toast(errorMessage(err), 'error')
     } finally {
@@ -99,7 +99,7 @@ export default function KeyTestPage() {
   async function runRight() {
     if (!detail) return
     if (!decIn.trim()) { toast('입력이 필요합니다', 'error'); return }
-    if (parsed.kind === 'error') { toast(`400 — ${parsed.message}`, 'error'); return }
+    if (parsed.kind === 'error') { toast(parsed.message, 'error'); return }
     setPending(true)
     try {
       if (sig) {
@@ -109,7 +109,7 @@ export default function KeyTestPage() {
           tone: r.valid ? 'ok' : 'bad',
           warn: r.oldVersion ? 'ⓘ 구 버전으로 처리됨' : undefined,
         })
-        toast(r.valid ? '서명 검증 성공' : '서명 불일치 — 검증 실패', r.valid ? 'ok' : 'error')
+        toast(r.valid ? '서명이 검증되었습니다' : '서명이 일치하지 않습니다', r.valid ? 'ok' : 'error')
       } else {
         const r = await testDecrypt(detail.keyUid, decIn.trim())
         setDecOut({
@@ -117,7 +117,7 @@ export default function KeyTestPage() {
           tone: 'ok',
           warn: r.oldVersion ? 'ⓘ 구 버전으로 처리됨 — 재암호화 대상 데이터입니다' : undefined,
         })
-        toast(`복호화 성공 — v${r.version}${r.oldVersion ? ' (구 버전)' : ''}`)
+        toast('복호화되었습니다')
       }
     } catch (err) {
       setDecOut(null)
@@ -128,7 +128,7 @@ export default function KeyTestPage() {
   }
 
   return (
-    <AppLayout crumb="키 관리 / 동작 테스트">
+    <AppLayout>
       <div className="page-h">
         <div><h2>동작 테스트</h2></div>
       </div>

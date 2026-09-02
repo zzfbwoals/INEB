@@ -1,17 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import { listKeys, type KeyAlgorithm, type KeyListParams, type KeyPurpose, type KeySummary, type PageResponse } from '@/api/keys'
 import { PURPOSE_KO, algoLabel } from '@/lib/keyRules'
 import { dday, fmtDate } from '@/lib/format'
+import { subscribeUiEvents } from '@/lib/events'
+import { useAutoPageSize } from '@/lib/usePageSize'
+import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
 import { KeyCreateDialog } from '@/components/keys/KeyCreateDialog'
 
-const PAGE_SIZE = 20
-
-/* 목업 keys.html — 키 목록 */
+/* 목업 keys.html — 키 목록. 페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
 export default function KeyListPage() {
   const navigate = useNavigate()
   const toast = useToast()
@@ -25,16 +26,31 @@ export default function KeyListPage() {
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
   const [reloadTick, setReloadTick] = useState(0)
+  const tblRef = useRef<HTMLDivElement>(null)
+  const pageSize = useAutoPageSize(tblRef, 50)
 
   useEffect(() => {
+    if (!pageSize) return
     let cancelled = false
     setLoading(true)
-    listKeys({ keyword, algorithm, status, purpose, page, size: PAGE_SIZE, sort: sort?.field, direction: sort?.dir })
+    listKeys({ keyword, algorithm, status, purpose, page, size: pageSize, sort: sort?.field, direction: sort?.dir })
       .then((res) => { if (!cancelled) setData(res) })
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [keyword, algorithm, status, purpose, page, sort, reloadTick, toast])
+  }, [keyword, algorithm, status, purpose, page, pageSize, sort, reloadTick, toast])
+
+  // 페이지 크기 변동(창 크기 변경)으로 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정
+  useEffect(() => {
+    if (data && data.totalPages > 0 && page >= data.totalPages) setPage(data.totalPages - 1)
+  }, [data, page])
+
+  // 실시간 갱신 — 키 관련 행위(생성·상태 변경·테스트·스케줄러)가 커밋되면 목록 refetch
+  useEffect(() => {
+    return subscribeUiEvents((e) => {
+      if (e.action.startsWith('KEY')) setReloadTick((t) => t + 1)
+    })
+  }, [])
 
   function toggleSort(field: string) {
     setPage(0)
@@ -44,7 +60,7 @@ export default function KeyListPage() {
   const rows = data?.content ?? []
 
   return (
-    <AppLayout crumb="키 관리 / 키 목록">
+    <AppLayout>
       <div className="page-h">
         <div><h2>키 목록</h2></div>
         <div className="acts">
@@ -78,19 +94,19 @@ export default function KeyListPage() {
       </div>
 
       <div className="card">
-        <div className="tbl-wrap">
-          <table>
+        <div className="tbl-wrap" ref={tblRef}>
+          <table className="tbl-fixed">
             <thead>
               <tr>
-                <th className="sortable" onClick={() => toggleSort('keyName')}>키명 ↕</th>
-                <th className="sortable" onClick={() => toggleSort('algorithm')}>알고리즘 ↕</th>
-                <th>모드</th>
-                <th>용도</th>
-                <th>상태</th>
-                <th>버전</th>
-                <th>갱신 주기</th>
-                <th className="sortable" onClick={() => toggleSort('nextRotationAt')}>다음 갱신 ↕</th>
-                <th>무결성</th>
+                <th className="sortable" style={{ width: '17%' }} onClick={() => toggleSort('keyName')}>키명 ↕</th>
+                <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('algorithm')}>알고리즘 ↕</th>
+                <th className="sortable" style={{ width: '6%' }} onClick={() => toggleSort('mode')}>모드 ↕</th>
+                <th className="sortable" style={{ width: '13%' }} onClick={() => toggleSort('purpose')}>용도 ↕</th>
+                <th className="sortable" style={{ width: '14%' }} onClick={() => toggleSort('status')}>상태 ↕</th>
+                <th style={{ width: '11%' }}>버전</th>
+                <th style={{ width: '8%' }}>갱신 주기</th>
+                <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신 ↕</th>
+                <th style={{ width: '8%' }}>무결성</th>
               </tr>
             </thead>
             <tbody>
@@ -101,14 +117,7 @@ export default function KeyListPage() {
             </tbody>
           </table>
         </div>
-        <div className="pager">
-          <span className="pinfo">총 {data?.totalElements ?? 0}건 · {(data?.page ?? 0) + 1}/{Math.max(data?.totalPages ?? 1, 1)} 페이지</span>
-          <button type="button" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>‹</button>
-          {Array.from({ length: Math.max(data?.totalPages ?? 1, 1) }, (_, i) => (
-            <button key={i} type="button" className={i === page ? 'on' : ''} onClick={() => setPage(i)}>{i + 1}</button>
-          ))}
-          <button type="button" disabled={page >= (data?.totalPages ?? 1) - 1} onClick={() => setPage((p) => p + 1)}>›</button>
-        </div>
+        <Pager page={page} data={data} onPage={setPage} />
       </div>
 
       <KeyCreateDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={() => setReloadTick((t) => t + 1)} />

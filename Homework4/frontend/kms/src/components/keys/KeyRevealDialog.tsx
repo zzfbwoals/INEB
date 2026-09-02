@@ -12,7 +12,7 @@ export function KeyRevealDialog({ detail, version, onClose }: { detail: KeyDetai
   const [result, setResult] = useState<MaterialReveal | null>(null)
 
   async function run() {
-    if (!reason.trim()) { toast('사유는 필수 입력입니다 (400 Bad Request)', 'error'); return }
+    if (!reason.trim()) { toast('사유를 입력해주세요', 'error'); return }
     setPending(true)
     try {
       const { data, message } = await revealMaterial(detail.keyUid, version, reason.trim())

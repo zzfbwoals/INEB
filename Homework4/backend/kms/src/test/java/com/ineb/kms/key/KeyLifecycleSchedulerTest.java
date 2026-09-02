@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.crypto.MasterKeyHolder;
 import com.ineb.kms.domain.CryptoKey;
 import com.ineb.kms.domain.HistoryTrigger;

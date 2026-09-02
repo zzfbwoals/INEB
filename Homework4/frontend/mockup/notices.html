@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공지사항 — iNEB D'GuardKMS</title>
+<link rel="stylesheet" href="assets/common.css">
+<script src="assets/theme.js"></script>
+<style>
+/* 고도몰 공지사항 레이아웃 참고 */
+.board-head{padding:6px 2px 0}
+.board-head h2{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.board-head p{color:var(--text-3);font-size:13.5px;margin-top:6px}
+.board-bar{display:flex;align-items:center;gap:10px;margin-top:22px}
+.board-bar .total{font-size:13px;color:var(--text-2);margin-right:auto}
+.board-bar .total b{color:var(--text)}
+.bd-table thead th{text-align:center;background:var(--raised);border-top:1px solid var(--line-strong)}
+.bd-table td{text-align:center;color:var(--text-2)}
+.bd-table td.tt{text-align:left}
+.bd-table td.tt a{color:var(--text);font-weight:600}
+.bd-table td.tt a:hover{color:var(--blue);text-decoration:underline}
+
+.bd-table tr.important td.tt a{font-weight:700}
+.tag-imp{display:inline-block;min-width:40px;padding:2px 9px;border-radius:99px;
+  background:var(--red-bg);color:var(--red);font-size:11px;font-weight:800;letter-spacing:.05em}
+.att{margin-left:7px;font-size:11.5px;color:var(--text-3)}
+.pager-center{display:flex;justify-content:center;gap:5px;padding:18px 16px}
+.pager-center button{min-width:31px;height:31px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--text-2);border:1px solid transparent}
+.pager-center button:hover{background:var(--hover)}
+.pager-center button.on{background:var(--btn-blue);color:var(--btn-blue-tx)}
+</style>
+</head>
+<body>
+<div class="shell" id="shell"></div>
+<template id="page-body">
+  <div class="board-head">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div><h2>공지사항</h2></div>
+      <button class="btn btn-primary" onclick="openModal('mdNotice')">공지 등록</button>
+    </div>
+    <div class="board-bar">
+      <span class="total">총 <b id="ntTotal">4</b>건</span>
+      <select class="input" style="width:110px"><option>전체</option><option>중요</option><option>일반</option></select>
+      <select class="input" style="width:120px"><option>제목+내용</option><option>제목</option><option>작성자</option></select>
+      <div class="search" style="flex:none;min-width:220px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
+        <input class="input" id="ntSearch" placeholder="검색어 입력" oninput="renderNotices()">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tbl-wrap"><table class="bd-table">
+      <thead><tr>
+        <th style="width:90px">번호</th><th style="width:110px">작성자</th><th>제목</th>
+        <th style="width:90px">조회수</th><th style="width:120px">등록일</th>
+      </tr></thead>
+      <tbody id="noticeTbody"></tbody>
+    </table></div>
+    <div class="pager-center">
+      <button onclick="toast('첫 페이지입니다')">«</button><button onclick="toast('이전 페이지가 없습니다')">‹</button>
+      <button class="on">1</button><button onclick="toast('2페이지 (목업)')">2</button><button onclick="toast('3페이지 (목업)')">3</button>
+      <button onclick="toast('다음 페이지 (목업)')">›</button><button onclick="toast('마지막 페이지 (목업)')">»</button>
+    </div>
+  </div>
+</template>
+
+<!-- 공지 등록 모달 -->
+<div class="modal-bk" id="mdNotice" onclick="bkClose(event,this)">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-h"><h3>공지사항 등록</h3><button class="x" onclick="closeModal('mdNotice')">✕</button></div>
+    <div class="modal-b">
+      <div class="field"><label>제목 <em>*</em></label><input class="input" placeholder="공지 제목을 입력하세요"></div>
+      <div class="field"><label>본문 <em>*</em></label><textarea class="input txt" style="min-height:130px" placeholder="공지 내용을 입력하세요"></textarea></div>
+      <div class="field"><label>첨부파일 <span style="font-weight:400;color:var(--text-3)">— 업로드 시 마스터키로 암호화 저장 (multipart)</span></label>
+        <button class="btn btn-ghost" style="justify-content:center;border-style:dashed;padding:16px" onclick="toast('파일 선택은 목업에서 생략됩니다 — 암호화 업로드 처리')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V5m0 0 4 4m-4-4L8 9M4 19h16"/></svg>파일을 끌어오거나 클릭하여 선택
+        </button></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-ghost" onclick="closeModal('mdNotice')">취소</button>
+      <button class="btn btn-primary" onclick="toast('공지사항이 등록되었습니다 · 첨부 암호화 저장');closeModal('mdNotice')">등록</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+renderShell('notices');
+function renderNotices(){
+  const q=(document.getElementById('ntSearch').value||'').trim();
+  const rows=NOTICES.filter(n=>!q||n.title.includes(q));
+  const imp=rows.filter(n=>n.important),normal=rows.filter(n=>!n.important);
+  const row=n=>`
+    <tr class="rowlink ${n.important?'important':''}" onclick="location.href='notice-detail.html?id=${n.id}'">
+      <td>${n.important?'<span class="tag-imp">중요</span>':n.no}</td>
+      <td>${n.by}</td>
+      <td class="tt"><a href="notice-detail.html?id=${n.id}" onclick="event.stopPropagation()">${n.title}</a>${n.files?`<span class="att">📎 ${n.files}</span>`:''}</td>
+      <td class="mono">${n.views}</td>
+      <td class="mono">${n.at}</td>
+    </tr>`;
+  document.getElementById('noticeTbody').innerHTML=[...imp,...normal].map(row).join('')
+    ||'<tr><td colspan="5" style="padding:34px;color:var(--text-3)">검색 결과가 없습니다</td></tr>';
+  document.getElementById('ntTotal').textContent=rows.length;
+}
+renderNotices();
+</script>
+</body>
+</html>

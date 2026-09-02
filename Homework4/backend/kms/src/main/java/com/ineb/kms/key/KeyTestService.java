@@ -1,5 +1,6 @@
 package com.ineb.kms.key;
 
+import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.domain.CryptoKey;
@@ -119,7 +120,8 @@ public class KeyTestService {
         }
         usageLogRepository.save(new KeyUsageLog(key, m.getVersion(), UsageOperation.VERIFY,
                 valid ? UsageResult.SUCCESS : UsageResult.FAIL, valid ? null : "서명 불일치"));
-        auditHook.record(actor, "KEY_TEST_VERIFY", key.getKeyUid(), "version=" + m.getVersion() + ", valid=" + valid);
+        auditHook.record(actor, "KEY_TEST_VERIFY", AuditHook.keyTarget(key.getKeyUid()),
+                "version=" + m.getVersion() + ", valid=" + valid);
         return new VerifyResponse(valid, m.getVersion(), m.getVersion() != key.getCurrentVersion());
     }
 
@@ -190,7 +192,7 @@ public class KeyTestService {
 
     private void success(CryptoKey key, int version, UsageOperation op, String actor, String auditAction) {
         record(key, version, op, UsageResult.SUCCESS, null);
-        auditHook.record(actor, auditAction, key.getKeyUid(),
+        auditHook.record(actor, auditAction, AuditHook.keyTarget(key.getKeyUid()),
                 "version=" + version + (version != key.getCurrentVersion() ? ", oldVersion=true" : ""));
     }
 

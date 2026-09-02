@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KMS 키 목록 — iNEB D'GuardKMS</title>
+<link rel="stylesheet" href="assets/common.css">
+<script src="assets/theme.js"></script>
+<style>
+.vtag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:var(--text-2);
+  background:var(--raised);border:1px solid var(--line-strong);border-radius:6px;padding:1px 7px;font-variant-numeric:tabular-nums}
+.vtag.sched{color:var(--blue);border-color:transparent;background:var(--blue-bg)}
+.help{font-size:11.5px;color:var(--text-3);line-height:1.5}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.rot-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rot-row .input{width:110px;text-align:right}
+.rot-row label.sw{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-2);cursor:pointer}
+.rot-row input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px}
+</style>
+</head>
+<body>
+<div class="shell" id="shell"></div>
+<template id="page-body">
+  <div class="page-h">
+    <div><h2>키 목록</h2></div>
+    <div class="acts"><button class="btn btn-primary" onclick="openKeyNew()">등록</button></div>
+  </div>
+  <div class="filters">
+    <div class="search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
+      <input class="input" id="keySearch" placeholder="키명 검색" oninput="renderKeys()">
+    </div>
+    <select class="input" id="keyAlgo" onchange="renderKeys()">
+      <option value="">알고리즘 전체</option><option>AES</option><option>ARIA</option><option>LEA</option><option>SEED</option><option>RSA</option><option>ECDSA</option><option>SHA256</option><option>SHA512</option>
+    </select>
+    <select class="input" id="keyStatus" onchange="renderKeys()">
+      <option value="LIVE">상태 전체 (폐기 제외)</option>
+      <option value="PRE_ACTIVE">PRE_ACTIVE · 준비</option>
+      <option value="ACTIVE">ACTIVE · 운영</option>
+      <option value="DEACTIVATED">DEACTIVATED · 정지</option>
+      <option value="DESTROYED">DESTROYED · 폐기</option>
+      <option value="">모두 표시</option>
+    </select>
+    <select class="input" id="keyPurpose" onchange="renderKeys()">
+      <option value="">용도 전체</option><option value="ENC_DEC">암/복호화</option><option value="ENC_DEC_SIGN_VERIFY">암/복호화 및 서명/검증</option><option value="SIGN_VERIFY">서명/검증</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="tbl-wrap"><table class="tbl-fixed">
+      <thead><tr>
+        <th class="sortable" style="width:17%" onclick="sortKeys('name')">키명 ↕</th><th class="sortable" style="width:12%" onclick="sortKeys('algo')">알고리즘 ↕</th>
+        <th class="sortable" style="width:6%" onclick="sortKeys('mode')">모드 ↕</th><th class="sortable" style="width:13%" onclick="sortKeys('purpose')">용도 ↕</th><th class="sortable" style="width:14%" onclick="sortKeys('status')">상태 ↕</th><th style="width:11%">버전</th><th style="width:8%">갱신 주기</th><th class="sortable" style="width:12%" onclick="sortKeys('expire')">다음 갱신 ↕</th><th style="width:8%">무결성</th>
+      </tr></thead>
+      <tbody id="keyTbody"></tbody>
+    </table></div>
+    <div class="pager" id="keyPager"></div>
+  </div>
+</template>
+
+<!-- 키 등록 모달 -->
+<div class="modal-bk" id="mdKeyNew" onclick="bkClose(event,this)">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-h"><h3>키 등록</h3><button class="x" onclick="closeModal('mdKeyNew')">✕</button></div>
+    <div class="modal-b">
+      <div class="field"><label>키명 <em>*</em></label><input class="input" placeholder="예: PAY-GW-AES256" id="nkName"></div>
+      <div class="fgrid">
+        <div class="field"><label>알고리즘 <em>*</em></label>
+          <select class="input" id="nkAlgo" onchange="algoChange()">
+            <option value="">선택하세요</option>
+            <optgroup label="대칭키"><option>AES</option><option>ARIA</option><option>LEA</option><option>SEED</option></optgroup>
+            <optgroup label="비대칭키"><option>RSA</option><option>ECDSA</option></optgroup>
+            <optgroup label="HMAC"><option>SHA256</option><option>SHA512</option></optgroup>
+          </select></div>
+        <div class="field"><label>사이즈 (bit) <em>*</em></label><select class="input" id="nkSize" disabled><option>—</option></select></div>
+      </div>
+      <div class="fgrid">
+        <div class="field"><label>모드</label><select class="input" id="nkMode" disabled><option>—</option></select></div>
+        <div class="field"><label>용도 <em>*</em></label>
+          <select class="input" id="nkPurpose">
+            <option value="ENC_DEC">암/복호화</option><option value="ENC_DEC_SIGN_VERIFY">암/복호화 및 서명/검증</option><option value="SIGN_VERIFY">서명/검증</option>
+          </select>
+          </div>
+      </div>
+      <div class="field"><label>갱신 주기 (회전)</label>
+        <div class="rot-row">
+          <label class="sw"><input type="checkbox" id="nkAutoRot" checked onchange="rotToggle()">자동 갱신</label>
+          <input class="input mono" type="number" id="nkRot" min="1" max="730" value="90" oninput="rotPreview()"> <span style="font-size:13px;color:var(--text-2)">일</span>
+          <span class="help" id="nkRotHelp"></span>
+        </div>
+        </div>
+      <div class="field"><label>활성일</label><input class="input mono" type="datetime-local" id="nkAct" onchange="previewState()">
+        </div>
+      <div class="field"><label>설명</label><input class="input" id="nkDesc" placeholder="용도·연동 시스템 등 (선택)"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-ghost" onclick="closeModal('mdKeyNew')">취소</button>
+      <button class="btn btn-primary" onclick="createKey()">생성</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+renderShell('keys');
+let keySort={f:null,dir:1},keyPage=0;
+function sortKeys(f){keySort.dir=keySort.f===f?-keySort.dir:1;keySort.f=f;keyPage=0;renderKeys();}
+function goKeyPage(p){keyPage=p;renderKeys();}
+window.addEventListener('resize',()=>renderKeys());
+function renderKeys(){
+  const q=document.getElementById('keySearch').value.trim().toLowerCase();
+  const fa=document.getElementById('keyAlgo').value,fs=document.getElementById('keyStatus').value,fp=document.getElementById('keyPurpose').value;
+  let rows=KEYS.filter(k=>(!q||k.name.toLowerCase().includes(q))&&(!fa||k.algoName===fa)&&(!fp||k.purpose===fp)
+    &&(fs===''||(fs==='LIVE'?k.status!=='DESTROYED':k.status===fs)));
+  if(keySort.f){const f=keySort.f;rows=[...rows].sort((a,b)=>((''+(a[f]??''))>(''+(b[f]??''))?1:-1)*keySort.dir);}
+  const size=autoPageSize(document.getElementById('keyTbody').closest('.tbl-wrap'),50);
+  const totalPages=Math.max(Math.ceil(rows.length/size),1);
+  if(keyPage>=totalPages)keyPage=totalPages-1;
+  const total=rows.length;rows=rows.slice(keyPage*size,(keyPage+1)*size);
+  document.getElementById('keyTbody').innerHTML=rows.map(k=>{
+    const cur=k.versions.find(v=>v.v===k.currentVersion);
+    const sched=k.versions.find(v=>v.state==='PRE_ACTIVE'&&v.v!==k.currentVersion);
+    let rotCell;
+    if(k.status==='DESTROYED'||k.status==='DEACTIVATED')rotCell=`<span style="color:var(--text-3)">—</span>`;
+    else if(k.status==='PRE_ACTIVE')rotCell=`<span style="color:var(--blue)">활성 예정 ${cur.activationDate.slice(0,10)}</span>`;
+    else if(!k.autoRotate)rotCell=`<span style="color:var(--text-3)">수동</span>`;
+    else rotCell=`<span style="color:${k.dday<=30?'var(--red)':'var(--text-2)'}">${k.nextRotationAt.slice(0,10)}${k.dday>0&&k.dday<=30?` <b>(D-${k.dday})</b>`:k.dday<=0?' <b>(지연)</b>':''}</span>`;
+    return `
+    <tr class="rowlink" onclick="location.href='key-detail.html?id=${k.id}'">
+      <td><b>${k.name}</b></td>
+      <td class="mono">${k.algo}</td>
+      <td class="mono" style="color:var(--text-2)">${k.mode||'—'}</td>
+      <td>${PURPOSE[k.purpose]}</td>
+      <td>${stateBadge(k.status)}</td>
+      <td><span class="vtag">v${k.currentVersion}</span> <span style="font-size:11.5px;color:var(--text-3)">/ ${k.versions.length}</span>${sched?` <span class="vtag sched" title="활성일 ${sched.activationDate}">↻ v${sched.v} 예약</span>`:''}</td>
+      <td class="mono" style="color:var(--text-2)">${k.autoRotate?k.rotationPeriodDays+'일':'<span style="color:var(--text-3)">—</span>'}</td>
+      <td class="mono">${rotCell}</td>
+      <td>${k.integrity?'<span class="badge b-ok">정상</span>':'<span class="badge b-bad">위반</span>'}</td>
+    </tr>`;}).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text-3);padding:34px">조건에 맞는 키가 없습니다 — 필터를 조정해 보세요</td></tr>';
+  renderPager(document.getElementById('keyPager'),total,keyPage,totalPages,'goKeyPage');
+}
+/* ---- 등록 모달 ---- */
+function openKeyNew(){
+  ['nkName','nkDesc','nkAct'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nkAlgo').value='';document.getElementById('nkAutoRot').checked=true;document.getElementById('nkRot').value=ROT_DEFAULT;
+  algoChange();rotToggle();openModal('mdKeyNew');
+}
+function fill(sel,arr,label){
+  sel.innerHTML=arr.length?arr.map(v=>`<option value="${v}">${label?label(v):v}</option>`).join(''):'<option value="">—</option>';
+  sel.disabled=!arr.length;
+}
+function algoChange(){
+  const name=document.getElementById('nkAlgo').value,a=ALGOS[name];
+  fill(document.getElementById('nkSize'),a?a.sizes:[],a&&a.sizeLabel?a.sizeLabel:null);
+  fill(document.getElementById('nkMode'),a?a.modes:[]);
+  const mode=document.getElementById('nkMode');
+  if(a&&!a.modes.length)mode.innerHTML=`<option value="">해당 없음 (${a.hmac?'HMAC':'비대칭키'})</option>`;
+  const p=document.getElementById('nkPurpose');
+  if(a){p.value=a.purpose;[...p.options].forEach(o=>o.disabled=o.value!==a.purpose);
+    document.getElementById('nkSize').value=String(a.sizes[a.sizes.length-1]);}
+  else{[...p.options].forEach(o=>o.disabled=false);}
+  previewState();
+}
+function rotToggle(){const on=document.getElementById('nkAutoRot').checked;document.getElementById('nkRot').disabled=!on;rotPreview();}
+function rotPreview(){
+  const on=document.getElementById('nkAutoRot').checked,d=Number(document.getElementById('nkRot').value);
+  const h=document.getElementById('nkRotHelp');
+  if(!on){h.textContent='수동 갱신만 — 주기적 갱신은 관리자 책임';previewState();return;}
+  if(!(d>=ROT_MIN&&d<=ROT_MAX)){h.innerHTML='<span style="color:var(--red)">1~730 범위여야 합니다</span>';return;}
+  previewState();
+}
+function previewState(){
+  const v=document.getElementById('nkAct').value,future=v&&new Date(v)>new Date();
+  const name=document.getElementById('nkAlgo').value,a=ALGOS[name];
+  const on=document.getElementById('nkAutoRot').checked,d=document.getElementById('nkRot').value;
+}
+function createKey(){
+  const n=document.getElementById('nkName').value.trim(),a=document.getElementById('nkAlgo').value;
+  if(!n){toast('키명을 입력해주세요');return;}
+  if(!a){toast('알고리즘을 선택해주세요');return;}
+  const on=document.getElementById('nkAutoRot').checked,d=Number(document.getElementById('nkRot').value);
+  if(on&&!(d>=ROT_MIN&&d<=ROT_MAX)){toast('갱신 주기는 1~730일이어야 합니다');return;}
+  closeModal('mdKeyNew');
+  toast('키가 생성되었습니다');
+}
+renderKeys();
+</script>
+</body>
+</html>
