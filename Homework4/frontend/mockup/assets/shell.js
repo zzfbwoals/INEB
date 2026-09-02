@@ -103,15 +103,12 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 function bkClose(e,el){if(e.target===el)el.classList.remove('open')}
 function qs(name){return new URLSearchParams(location.search).get(name)}
 
-/* ---- 목록 자동 페이징 — 행이 화면을 벗어나지 않게 남은 높이로 페이지 크기 계산 (React useAutoPageSize/Pager 와 동일 규칙) ---- */
-function autoPageSize(wrapEl,min=3){
+/* ---- 목록 자동 페이징 — 행이 화면을 벗어나지 않게 남은 높이로 페이지 크기 계산 (React useAutoPageSize/Pager 와 동일 규칙)
+   행 높이는 화면별 고정 상수(감사 46 / 키 50 / 사용자 58) — 실측하면 데이터 전후로 값이 출렁여 결정적으로 만든다 ---- */
+function autoPageSize(wrapEl,rowH,min=3){
   const body=wrapEl.querySelector('tbody');
   const top=(body||wrapEl).getBoundingClientRect().top+window.scrollY;
-  let rowH=47; // 폴백: td padding 12*2 + 한 줄 + 경계선
-  for(const r of wrapEl.querySelectorAll('tbody tr')){
-    if(!r.querySelector('[colspan]')){rowH=Math.max(r.getBoundingClientRect().height,30);break;}
-  }
-  const avail=window.innerHeight-top-52-60; // pager 높이 + content 하단 여백
+  const avail=window.innerHeight-top-56-60; // pager 높이 + content 하단 여백
   return Math.max(min,Math.floor(avail/rowH));
 }
 function pageWindow(page,totalPages){

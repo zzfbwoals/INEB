@@ -27,7 +27,7 @@ export default function KeyListPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [reloadTick, setReloadTick] = useState(0)
   const tblRef = useRef<HTMLDivElement>(null)
-  const pageSize = useAutoPageSize(tblRef)
+  const pageSize = useAutoPageSize(tblRef, 50)
 
   useEffect(() => {
     if (!pageSize) return

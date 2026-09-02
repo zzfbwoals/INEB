@@ -26,7 +26,7 @@ export default function AuditLogPage() {
   const [chain, setChain] = useState<AuditVerifyResult | null | 'unavailable'>(null)
   const [reloadTick, setReloadTick] = useState(0)
   const tblRef = useRef<HTMLDivElement>(null)
-  const pageSize = useAutoPageSize(tblRef)
+  const pageSize = useAutoPageSize(tblRef, 46)
 
   // 화면 진입 시 체인 상태 자동 검증 (읽기 전용 — 감사 기록 없음)
   useEffect(() => {

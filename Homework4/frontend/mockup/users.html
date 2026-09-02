@@ -92,7 +92,7 @@ function renderUsers(){
   const q=document.getElementById('userSearch').value.trim();
   const fs=document.getElementById('userStatus').value;
   let rows=USERS.filter(u=>(!q||u.name.includes(q))&&(!fs||u.status===fs));
-  const size=autoPageSize(document.getElementById('userTbody').closest('.tbl-wrap'));
+  const size=autoPageSize(document.getElementById('userTbody').closest('.tbl-wrap'),58);
   const totalPages=Math.max(Math.ceil(rows.length/size),1);
   if(userPage>=totalPages)userPage=totalPages-1;
   const total=rows.length;rows=rows.slice(userPage*size,(userPage+1)*size);

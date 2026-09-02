@@ -49,7 +49,7 @@ let auditPage=0;
 function goAuditPage(p){auditPage=p;renderAudit();}
 window.addEventListener('resize',()=>renderAudit());
 function renderAudit(){
-  const size=autoPageSize(document.getElementById('auditTbody').closest('.tbl-wrap'));
+  const size=autoPageSize(document.getElementById('auditTbody').closest('.tbl-wrap'),46);
   const totalPages=Math.max(Math.ceil(AUDITS.length/size),1);
   if(auditPage>=totalPages)auditPage=totalPages-1;
   const rows=AUDITS.slice(auditPage*size,(auditPage+1)*size);

@@ -30,7 +30,7 @@ export default function UserListPage() {
   const [editTarget, setEditTarget] = useState<UserSummary | null>(null)
   const [plainTarget, setPlainTarget] = useState<UserSummary | null>(null)
   const tblRef = useRef<HTMLDivElement>(null)
-  const pageSize = useAutoPageSize(tblRef)
+  const pageSize = useAutoPageSize(tblRef, 58)
 
   useEffect(() => {
     fetchMe().then((me) => setIsAdmin(me.role === 'ADMIN')).catch(() => {})

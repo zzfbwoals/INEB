@@ -112,7 +112,7 @@ function renderKeys(){
   let rows=KEYS.filter(k=>(!q||k.name.toLowerCase().includes(q))&&(!fa||k.algoName===fa)&&(!fp||k.purpose===fp)
     &&(fs===''||(fs==='LIVE'?k.status!=='DESTROYED':k.status===fs)));
   if(keySort.f){const f=keySort.f;rows=[...rows].sort((a,b)=>((a[f]>b[f])?1:-1)*keySort.dir);}
-  const size=autoPageSize(document.getElementById('keyTbody').closest('.tbl-wrap'));
+  const size=autoPageSize(document.getElementById('keyTbody').closest('.tbl-wrap'),50);
   const totalPages=Math.max(Math.ceil(rows.length/size),1);
   if(keyPage>=totalPages)keyPage=totalPages-1;
   const total=rows.length;rows=rows.slice(keyPage*size,(keyPage+1)*size);
