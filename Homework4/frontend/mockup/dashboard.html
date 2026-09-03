@@ -6,35 +6,143 @@
 <link rel="stylesheet" href="assets/common.css">
 <script src="assets/theme.js"></script>
 <style>
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.stat{padding:18px 20px;display:flex;flex-direction:column;gap:9px}
-.stat .lb{font-size:12.5px;color:var(--text-2);font-weight:600;display:flex;align-items:center;gap:8px}
-.stat .lb .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center}
-.stat .num{font-size:29px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.stat .delta{font-size:12px;color:var(--text-3)}
-.stat .delta b{font-weight:700}
+/* 대시보드 전용 경고색 — 임박(주의)은 amber, 위반(위험)은 red 로 구분. common.css 토큰 승격 검토 */
+:root{--amber:#E2A33B;--amber-bg:#3A2A10}
+[data-theme="light"]{--amber:#B26E00;--amber-bg:#FFF1D6}
+
+/* 한 화면 고정 — 콘텐츠를 100vh 그리드로 잡고 중간·하단 행이 남은 높이를 나눠 가짐. 카드 내부만 스크롤 */
+.content{height:100vh;overflow:hidden;padding:18px 24px 16px;gap:12px;
+  display:grid;grid-template-rows:auto auto auto minmax(0,1.15fr) minmax(0,1fr)}
+.page-h{align-items:center}
+.card.fill{display:flex;flex-direction:column;min-height:0}
+.card.fill .body{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+.card.fill .body::-webkit-scrollbar{width:6px}
+.card.fill .body::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:3px}
+
+/* 상단 상태줄: 체인 상태 + Quick actions */
+.dash-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.chain-band{display:flex;align-items:center;gap:12px;padding:7px 12px;border-radius:10px;
+  background:var(--surface);border:1px solid var(--line);font-size:12.5px;color:var(--text-2)}
+.chain-band .sep{width:1px;height:14px;background:var(--line-strong)}
+.chain-band.bad{border-color:var(--red)}
+.quick{display:flex;gap:8px;flex-wrap:wrap}
+.quick .btn svg{flex:none;width:13px;height:13px}
+.quick .qic{display:inline-flex}
+
+/* 실시간 표시 */
+.live{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 55%,transparent)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+/* 요약 카드 */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{padding:12px 16px;display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit}
+.stat:hover{border-color:var(--line-strong)}
+.stat .lb{font-size:12px;color:var(--text-2);font-weight:600;display:flex;align-items:center;gap:8px}
+.stat .lb .ic{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:var(--raised);color:var(--text-2)}
+.stat .num{font-size:25px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.stat .delta{font-size:11.5px;color:var(--text-3);line-height:1.5}
+.stat .delta b{font-weight:700;color:var(--text-2)}
 .stat.warn-ring{border-color:var(--red)}
-.grid-dash{display:grid;grid-template-columns:1.65fr 1fr;gap:16px;align-items:start}
-.card-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
-.card-h h3{font-size:14.5px;font-weight:700}
-.card-h .hint{font-size:12px;color:var(--text-3)}
-.chart-box{padding:18px 20px 10px}
-.legend{display:flex;gap:16px;padding:0 20px 16px;font-size:12px;color:var(--text-2)}
-.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px}
-.exp-it{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line)}
+.stat .row{display:flex;align-items:center;gap:12px}
+.donut{flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:2px 9px;font-size:11.5px;color:var(--text-3)}
+.chips span{display:inline-flex;align-items:center;gap:4px}
+.chips i{width:7px;height:7px;border-radius:2px;display:inline-block}
+.chips b{color:var(--text);font-variant-numeric:tabular-nums}
+.iv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px 12px;font-size:11.5px;color:var(--text-3)}
+.iv-grid b{color:var(--text-2);font-variant-numeric:tabular-nums}
+.iv-grid b.bad{color:var(--red)}
+
+/* 카드 공통 헤더 */
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);flex:none}
+.card-h h3{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-h .hint{font-size:11.5px;color:var(--text-3);font-weight:500}
+.card-h .cnt{font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--raised);color:var(--text-2);font-variant-numeric:tabular-nums}
+.card-h .cnt.red{background:var(--red-bg);color:var(--red)}
+.card-h a.more{font-size:11.5px;color:var(--text-3);text-decoration:none}
+.card-h a.more:hover{color:var(--blue)}
+.empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:12.5px}
+
+/* 중간 행: 추이 차트 + 임박 키 */
+.grid-mid{display:grid;grid-template-columns:1.65fr 1fr;gap:12px;min-height:0}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--text-3);font-size:11px;font-weight:700;padding:4px 8px;cursor:pointer}
+.seg button.on{background:var(--raised);color:var(--text)}
+.chart-sum{display:flex;gap:16px;padding:8px 16px 0;font-size:11.5px;color:var(--text-3);flex:none}
+.chart-sum b{color:var(--text);font-variant-numeric:tabular-nums}
+.chart-wrap{flex:1;min-height:0;position:relative;padding:6px 12px 2px}
+.chart-wrap svg{display:block;width:100%;height:100%}
+.chart-tip{position:absolute;pointer-events:none;display:none;background:var(--raised);border:1px solid var(--line-strong);border-radius:8px;
+  padding:7px 10px;font-size:11.5px;color:var(--text-2);box-shadow:var(--shadow);white-space:nowrap;z-index:2}
+.chart-tip b{display:block;color:var(--text);font-variant-numeric:tabular-nums;margin-bottom:3px}
+.chart-tip span{display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+.chart-tip i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.legend{display:flex;gap:14px;padding:0 16px 8px;font-size:11.5px;color:var(--text-2);flex:none}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
+.exp-it{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}
 .exp-it:last-child{border-bottom:none}
+.exp-it:hover{background:var(--hover)}
 .exp-it .kn{flex:1;min-width:0}
-.exp-it .kn b{display:block;font-size:13.5px}
-.exp-it .kn span{font-size:11.5px;color:var(--text-3)}
-.dday{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;padding:4px 9px;border-radius:7px}
+.exp-it .kn b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exp-it .kn span{font-size:11px;color:var(--text-3)}
+.exp-it .kind{font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px;background:var(--raised);color:var(--text-3);flex:none}
+.dday{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;padding:3px 8px;border-radius:7px;flex:none}
 .dday.d-red{background:var(--red-bg);color:var(--red)}
-.dday.d-amber{background:var(--raised);color:var(--text-2)}
-@media (max-width:1100px){.grid4{grid-template-columns:repeat(2,1fr)}.grid-dash{grid-template-columns:1fr}}
+.dday.d-amber{background:var(--amber-bg);color:var(--amber)}
+.dday.d-blue{background:var(--blue-bg);color:var(--blue)}
+
+/* 하단 행: 최근 활동 · 보안 신호 · 연산 실패 · 알고리즘 분포 */
+.grid-bot{display:grid;grid-template-columns:1.6fr 1fr 1.2fr 1fr;gap:12px;min-height:0}
+.feed-it{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:7px 16px;border-bottom:1px solid var(--line);font-size:12px}
+.feed-it:last-child{border-bottom:none}
+.feed-it.new{animation:pgin .4s;background:var(--blue-bg)}
+.feed-it .who{font-weight:700;min-width:50px}
+.feed-it .who.sys{color:var(--amber)}
+.feed-it .what{min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden}
+.feed-it .what .mono{color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feed-it .when{font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.actchip{font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:2px 7px;border-radius:6px;flex:none;
+  background:var(--raised);border:1px solid var(--line-strong);color:var(--text-2)}
+.actchip.bad{background:var(--red-bg);border-color:transparent;color:var(--red)}
+.sig-it{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--text-2)}
+.sig-it:last-child{border-bottom:none}
+.sig-it .v{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text)}
+.sig-it .v.warn{color:var(--amber)}
+.sig-it .v.bad{color:var(--red)}
+.sig-it small{display:block;font-size:10.5px;color:var(--text-3);margin-top:1px}
+.fail-it{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--line);font-size:12px;text-decoration:none;color:inherit}
+.fail-it:last-child{border-bottom:none}
+.fail-it:hover{background:var(--hover)}
+.fail-it .kn{flex:1;min-width:0}
+.fail-it .kn b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fail-it .kn span{font-size:11px;color:var(--red);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.fail-it .when{font-size:11px;color:var(--text-3);white-space:nowrap}
+.bars{padding:10px 16px;display:flex;flex-direction:column;gap:7px}
+.bar-it{display:grid;grid-template-columns:46px 1fr 20px;align-items:center;gap:10px;font-size:11.5px}
+.bar-it .nm{font-weight:700;color:var(--text-2)}
+.bar-it .tr{height:7px;border-radius:4px;background:var(--raised);overflow:hidden}
+.bar-it .fl{height:100%;border-radius:4px;background:var(--blue);opacity:.85}
+.bar-it .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--text-3)}
+
+/* 등록 모달 (keys.html · users.html · notices.html 과 동일 폼) */
+.help{font-size:11.5px;color:var(--text-3);line-height:1.5}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.rot-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rot-row .input{width:110px;text-align:right}
+.rot-row label.sw{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-2);cursor:pointer}
+.rot-row input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px}
+
+@media (max-width:1280px){.grid-bot{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:1100px){.content{height:auto;overflow:visible;display:flex}.grid4{grid-template-columns:repeat(2,1fr)}.grid-mid{grid-template-columns:1fr}.chart-wrap{height:220px}}
+@media (max-width:720px){.grid-bot{grid-template-columns:1fr}}
+
 /* 전체화면(관제) 모드 — 사이드바 숨기고 대시보드만 표시 */
 html.dash-full .side{display:none}
 html.dash-full .shell{grid-template-columns:1fr}
-html.dash-full .content{padding-top:26px}
+html.dash-full .content{padding:22px 32px 20px;gap:14px}
 html.dash-full .page-h h2{display:none}
+html.dash-full .stat .num{font-size:30px}
 </style>
 </head>
 <body>
@@ -42,54 +150,231 @@ html.dash-full .page-h h2{display:none}
 <template id="page-body">
   <div class="page-h">
     <div><h2>대시보드</h2></div>
-    <div class="acts" style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:12.5px;color:var(--text-3)">마지막 갱신 2026-08-19 09:42 KST</span>
-      <button class="btn btn-ghost" id="fsBtn" onclick="toggleFullscreen()" title="대시보드 전체화면 (ESC로 종료)" aria-label="대시보드 전체화면" style="padding:8px 10px">
+    <div class="acts" style="display:flex;align-items:center;gap:10px">
+      <!-- SSE(GET /api/events) 수신 시 마지막 이벤트 시각 갱신. 연결 끊기면 점을 회색으로 -->
+      <span class="live" id="liveTag"><i></i>실시간 · 마지막 이벤트 <span id="lastEvt"></span></span>
+      <button class="btn btn-ghost" onclick="refreshDash()" title="새로고침" aria-label="새로고침" style="padding:7px 9px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>
+      </button>
+      <button class="btn btn-ghost" id="fsBtn" onclick="toggleFullscreen()" title="대시보드 전체화면 (ESC로 종료)" aria-label="대시보드 전체화면" style="padding:7px 9px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
       </button>
     </div>
   </div>
+
+  <!-- 상태줄: 감사 체인 상태(배치 검증 60초 + SSE 갱신) / Quick actions — 등록은 화면 이동 없이 모달로 바로 -->
+  <div class="dash-top">
+    <div class="chain-band" id="chainBand">
+      <span class="badge b-active">체인 정상</span>
+      <span>마지막 검증 <b class="mono" id="chainAt">09:41:03</b></span>
+      <span class="sep"></span>
+      <span>감사 로그 <b class="mono">1,291</b>행 · 위반 구간 <b class="mono">0</b></span>
+      <span class="sep"></span>
+      <a href="audit.html" style="color:var(--text-3);text-decoration:none">감사 로그 →</a>
+    </div>
+    <div class="quick">
+      <!-- 등록 버튼 아이콘은 사이드바 탭 아이콘(shell.js IC)을 그대로 사용 -->
+      <button class="btn btn-ghost btn-sm" onclick="openKeyNew()"><span class="qic" data-ic="key"></span>키 등록</button>
+      <button class="btn btn-ghost btn-sm" onclick="openUserNew()"><span class="qic" data-ic="user"></span>사용자 등록</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('mdNotice')"><span class="qic" data-ic="notice"></span>공지사항 등록</button>
+      <button class="btn btn-ghost btn-sm" onclick="verifyChain()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/><path d="m9 12 2 2 4-4"/></svg>체인 재검증</button>
+    </div>
+  </div>
+
+  <!-- 요약 카드 4종 (GET /api/dashboard/summary) -->
   <div class="grid4">
-    <a class="card stat" href="keys.html" style="text-decoration:none;color:inherit">
-      <div class="lb"><span class="ic" style="background:var(--raised);color:var(--text-2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5"/><path d="m11 12 9.6-9.6"/><path d="m15.2 7.8 3 3L22 7l-3-3"/></svg></span>전체 KMS 키</div>
-      <div class="num">8</div>
-      <div class="delta">운영 <b>5</b> · 준비 <b>1</b> · 정지 <b>1</b> · 폐기 <b>1</b> · 무결성 위반 <b style="color:var(--red)">1</b></div>
+    <a class="card stat" href="keys.html">
+      <div class="lb"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5"/><path d="m11 12 9.6-9.6"/><path d="m15.2 7.8 3 3L22 7l-3-3"/></svg></span>전체 KMS 키</div>
+      <div class="row">
+        <svg class="donut" id="keyDonut" width="52" height="52" viewBox="0 0 64 64"></svg>
+        <div style="min-width:0">
+          <div class="num" id="keyTotal">0</div>
+          <div class="chips" id="keyChips" style="margin-top:4px"></div>
+        </div>
+      </div>
+      <div class="delta" id="keyVer"></div>
     </a>
-    <a class="card stat" href="users.html" style="text-decoration:none;color:inherit">
-      <div class="lb"><span class="ic" style="background:var(--raised);color:var(--text-2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg></span>서비스 사용자</div>
-      <div class="num">5</div>
-      <div class="delta">활성 <b>4</b> · 정지 <b>1</b></div>
+    <a class="card stat" href="users.html">
+      <div class="lb"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg></span>서비스 사용자</div>
+      <div class="num" id="userTotal">0</div>
+      <div class="delta" id="userDelta"></div>
     </a>
-    <a class="card stat" href="notices.html" style="text-decoration:none;color:inherit">
-      <div class="lb"><span class="ic" style="background:var(--raised);color:var(--text-2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v12H8l-4 4V5z"/></svg></span>공지사항</div>
-      <div class="num">4</div>
-      <div class="delta">이번 달 등록 <b>2</b></div>
+    <a class="card stat" href="notices.html">
+      <div class="lb"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v12H8l-4 4V5z"/></svg></span>공지사항</div>
+      <div class="num" id="noticeTotal">0</div>
+      <div class="delta" id="noticeDelta"></div>
     </a>
-    <a class="card stat warn-ring" href="keys.html" style="text-decoration:none;color:inherit">
-      <div class="lb"><span class="ic" style="background:var(--red-bg);color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4m0 3.2v.1"/></svg></span>무결성 위반</div>
-      <div class="num" style="color:var(--red)">1</div>
-      <div class="delta" style="color:var(--red)">crypto_key #7 확인 필요 →</div>
+    <!-- 무결성 대상 4종(crypto_key · key_material · app_user · audit_log)별 집계. 0건이면 warn-ring 없음 -->
+    <a class="card stat" id="ivCard" href="keys.html">
+      <div class="lb"><span class="ic" id="ivIcon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4m0 3.2v.1"/></svg></span>무결성 위반</div>
+      <div class="num" id="ivTotal">0</div>
+      <div class="iv-grid" id="ivGrid"></div>
+      <div class="delta" id="ivHint"></div>
     </a>
   </div>
-  <div class="grid-dash">
-    <div class="card">
-      <div class="card-h"><h3>최근 30일 키 사용 추이</h3><span class="hint">key_usage_log 집계 · 일자별</span></div>
-      <div class="chart-box"><svg id="trendChart" width="100%" height="220" viewBox="0 0 640 220" preserveAspectRatio="none"></svg></div>
+
+  <!-- 사용 추이 (GET /api/dashboard/usage-trend?days=30&op=ALL) + 갱신 임박·예약 활성 (GET /api/dashboard/expiring?days=30) -->
+  <div class="grid-mid">
+    <div class="card fill">
+      <div class="card-h">
+        <h3>키 사용 추이</h3>
+        <div style="display:flex;gap:8px">
+          <div class="seg" id="opSeg">
+            <button class="on" data-op="ALL">전체</button><button data-op="ENC">암복호화</button><button data-op="SIGN">서명검증</button>
+          </div>
+          <div class="seg" id="daySeg">
+            <button data-days="7">7일</button><button class="on" data-days="30">30일</button>
+          </div>
+        </div>
+      </div>
+      <div class="chart-sum" id="chartSum"></div>
+      <div class="chart-wrap" id="chartWrap">
+        <svg id="trendChart"></svg>
+        <div class="chart-tip" id="chartTip"></div>
+      </div>
       <div class="legend">
-        <span><i style="background:var(--blue)"></i>암호화 호출</span>
-        <span><i style="background:var(--blue);opacity:.35"></i>복호화 호출</span>
+        <span><i style="background:var(--blue)"></i>성공</span>
+        <span><i style="background:var(--red)"></i>실패</span>
       </div>
     </div>
-    <div class="card">
-      <div class="card-h"><h3>갱신 임박 키</h3><span class="hint">30일 이내 · 지연 포함</span></div>
-      <div id="expList"></div>
+    <div class="card fill">
+      <div class="card-h">
+        <h3>갱신 임박 · 예약 활성 <span class="cnt" id="expCnt">0</span></h3>
+        <span class="hint" id="expHint">30일 이내</span>
+      </div>
+      <div class="body" id="expList"></div>
+    </div>
+  </div>
+
+  <!-- 최근 활동 (GET /api/audit-logs?size=10, SSE 로 실시간 추가) · 보안 신호 · 연산 실패 · 알고리즘 분포 -->
+  <div class="grid-bot">
+    <div class="card fill">
+      <div class="card-h"><h3>최근 활동</h3><a class="more" href="audit.html">전체 보기 →</a></div>
+      <div class="body" id="feed"></div>
+    </div>
+    <div class="card fill">
+      <div class="card-h"><h3>보안 신호</h3><span class="hint">최근 24시간</span></div>
+      <div class="body" id="sigList"></div>
+    </div>
+    <div class="card fill">
+      <div class="card-h"><h3>연산 실패 <span class="cnt red" id="failCnt">0</span></h3><span class="hint">최근 30일</span></div>
+      <div class="body" id="failList"></div>
+    </div>
+    <div class="card fill">
+      <div class="card-h"><h3>알고리즘 분포</h3><span class="hint">폐기 제외</span></div>
+      <div class="body bars" id="algoBars"></div>
     </div>
   </div>
 </template>
+
+<!-- 키 등록 모달 — keys.html 과 동일 (POST /api/keys) -->
+<div class="modal-bk" id="mdKeyNew" onclick="bkClose(event,this)">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-h"><h3>키 등록</h3><button class="x" onclick="closeModal('mdKeyNew')">✕</button></div>
+    <div class="modal-b">
+      <div class="field"><label>키명 <em>*</em></label><input class="input" placeholder="예: PAY-GW-AES256" id="nkName"></div>
+      <div class="fgrid">
+        <div class="field"><label>알고리즘 <em>*</em></label>
+          <select class="input" id="nkAlgo" onchange="algoChange()">
+            <option value="">선택하세요</option>
+            <optgroup label="대칭키"><option>AES</option><option>ARIA</option><option>LEA</option><option>SEED</option></optgroup>
+            <optgroup label="비대칭키"><option>RSA</option><option>ECDSA</option></optgroup>
+            <optgroup label="HMAC"><option>SHA256</option><option>SHA512</option></optgroup>
+          </select></div>
+        <div class="field"><label>사이즈 (bit) <em>*</em></label><select class="input" id="nkSize" disabled><option>—</option></select></div>
+      </div>
+      <div class="fgrid">
+        <div class="field"><label>모드</label><select class="input" id="nkMode" disabled><option>—</option></select></div>
+        <div class="field"><label>용도 <em>*</em></label>
+          <select class="input" id="nkPurpose">
+            <option value="ENC_DEC">암/복호화</option><option value="ENC_DEC_SIGN_VERIFY">암/복호화 및 서명/검증</option><option value="SIGN_VERIFY">서명/검증</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>갱신 주기 (회전)</label>
+        <div class="rot-row">
+          <label class="sw"><input type="checkbox" id="nkAutoRot" checked onchange="rotToggle()">자동 갱신</label>
+          <input class="input mono" type="number" id="nkRot" min="1" max="730" value="90" oninput="rotPreview()"> <span style="font-size:13px;color:var(--text-2)">일</span>
+          <span class="help" id="nkRotHelp"></span>
+        </div>
+      </div>
+      <div class="field"><label>활성일</label><input class="input mono" type="datetime-local" id="nkAct"></div>
+      <div class="field"><label>설명</label><input class="input" id="nkDesc" placeholder="용도·연동 시스템 등 (선택)"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-ghost" onclick="closeModal('mdKeyNew')">취소</button>
+      <button class="btn btn-primary" onclick="createKey()">생성</button>
+    </div>
+  </div>
+</div>
+
+<!-- 사용자 등록 모달 — users.html 등록 모드와 동일 (POST /api/users) -->
+<div class="modal-bk" id="mdUser" onclick="bkClose(event,this)">
+  <div class="modal">
+    <div class="modal-h"><h3>사용자 등록</h3><button class="x" onclick="closeModal('mdUser')">✕</button></div>
+    <div class="modal-b">
+      <div class="field"><label>이름 <em>*</em></label><input class="input" id="ufName" placeholder="홍길동"></div>
+      <div class="fgrid">
+        <div class="field"><label>연락처 <em>*</em></label><input class="input mono" id="ufPhone" placeholder="010-0000-0000"></div>
+        <div class="field"><label>상태</label><select class="input" id="ufStatus"><option value="ACTIVE">활성</option><option value="SUSPENDED">정지</option></select></div>
+      </div>
+      <div class="field"><label>이메일 <em>*</em></label><input class="input" id="ufEmail" placeholder="user@ineb.co.kr"></div>
+      <div class="fgrid">
+        <div class="field"><label>초기 비밀번호 <em>*</em></label><input class="input" type="password" id="ufPw" placeholder="8자 이상, 특수문자 포함"></div>
+        <div class="field"><label>비밀번호 확인 <em>*</em></label><input class="input" type="password" id="ufPw2" placeholder="비밀번호 재입력"></div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-ghost" onclick="closeModal('mdUser')">취소</button>
+      <button class="btn btn-primary" onclick="saveUser()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 공지사항 등록 모달 — notices.html 과 동일 (POST /api/notices, 첨부는 마스터키 암호화) -->
+<div class="modal-bk" id="mdNotice" onclick="bkClose(event,this)">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-h"><h3>공지사항 등록</h3><button class="x" onclick="closeModal('mdNotice')">✕</button></div>
+    <div class="modal-b">
+      <div class="field"><label>제목 <em>*</em></label><input class="input" id="ntTitle" placeholder="공지 제목을 입력하세요"></div>
+      <div class="field"><label>본문 <em>*</em></label><textarea class="input txt" id="ntBody" style="min-height:130px" placeholder="공지 내용을 입력하세요"></textarea></div>
+      <div class="field"><label>첨부파일 <span style="font-weight:400;color:var(--text-3)">— 업로드 시 마스터키로 암호화 저장</span></label>
+        <button class="btn btn-ghost" style="justify-content:center;border-style:dashed;padding:16px" onclick="toast('파일 선택은 목업에서 생략됩니다 — 암호화 업로드 처리')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V5m0 0 4 4m-4-4L8 9M4 19h16"/></svg>파일을 끌어오거나 클릭하여 선택
+        </button></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-ghost" onclick="closeModal('mdNotice')">취소</button>
+      <button class="btn btn-primary" onclick="createNotice()">등록</button>
+    </div>
+  </div>
+</div>
+
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
 renderShell('dashboard');
+/* 기준 시각 — 더미 데이터의 최신 시각(2026-08-28)에 맞춤. 실제는 서버 KST now */
+const NOW=new Date('2026-08-28T09:42:18+09:00');
+const DAY=86400000;
+const parseKst=s=>new Date(s.replace(' ','T')+'+09:00');
+const hhmmss=d=>d.toTimeString().slice(0,8);
+const fmtDay=d=>String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+function rel(s){
+  const ms=NOW-parseKst(s);
+  if(ms<60000)return '방금';
+  const m=Math.floor(ms/60000);if(m<60)return m+'분 전';
+  const h=Math.floor(m/60);if(h<24)return h+'시간 전';
+  const d=Math.floor(h/24);if(d<30)return d+'일 전';
+  return s.slice(0,10);
+}
+const keyById=id=>KEYS.find(k=>k.id===id);
+
+/* ---------- 상단 ---------- */
+document.querySelectorAll('.quick .qic').forEach(el=>{el.innerHTML=IC[el.dataset.ic];});
+document.getElementById('lastEvt').textContent=hhmmss(parseKst(AUDITS[0].at));
+function refreshDash(){document.getElementById('lastEvt').textContent=hhmmss(NOW);toast('대시보드를 갱신했습니다.');}
+function verifyChain(){document.getElementById('chainAt').textContent=hhmmss(NOW);toast('해시 체인 검증을 통과했습니다.');}
 function toggleFullscreen(){
   if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>toast('이 브라우저에서는 전체화면을 사용할 수 없습니다'));}
   else{document.exitFullscreen();}
@@ -106,28 +391,273 @@ document.addEventListener('fullscreenchange',()=>{
     b.setAttribute('aria-label',on?'전체화면 종료':'대시보드 전체화면');
   }
 });
-(function drawTrend(){
-  const svg=document.getElementById('trendChart');
-  const W=640,H=220,pad={l:34,r:8,t:12,b:24};
-  const enc=[12,15,11,18,22,17,14,20,25,19,16,23,28,21,18,26,31,24,20,27,33,29,25,30,36,32,28,34,39,35];
-  const dec=[8,9,7,12,14,10,9,13,16,12,10,15,18,13,11,17,20,15,13,17,21,19,16,19,23,20,18,22,25,23];
-  const max=45,bw=(W-pad.l-pad.r)/30;let s='';
-  [45,30,15,0].forEach(v=>{const y=pad.t+(H-pad.t-pad.b)*(1-v/max);
-    s+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#888" stroke-opacity=".2"/>`;
-    s+=`<text x="${pad.l-8}" y="${y+4}" fill="#8A9096" font-size="10" text-anchor="end">${v}</text>`;});
-  enc.forEach((v,i)=>{const x=pad.l+i*bw,eh=(H-pad.t-pad.b)*v/max,dh=(H-pad.t-pad.b)*dec[i]/max;
-    s+=`<rect x="${x+bw*.14}" y="${H-pad.b-eh}" width="${bw*.34}" height="${eh}" rx="2" fill="#3B9EFF" opacity=".92"><title>${i+1}일차 · 암호화 ${v}건</title></rect>`;
-    s+=`<rect x="${x+bw*.52}" y="${H-pad.b-dh}" width="${bw*.34}" height="${dh}" rx="2" fill="#3B9EFF" opacity=".35"><title>${i+1}일차 · 복호화 ${dec[i]}건</title></rect>`;});
-  [['07/21',0],['07/31',10],['08/10',20],['08/19',29]].forEach(([d,i])=>{
-    s+=`<text x="${pad.l+i*bw+bw/2}" y="${H-7}" fill="#8A9096" font-size="10" text-anchor="middle">${d}</text>`;});
-  svg.innerHTML=s;
+
+/* ---------- 요약 카드 ---------- */
+(function summary(){
+  const ORDER=['ACTIVE','PRE_ACTIVE','DEACTIVATED','DESTROYED'];
+  const COLOR={ACTIVE:'var(--green)',PRE_ACTIVE:'var(--blue)',DEACTIVATED:'var(--text-2)',DESTROYED:'var(--text-3)'};
+  const cnt=Object.fromEntries(ORDER.map(s=>[s,KEYS.filter(k=>k.status===s).length]));
+  document.getElementById('keyTotal').textContent=KEYS.length;
+  document.getElementById('keyChips').innerHTML=ORDER.map(s=>`<span><i style="background:${COLOR[s]}"></i>${STATE_KO[s]} <b>${cnt[s]}</b></span>`).join('');
+  // 도넛 — 상태 4구간
+  const R=26,C=2*Math.PI*R;let off=0,d='';
+  ORDER.forEach(s=>{const f=cnt[s]/KEYS.length;if(!f)return;
+    d+=`<circle cx="32" cy="32" r="${R}" fill="none" stroke="${COLOR[s]}" stroke-width="9" stroke-dasharray="${f*C-1.5} ${C-f*C+1.5}" stroke-dashoffset="${-off*C}" transform="rotate(-90 32 32)"><title>${STATE_KO[s]} ${cnt[s]}건</title></circle>`;off+=f;});
+  document.getElementById('keyDonut').innerHTML=d;
+  // 버전 지표 — 네이버식 버전 운영
+  const vers=KEYS.flatMap(k=>k.versions.map(v=>({...v,cur:k.currentVersion===v.v})));
+  const decOnly=vers.filter(v=>v.state==='ACTIVE'&&!v.cur).length;
+  const pre=vers.filter(v=>v.state==='PRE_ACTIVE').length;
+  const wait=vers.filter(v=>v.state==='DEACTIVATED').length;
+  document.getElementById('keyVer').innerHTML=`버전 <b>${vers.length}</b> · 복호화 전용 <b>${decOnly}</b> · 예약 활성 <b>${pre}</b> · 폐기 대기 <b>${wait}</b>`;
+
+  const uAct=USERS.filter(u=>u.status==='ACTIVE').length;
+  const uNew=USERS.filter(u=>NOW-parseKst(u.joined+' 00:00:00')<=30*DAY).length;
+  document.getElementById('userTotal').textContent=USERS.length;
+  document.getElementById('userDelta').innerHTML=`활성 <b>${uAct}</b> · 정지 <b>${USERS.length-uAct}</b> · 최근 30일 가입 <b>${uNew}</b>`;
+
+  const nImp=NOTICES.filter(n=>n.important).length, nFiles=NOTICES.reduce((a,n)=>a+n.files,0);
+  const ym=NOW.getFullYear()+'-'+String(NOW.getMonth()+1).padStart(2,'0');
+  const nMonth=NOTICES.filter(n=>n.at.slice(0,7)===ym).length;
+  document.getElementById('noticeTotal').textContent=NOTICES.length;
+  document.getElementById('noticeDelta').innerHTML=`중요 <b>${nImp}</b> · 이번 달 <b>${nMonth}</b> · 첨부 <b>${nFiles}</b>건 암호화 저장`;
+
+  // 무결성 위반 — 키 메타(crypto_key) / 키 버전(key_material) / 사용자(app_user) / 감사 체인(audit_log 구간)
+  const ivKey=KEYS.filter(k=>!k.integrity).length;
+  const ivVer=vers.filter(v=>!v.integrity).length;
+  const ivUser=0, ivChain=0; // app_user integrityValid=false 건수 · 체인 위반 구간 수 (더미)
+  const ivTotal=ivKey+ivVer+ivUser+ivChain;
+  const card=document.getElementById('ivCard');
+  document.getElementById('ivTotal').textContent=ivTotal;
+  document.getElementById('ivGrid').innerHTML=[['키 메타',ivKey],['키 버전',ivVer],['사용자',ivUser],['감사 체인',ivChain]]
+    .map(([l,v])=>`<span>${l} <b class="${v?'bad':''}">${v}</b></span>`).join('');
+  if(ivTotal){
+    card.classList.add('warn-ring');
+    document.getElementById('ivTotal').style.color='var(--red)';
+    document.getElementById('ivIcon').style.cssText='background:var(--red-bg);color:var(--red)';
+    const first=KEYS.find(k=>!k.integrity||k.versions.some(v=>!v.integrity));
+    card.href=`key-detail.html?id=${first.id}`;
+    document.getElementById('ivHint').innerHTML=`<span style="color:var(--red)">${first.name} 확인 필요 →</span>`;
+  }else{
+    document.getElementById('ivHint').textContent='위반 없음';
+  }
 })();
-document.getElementById('expList').innerHTML=KEYS.filter(k=>k.status==='ACTIVE'&&k.autoRotate&&k.dday<=30).sort((a,b)=>a.dday-b.dday).map(k=>`
-  <a class="exp-it" href="key-detail.html?id=${k.id}" style="text-decoration:none;color:inherit">
-    <svg width="14" height="20" viewBox="0 0 14 20"><circle cx="7" cy="6" r="5.5" style="fill:${k.dday<=15?'var(--red)':'var(--text-3)'}" opacity=".85"/><rect x="4.6" y="9" width="4.8" height="10" rx="1" style="fill:${k.dday<=15?'var(--red)':'var(--text-3)'}" opacity=".85"/></svg>
-    <div class="kn"><b>${k.name}</b><span class="mono">${k.algo} · v${k.currentVersion} · ${k.expire} 갱신 예정</span></div>
-    <span class="dday ${k.dday<=15?'d-red':'d-amber'}">${k.dday<=0?'지연':'D-'+k.dday}</span>
-  </a>`).join('');
+
+/* ---------- 사용 추이 (더미 · API: /api/dashboard/usage-trend?days=&op=) ---------- */
+const TREND=(function(){
+  // 결정적 의사난수 — 새로고침마다 같은 그래프
+  let seed=7;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+  const days=[];
+  for(let i=29;i>=0;i--){
+    const d=new Date(NOW-i*DAY);const wk=d.getDay()===0||d.getDay()===6;
+    const base=wk?6:18+Math.floor((29-i)/6);
+    const enc=Math.round(base*(0.8+rnd()*0.6)), dec=Math.round(base*(0.5+rnd()*0.5));
+    const sign=Math.round(base*0.3*(0.6+rnd()*0.8)), verify=Math.round(base*0.25*(0.6+rnd()*0.8));
+    const fail=rnd()<0.35?Math.round(rnd()*3):0;
+    days.push({d,ENC:{ok:enc+dec,fail:Math.min(fail,enc+dec)},SIGN:{ok:sign+verify,fail:rnd()<0.2?1:0}});
+  }
+  // 더미 usage_log 의 실제 실패 건을 해당 일자에 반영
+  USAGE.filter(u=>u.result==='FAIL').forEach(u=>{const k=fmtDay(parseKst(u.at));const row=days.find(x=>fmtDay(x.d)===k);
+    if(row){const g=(u.operation==='SIGN'||u.operation==='VERIFY')?'SIGN':'ENC';row[g].fail=Math.max(row[g].fail,1);}});
+  return days;
+})();
+let trendOp='ALL',trendDays=30,trendRows=[],trendGeo=null;
+function drawTrend(){
+  trendRows=TREND.slice(-trendDays).map(r=>{
+    const g=trendOp==='ALL'?[r.ENC,r.SIGN]:[r[trendOp]];
+    return {d:r.d,ok:g.reduce((a,x)=>a+x.ok,0),fail:g.reduce((a,x)=>a+x.fail,0)};});
+  const rows=trendRows;
+  const tot=rows.reduce((a,r)=>a+r.ok+r.fail,0), fails=rows.reduce((a,r)=>a+r.fail,0);
+  document.getElementById('chartSum').innerHTML=`<span>총 호출 <b>${tot.toLocaleString()}</b></span><span>실패 <b style="color:${fails?'var(--red)':'inherit'}">${fails}</b></span><span>실패율 <b>${tot?(fails/tot*100).toFixed(1):0}%</b></span><span>일평균 <b>${(tot/rows.length).toFixed(1)}</b></span>`;
+  const wrap=document.getElementById('chartWrap'),svg=document.getElementById('trendChart');
+  const W=Math.max(wrap.clientWidth-24,200),H=Math.max(wrap.clientHeight-8,80);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const pad={l:34,r:22,t:10,b:22};
+  const max=Math.max(10,Math.ceil(Math.max(...rows.map(r=>r.ok+r.fail))/10)*10);
+  const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+  const X=i=>pad.l+(rows.length===1?iw/2:i*iw/(rows.length-1)), Y=v=>pad.t+ih*(1-v/max);
+  trendGeo={X,Y,pad,W,H};
+  let s='';
+  [max,max*2/3,max/3,0].forEach(v=>{const y=Y(v);
+    s+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" style="stroke:var(--line-strong)"/>`;
+    s+=`<text x="${pad.l-8}" y="${y+4}" style="fill:var(--text-3)" font-size="10" text-anchor="end">${Math.round(v)}</text>`;});
+  const okPts=rows.map((r,i)=>`${X(i)},${Y(r.ok)}`), failPts=rows.map((r,i)=>`${X(i)},${Y(r.fail)}`);
+  s+=`<polygon points="${X(0)},${Y(0)} ${okPts.join(' ')} ${X(rows.length-1)},${Y(0)}" style="fill:var(--blue)" opacity=".10"/>`;
+  s+=`<polyline points="${okPts.join(' ')}" fill="none" style="stroke:var(--blue)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  s+=`<polyline points="${failPts.join(' ')}" fill="none" style="stroke:var(--red)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const step=trendDays===7?1:(iw<420?10:5);
+  rows.forEach((r,i)=>{if(i%step===0||i===rows.length-1)
+    s+=`<text x="${X(i)}" y="${H-6}" style="fill:var(--text-3)" font-size="10" text-anchor="middle">${fmtDay(r.d)}</text>`;});
+  // 호버 가이드 (선·점) — mousemove 로 즉시 갱신
+  s+=`<g id="hoverG" style="display:none"><line id="hvLine" y1="${pad.t}" y2="${H-pad.b}" style="stroke:var(--text-3)" stroke-dasharray="3 3"/>
+      <circle id="hvOk" r="4" style="fill:var(--blue);stroke:var(--surface)" stroke-width="2"/>
+      <circle id="hvFail" r="3.5" style="fill:var(--red);stroke:var(--surface)" stroke-width="2"/></g>`;
+  svg.innerHTML=s;
+}
+function trendHover(e){
+  if(!trendGeo||!trendRows.length)return;
+  const wrap=document.getElementById('chartWrap'),svg=document.getElementById('trendChart');
+  const rect=svg.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*trendGeo.W/rect.width;
+  const {X,Y,pad,W}=trendGeo;
+  if(x<pad.l-6||x>W-pad.r+6){trendLeave();return;}
+  const iw=W-pad.l-pad.r;
+  const i=Math.max(0,Math.min(trendRows.length-1,Math.round((x-pad.l)/iw*(trendRows.length-1))));
+  const r=trendRows[i];
+  document.getElementById('hoverG').style.display='';
+  const hx=X(i);
+  document.getElementById('hvLine').setAttribute('x1',hx);document.getElementById('hvLine').setAttribute('x2',hx);
+  document.getElementById('hvOk').setAttribute('cx',hx);document.getElementById('hvOk').setAttribute('cy',Y(r.ok));
+  document.getElementById('hvFail').setAttribute('cx',hx);document.getElementById('hvFail').setAttribute('cy',Y(r.fail));
+  const tip=document.getElementById('chartTip');
+  tip.style.display='block';
+  tip.innerHTML=`<b>${r.d.getFullYear()}-${fmtDay(r.d).replace('/','-')} (${'일월화수목금토'[r.d.getDay()]})</b><span><i style="background:var(--blue)"></i>성공 ${r.ok}건</span><span><i style="background:var(--red)"></i>실패 ${r.fail}건</span>`;
+  const px=hx*rect.width/trendGeo.W+(rect.left-wrap.getBoundingClientRect().left);
+  const py=e.clientY-wrap.getBoundingClientRect().top;
+  const flip=px+tip.offsetWidth+16>wrap.clientWidth;
+  tip.style.left=(flip?px-tip.offsetWidth-12:px+12)+'px';
+  tip.style.top=Math.max(4,Math.min(py-tip.offsetHeight/2,wrap.clientHeight-tip.offsetHeight-4))+'px';
+}
+function trendLeave(){
+  const g=document.getElementById('hoverG');if(g)g.style.display='none';
+  document.getElementById('chartTip').style.display='none';
+}
+document.getElementById('trendChart').addEventListener('mousemove',trendHover);
+document.getElementById('trendChart').addEventListener('mouseleave',trendLeave);
+document.getElementById('opSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  trendOp=b.dataset.op;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));drawTrend();});
+document.getElementById('daySeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  trendDays=+b.dataset.days;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));drawTrend();});
+new ResizeObserver(()=>drawTrend()).observe(document.getElementById('chartWrap'));
+drawTrend();
+
+/* ---------- 갱신 임박 · 예약 활성 ---------- */
+(function expiring(){
+  const items=[];
+  KEYS.forEach(k=>{
+    if(k.status==='ACTIVE'&&k.autoRotate&&k.nextRotationAt){
+      const dd=Math.ceil((parseKst(k.nextRotationAt)-NOW)/DAY);
+      if(dd<=30)items.push({k,kind:'회전',dd,when:k.nextRotationAt.slice(0,10)+' 회전 예정'});
+    }
+    k.versions.filter(v=>v.state==='PRE_ACTIVE').forEach(v=>{
+      const dd=Math.ceil((parseKst(v.activationDate)-NOW)/DAY);
+      items.push({k,kind:'활성',dd,when:`v${v.v} · ${v.activationDate.slice(0,10)} 활성 예정`});
+    });
+  });
+  items.sort((a,b)=>a.dd-b.dd);
+  const late=items.filter(i=>i.dd<=0).length;
+  document.getElementById('expCnt').textContent=items.length;
+  document.getElementById('expCnt').classList.toggle('red',late>0);
+  document.getElementById('expHint').textContent=late?`30일 이내 · 지연 ${late}건`:'30일 이내';
+  const badge=i=>i.dd<=0?['d-red','지연 '+(-i.dd)+'일']:i.kind==='활성'?['d-blue','D-'+i.dd]:i.dd<=7?['d-red','D-'+i.dd]:['d-amber','D-'+i.dd];
+  document.getElementById('expList').innerHTML=items.length?items.map(i=>{const [cls,txt]=badge(i);return `
+    <a class="exp-it" href="key-detail.html?id=${i.k.id}">
+      <span class="kind">${i.kind}</span>
+      <div class="kn"><b>${i.k.name}</b><span class="mono">${i.k.algo} · ${i.when}</span></div>
+      <span class="dday ${cls}">${txt}</span>
+    </a>`;}).join('')
+    :'<div class="empty">30일 이내 회전·활성 예정 키가 없습니다.</div>';
+})();
+
+/* ---------- 최근 활동 (SSE 수신 시 맨 위에 .new 로 삽입) ---------- */
+(function feed(){
+  const BAD=/VIOLATION|FAILED|DESTROYED/;
+  document.getElementById('feed').innerHTML=AUDITS.slice(0,10).map(a=>`
+    <div class="feed-it">
+      <span class="who ${a.actor==='SYSTEM'?'sys':''}">${a.actor}</span>
+      <div class="what"><span class="actchip ${BAD.test(a.action)?'bad':''}">${a.action}</span><span class="mono" title="${a.detail}">${a.keyId?keyById(a.keyId).name:a.target}</span></div>
+      <span class="when">${rel(a.at)}</span>
+    </div>`).join('');
+})();
+
+/* ---------- 보안 신호 (더미 · API: /api/dashboard/summary.security, 24시간 창) ---------- */
+(function signals(){
+  const S=[
+    {l:'로그인 실패',v:2,sub:'AUTH#admin 1 · AUTH#secops 1',lvl:'warn'},
+    {l:'개인정보 원문 조회',v:1,sub:'USER_PLAIN_VIEWED · 사유 기록됨',lvl:''},
+    {l:'키값 조회',v:0,sub:'KEY_MATERIAL_VIEWED',lvl:''},
+    {l:'무결성 위반 감지',v:1,sub:'KEY_INTEGRITY_VIOLATION',lvl:'bad'},
+  ];
+  document.getElementById('sigList').innerHTML=S.map(s=>`
+    <div class="sig-it"><div>${s.l}<small>${s.sub}</small></div><span class="v ${s.v?s.lvl:''}">${s.v}</span></div>`).join('');
+})();
+
+/* ---------- 연산 실패 (key_usage_log result=FAIL, 30일) ---------- */
+(function fails(){
+  const rows=USAGE.filter(u=>u.result==='FAIL'&&NOW-parseKst(u.at)<=30*DAY);
+  document.getElementById('failCnt').textContent=rows.length;
+  document.getElementById('failList').innerHTML=rows.length?rows.map(u=>{const k=keyById(u.keyId);return `
+    <a class="fail-it" href="key-detail.html?id=${k.id}">
+      <div class="kn"><b>${k.name} <span class="mono" style="color:var(--text-3);font-weight:500">v${u.version} · ${u.operation}</span></b><span title="${u.failReason}">${u.failReason}</span></div>
+      <span class="when">${rel(u.at)}</span>
+    </a>`;}).join('')
+    :'<div class="empty">최근 30일 실패한 연산이 없습니다.</div>';
+})();
+
+/* ---------- 알고리즘 분포 (폐기 제외) ---------- */
+(function algos(){
+  const m={};KEYS.filter(k=>k.status!=='DESTROYED').forEach(k=>{m[k.algoName]=(m[k.algoName]||0)+1;});
+  const rows=Object.entries(m).sort((a,b)=>b[1]-a[1]);const max=rows.length?rows[0][1]:1;
+  document.getElementById('algoBars').innerHTML=rows.map(([n,v])=>`
+    <div class="bar-it"><span class="nm">${n}</span><div class="tr"><div class="fl" style="width:${v/max*100}%"></div></div><span class="v">${v}</span></div>`).join('');
+})();
+
+/* ---------- Quick actions 등록 모달 (keys.html · users.html · notices.html 과 동일 로직) ---------- */
+function openKeyNew(){
+  ['nkName','nkDesc','nkAct'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nkAlgo').value='';document.getElementById('nkAutoRot').checked=true;document.getElementById('nkRot').value=ROT_DEFAULT;
+  algoChange();rotToggle();openModal('mdKeyNew');
+}
+function fill(sel,arr,label){
+  sel.innerHTML=arr.length?arr.map(v=>`<option value="${v}">${label?label(v):v}</option>`).join(''):'<option value="">—</option>';
+  sel.disabled=!arr.length;
+}
+function algoChange(){
+  const name=document.getElementById('nkAlgo').value,a=ALGOS[name];
+  fill(document.getElementById('nkSize'),a?a.sizes:[],a&&a.sizeLabel?a.sizeLabel:null);
+  fill(document.getElementById('nkMode'),a?a.modes:[]);
+  const mode=document.getElementById('nkMode');
+  if(a&&!a.modes.length)mode.innerHTML=`<option value="">해당 없음 (${a.hmac?'HMAC':'비대칭키'})</option>`;
+  const p=document.getElementById('nkPurpose');
+  if(a){p.value=a.purpose;[...p.options].forEach(o=>o.disabled=o.value!==a.purpose);
+    document.getElementById('nkSize').value=String(a.sizes[a.sizes.length-1]);}
+  else{[...p.options].forEach(o=>o.disabled=false);}
+}
+function rotToggle(){const on=document.getElementById('nkAutoRot').checked;document.getElementById('nkRot').disabled=!on;rotPreview();}
+function rotPreview(){
+  const on=document.getElementById('nkAutoRot').checked,d=Number(document.getElementById('nkRot').value);
+  const h=document.getElementById('nkRotHelp');
+  h.innerHTML=(on&&!(d>=ROT_MIN&&d<=ROT_MAX))?'<span style="color:var(--red)">1~730 범위여야 합니다</span>':'';
+}
+function createKey(){
+  const n=document.getElementById('nkName').value.trim(),a=document.getElementById('nkAlgo').value;
+  if(!n){toast('키명을 입력해주세요');return;}
+  if(!a){toast('알고리즘을 선택해주세요');return;}
+  const on=document.getElementById('nkAutoRot').checked,d=Number(document.getElementById('nkRot').value);
+  if(on&&!(d>=ROT_MIN&&d<=ROT_MAX)){toast('갱신 주기는 1~730일이어야 합니다');return;}
+  closeModal('mdKeyNew');
+  toast('키가 생성되었습니다');
+}
+function openUserNew(){
+  ['ufName','ufPhone','ufEmail','ufPw','ufPw2'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ufStatus').value='ACTIVE';
+  openModal('mdUser');
+}
+function saveUser(){
+  const n=document.getElementById('ufName').value.trim();
+  if(!n){toast('이름을 입력해주세요');return;}
+  const p=document.getElementById('ufPw').value,p2=document.getElementById('ufPw2').value;
+  if(p.length<8){toast('비밀번호는 8자 이상이어야 합니다');return;}
+  if(p!==p2){toast('비밀번호가 일치하지 않습니다');return;}
+  closeModal('mdUser');
+  toast('사용자가 등록되었습니다');
+}
+function createNotice(){
+  if(!document.getElementById('ntTitle').value.trim()){toast('제목을 입력해주세요');return;}
+  closeModal('mdNotice');
+  document.getElementById('ntTitle').value='';document.getElementById('ntBody').value='';
+  toast('공지사항이 등록되었습니다 · 첨부 암호화 저장');
+}
 </script>
 </body>
 </html>

@@ -124,8 +124,7 @@ export function KeyCreateDialog({ open, onOpenChange, onCreated }: { open: boole
                   onChange={(e) => setRotationDays(Number(e.target.value))} />
                 <span style={{ fontSize: 13, color: 'var(--text-2)' }}>일</span>
                 <span className="help">
-                  {!autoRotate ? '수동 갱신만 — 주기적 갱신은 관리자 책임'
-                    : !rotValid ? <span style={{ color: 'var(--red)' }}>1~730 범위여야 합니다</span> : ''}
+                  {autoRotate && !rotValid && <span style={{ color: 'var(--red)' }}>1~730 범위여야 합니다</span>}
                 </span>
               </div>
             </div>

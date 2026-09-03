@@ -248,6 +248,12 @@ html.collapsed .me-menu{left:calc(100% + 10px);bottom:4px}
   font-size:12.5px;color:var(--text-2);word-break:break-all;min-height:66px;line-height:1.65;font-variant-numeric:tabular-nums}
 .result-box.ok{border-style:solid;border-color:var(--green);color:var(--green)}
 
+/* 복사 버튼 — uid·공개키·암호문 등 원클릭 복사 (상용 KMS 콘솔 공통 관례) */
+.copy-btn{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--text-3);
+  background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;padding:2.5px 8px;cursor:pointer;vertical-align:middle}
+.copy-btn:hover{color:var(--text);background:var(--hover)}
+.copy-btn svg{flex:none}
+
 @media (max-width:900px){
   .shell{grid-template-columns:66px 1fr}
   html:not(.collapsed) .side{width:66px}

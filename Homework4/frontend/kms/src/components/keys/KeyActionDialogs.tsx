@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { runKeyAction, type KeyAction, type KeyDetail, type VersionInfo } from '@/api/keys'
 import { BADGE, STATE_KO } from '@/lib/keyRules'
-import { fromDateTimeLocal } from '@/lib/format'
+import { fmt, fromDateTimeLocal, relTime, within7Days } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
@@ -106,10 +106,19 @@ function ReactivateDialog({ detail, version, onClose, onDone }: { detail: KeyDet
 function DeactivateDialog({ detail, version, onClose, onDone }: { detail: KeyDetail; version: number | null; onClose: () => void; onDone: () => void }) {
   const { run, pending } = useRunner(detail, onClose, onDone)
   const [reason, setReason] = useState('')
+  // 최근 사용 정보 — 정지 전 마지막 사용·누적 횟수, 최근 7일 내 사용이면 붉게 강조
+  const targets = version ? detail.versions.filter((v) => v.version === version) : detail.versions.filter((v) => v.state === 'ACTIVE')
+  const last = targets.map((v) => v.lastUsedAt).filter((x): x is string => !!x).sort().pop() ?? null
+  const cnt = targets.reduce((s, v) => s + v.usageCount, 0)
+  const recent = within7Days(last)
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title={version ? '버전 정지' : '키 정지'}>
         <DialogBody>
+          <div className="deact-use">
+            {version ? `v${version}` : 'ACTIVE 버전 전체'} — 마지막 사용 <b style={recent ? { color: 'var(--red)' } : undefined}>{relTime(last)}</b>
+            {last && ` (${fmt(last)})`} · 누적 {cnt.toLocaleString()}회
+          </div>
           <ReasonField value={reason} onChange={setReason} placeholder="예: 해당 버전 암호문 전량 재암호화 완료" />
         </DialogBody>
         <DialogFooter>
@@ -152,6 +161,7 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
   const toast = useToast()
   const [reason, setReason] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [ack, setAck] = useState(false)
   const [target, setTarget] = useState<number | null>(version)
   const actives = detail.versions.filter((v) => v.state === 'ACTIVE')
   const candidates: VersionInfo[] = detail.versions.filter((v) => v.state === 'DEACTIVATED' || v.state === 'PRE_ACTIVE')
@@ -175,6 +185,7 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
                   <input type="radio" name="des" checked={target === v.version} onChange={() => setTarget(v.version)} />
                   <span>
                     <b>v{v.version}만 삭제 <span className={`badge ${BADGE[v.state]}`} style={{ marginLeft: 4 }}>{STATE_KO[v.state]}</span></b>
+                    <span>마지막 사용 {fmt(v.lastUsedAt)} · 누적 {v.usageCount.toLocaleString()}회</span>
                   </span>
                 </label>
               ))}
@@ -192,10 +203,14 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
             <Input className="mono" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="키명을 정확히 입력" />
           </div>
           <ReasonField value={reason} onChange={setReason} placeholder="예: 해당 버전 암호문 전량 파기 확인" />
+          <label className="ack">
+            <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} />
+            키 재료가 영구 삭제되며 복구할 수 없음을 확인합니다
+          </label>
         </DialogBody>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>취소</Button>
-          <Button variant="danger" disabled={pending} onClick={submit}>삭제 실행</Button>
+          <Button variant="danger" disabled={pending || !ack} onClick={submit}>삭제</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

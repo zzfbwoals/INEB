@@ -994,6 +994,62 @@ textarea.input:focus {
   border-color: var(--red);
   color: var(--red);
 }
+/* 복사 버튼 — uid·공개키·암호문 등 원클릭 복사 (상용 KMS 콘솔 공통 관례) */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 2.5px 8px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.copy-btn:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+.copy-btn svg {
+  flex: none;
+}
+/* 구 ACTIVE 버전 역할 라벨 — 네이버식 모델(암호화는 최신만)을 화면 언어로 표기 */
+.roletag {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--blue);
+  background: var(--blue-bg);
+  border-radius: 5px;
+  padding: 1px 6px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+/* 위험 작업 모달 최근 사용 정보 — 박스 없이 한 줄 */
+.deact-use {
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+/* 파기 복구 불가 확인 체크박스 */
+.ack {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  cursor: pointer;
+  line-height: 1.5;
+}
+.ack input {
+  accent-color: var(--red);
+  margin-top: 2px;
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
 /* 모달 (Radix Dialog 에 적용) */
 .modal-bk {
   position: fixed;
