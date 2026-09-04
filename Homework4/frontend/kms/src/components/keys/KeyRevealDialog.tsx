@@ -3,6 +3,7 @@ import { revealMaterial, type KeyDetail, type MaterialReveal } from '@/api/keys'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
 import { errorMessage, useToast } from '@/components/ui/toast'
+import { copyText } from '@/lib/clipboard'
 
 /* 버전 키값 조회 — 사유 필수, 조회 즉시 감사로그(KEY_MATERIAL_VIEWED) 기록 */
 export function KeyRevealDialog({ detail, version, onClose }: { detail: KeyDetail; version: number; onClose: () => void }) {
@@ -26,7 +27,7 @@ export function KeyRevealDialog({ detail, version, onClose }: { detail: KeyDetai
   }
 
   async function copy(text: string) {
-    try { await navigator.clipboard.writeText(text); toast('복사되었습니다') } catch { toast('복사에 실패했습니다', 'error') }
+    try { await copyText(text); toast('복사되었습니다') } catch { toast('복사에 실패했습니다', 'error') }
   }
 
   return (
