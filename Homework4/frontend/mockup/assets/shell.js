@@ -101,7 +101,11 @@ function qs(name){return new URLSearchParams(location.search).get(name)}
 
 /* ---- 복사·다운로드 — uid·공개키·암호문 등 원클릭 (상용 KMS 콘솔 공통 관례) ---- */
 function copyText(text){
-  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject())
+  // navigator.clipboard 는 HTTPS·localhost 에서만 존재 → HTTP 배포(192.168.200.52)는 execCommand 폴백
+  const fallback=()=>{const ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand('copy');}finally{document.body.removeChild(ta);}return ok?Promise.resolve():Promise.reject();};
+  (window.isSecureContext&&navigator.clipboard?navigator.clipboard.writeText(text).catch(fallback):fallback())
     .then(()=>toast('복사되었습니다')).catch(()=>toast('복사에 실패했습니다'));
 }
 function copyEl(id){const el=document.getElementById(id);copyText((el.innerText||el.textContent).trim());}
