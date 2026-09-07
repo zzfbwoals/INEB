@@ -178,7 +178,7 @@ export default function KeyTestPage() {
               <label>{sig ? '원문 입력' : '평문 입력'}</label>
               <textarea className="input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="입력하세요" />
               {maxBytes !== null && (
-                <div className="fmt">{utf8Bytes(input)} / {maxBytes} bytes{tooLong && <b style={{ color: 'var(--red)' }}> — 상한 초과 (400)</b>}</div>
+                <div className="fmt" style={tooLong ? { color: 'var(--red)', fontWeight: 600 } : undefined}>{utf8Bytes(input)} / {maxBytes} bytes</div>
               )}
             </div>
             <Button style={{ alignSelf: 'flex-start' }} disabled={!curOk || !latestSel || pending} onClick={runLeft}>{sig ? '서명 실행' : '암호화 실행'}</Button>

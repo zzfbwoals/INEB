@@ -112,7 +112,8 @@ function updCount(){
   if(mode!=='enc'||max===null){el.style.display='none';return;}
   const n=new TextEncoder().encode(document.getElementById('encIn').value).length;
   el.style.display='';
-  el.innerHTML=`${n} / ${max} bytes${n>max?' <b style="color:var(--red)">— 상한 초과 (400)</b>':''}`;
+  el.style.color=n>max?'var(--red)':'';el.style.fontWeight=n>max?'600':'';
+  el.textContent=`${n} / ${max} bytes`;
 }
 function fillVersions(){
   const k=curKey(),vs=document.getElementById('testVerSel');
