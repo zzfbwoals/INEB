@@ -1241,6 +1241,19 @@ textarea.input:focus {
 .timeline {
   padding: 6px 20px 18px;
 }
+/* 버전 목록·사용 이력 — 카드 내부 세로 스크롤(max-height 는 화면에서 계산). 헤더는 고정,
+   border-collapse 표에서 sticky th 의 border 가 스크롤 시 사라지므로 box-shadow 로 선을 그린다 */
+.tbl-wrap.tbl-scroll {
+  overflow-y: auto;
+}
+.tbl-wrap.tbl-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+  border-bottom: none;
+  box-shadow: inset 0 -1px 0 var(--line);
+}
 /* 타임라인 카드 — 메타 카드 높이 초과분은 숨기고 하단 페이드 + 더보기(모달) */
 .tl-card {
   position: relative;
