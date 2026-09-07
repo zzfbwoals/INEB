@@ -68,6 +68,13 @@ export function downloadText(name: string, content: string, type = 'text/plain')
   URL.revokeObjectURL(a.href)
 }
 
+/** PEM 본문을 앞 16자·뒤 8자만 남겨 축약 — 화면에는 전문을 노출하지 않고 복사·.pem 으로만 제공 */
+export function abbreviatePem(pem: string): string {
+  const body = pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '')
+  if (body.length <= 24) return body
+  return `${body.slice(0, 16)}…${body.slice(-8)}`
+}
+
 /** 오늘 + n일 → "yyyy-MM-dd" (미리보기용) */
 export function plusDays(days: number): string {
   const d = new Date()

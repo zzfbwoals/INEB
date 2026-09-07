@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import { getHistory, getKey, getUsage, type HistoryItem, type KeyDetail, type UsageResponse, type VersionInfo } from '@/api/keys'
 import { ALGOS, PURPOSE_KO, TRIGGER_KO, canEncrypt, canSign } from '@/lib/keyRules'
-import { dday, downloadText, fmt, relTime } from '@/lib/format'
+import { abbreviatePem, dday, downloadText, fmt, relTime } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
@@ -149,7 +149,7 @@ export default function KeyDetailPage() {
                     {DOWNLOAD_ICON}.pem
                   </button>
                 </div>
-                <div className="pubkey">{detail.publicKeyPem}</div>
+                <div className="pubkey" title="전문은 복사 또는 .pem 다운로드로 확인">{abbreviatePem(detail.publicKeyPem)}</div>
               </div>
             )}
           </div>
