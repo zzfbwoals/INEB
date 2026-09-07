@@ -109,6 +109,7 @@ const USAGE=[
 ];
 /* audit_log — 감사 로그 페이지. target 은 KEY#{uid}/USER#{id}/AUTH#{loginId} 형식, detail 은 key=value 문자열 (백엔드와 동일 규격) */
 const AUDITS=[
+ {id:1292,at:'2026-08-28 09:00:03',actor:'SYSTEM',action:'KEY_ROTATION_FAILED',target:'KEY#7',keyId:7,detail:'trigger=SCHEDULE, reason=키 메타 무결성 위반 — 회전 중단'},
  {id:1291,at:'2026-08-28 08:40:12',actor:'admin',action:'KEY_TEST_ENCRYPT',target:'KEY#2',keyId:2,detail:'version=1'},
  {id:1290,at:'2026-08-27 18:30:00',actor:'admin',action:'KEY_TEST_SIGN',target:'KEY#4',keyId:4,detail:'version=2'},
  {id:1289,at:'2026-08-27 14:02:18',actor:'admin',action:'KEY_TEST_ENCRYPT',target:'KEY#1',keyId:1,detail:'version=3'},

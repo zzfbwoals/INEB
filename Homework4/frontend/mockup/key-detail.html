@@ -272,7 +272,7 @@ function render(){
     <div class="meta-it"><div class="k">알고리즘 / 사이즈</div><div class="v">${key.algoName} · ${a&&a.sizeLabel?a.sizeLabel(key.size):key.size+' bit'}</div></div>
     <div class="meta-it"><div class="k">모드 / 용도</div><div class="v">${key.mode||(a&&a.hmac?'HMAC':'—')} · ${PURPOSE[key.purpose]}</div></div>
     <div class="meta-it"><div class="k">버전</div><div class="v">v${key.currentVersion}</div></div>
-    <div class="meta-it"><div class="k">갱신 주기 / 다음 갱신</div><div class="v mono">${key.autoRotate?`${key.rotationPeriodDays}일 · ${fmt(key.nextRotationAt)}${key.dday<=0&&s==='ACTIVE'?' <b style="color:var(--red)">(지연)</b>':''}`:'수동 갱신'}</div></div>
+    <div class="meta-it"><div class="k">갱신 주기 / 다음 갱신</div><div class="v mono">${key.autoRotate?`${key.rotationPeriodDays}일 · ${fmt(key.nextRotationAt)}${key.dday<=0&&s==='ACTIVE'?' <b style="color:var(--red)">(갱신 실패)</b>':''}`:'수동 갱신'}</div></div>
     <div class="meta-it"><div class="k">활성일 (v${key.currentVersion})</div><div class="v mono">${fmt(cv.activationDate)}${cv.state==='PRE_ACTIVE'?' <b style="color:var(--blue)">(예정)</b>':''}</div></div>
     <div class="meta-it"><div class="k">설명</div><div class="v" style="font-weight:500">${key.desc||'—'}</div></div>
     <div class="meta-it"><div class="k">생성일</div><div class="v mono">${key.created}</div></div>

@@ -123,7 +123,7 @@ function renderKeys(){
     if(k.status==='DESTROYED'||k.status==='DEACTIVATED')rotCell=`<span style="color:var(--text-3)">—</span>`;
     else if(k.status==='PRE_ACTIVE')rotCell=`<span style="color:var(--blue)">활성 예정 ${cur.activationDate.slice(0,10)}</span>`;
     else if(!k.autoRotate)rotCell=`<span style="color:var(--text-3)">수동</span>`;
-    else rotCell=`<span style="color:${k.dday<=30?'var(--red)':'var(--text-2)'}">${k.nextRotationAt.slice(0,10)}${k.dday>0&&k.dday<=30?` <b>(D-${k.dday})</b>`:k.dday<=0?' <b>(지연)</b>':''}</span>`;
+    else rotCell=`<span style="color:${k.dday<=30?'var(--red)':'var(--text-2)'}">${k.nextRotationAt.slice(0,10)}${k.dday>0&&k.dday<=30?` <b>(D-${k.dday})</b>`:k.dday<=0?' <b>(갱신 실패)</b>':''}</span>`;
     return `
     <tr class="rowlink" onclick="location.href='key-detail.html?id=${k.id}'">
       <td><b>${k.name}</b></td>

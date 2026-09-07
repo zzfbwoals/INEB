@@ -537,19 +537,17 @@ drawTrend();
   KEYS.forEach(k=>{
     if(k.status==='ACTIVE'&&k.autoRotate&&k.nextRotationAt){
       const dd=Math.ceil((parseKst(k.nextRotationAt)-NOW)/DAY);
-      if(dd<=30)items.push({k,kind:'회전',dd,when:k.nextRotationAt.slice(0,10)+' 회전 예정'});
+      // 도래분은 스케줄러(60초)가 자동 회전하므로 예정 목록에 남지 않는다 — 회전이 실패한 키는 보안 신호 카드(KEY_ROTATION_FAILED)로
+      if(dd>0&&dd<=30)items.push({k,kind:'회전',dd,when:k.nextRotationAt.slice(0,10)+' 회전 예정'});
     }
     k.versions.filter(v=>v.state==='PRE_ACTIVE').forEach(v=>{
       const dd=Math.ceil((parseKst(v.activationDate)-NOW)/DAY);
-      items.push({k,kind:'활성',dd,when:`v${v.v} · ${v.activationDate.slice(0,10)} 활성 예정`});
+      if(dd>0)items.push({k,kind:'활성',dd,when:`v${v.v} · ${v.activationDate.slice(0,10)} 활성 예정`});
     });
   });
   items.sort((a,b)=>a.dd-b.dd);
-  const late=items.filter(i=>i.dd<=0).length;
   document.getElementById('expCnt').textContent=items.length;
-  document.getElementById('expCnt').classList.toggle('red',late>0);
-  document.getElementById('expHint').textContent=late?`30일 이내 · 지연 ${late}건`:'30일 이내';
-  const badge=i=>i.dd<=0?['d-red','지연 '+(-i.dd)+'일']:i.kind==='활성'?['d-blue','D-'+i.dd]:i.dd<=7?['d-red','D-'+i.dd]:['d-amber','D-'+i.dd];
+  const badge=i=>i.kind==='활성'?['d-blue','D-'+i.dd]:i.dd<=7?['d-red','D-'+i.dd]:['d-amber','D-'+i.dd];
   document.getElementById('expList').innerHTML=items.length?items.map(i=>{const [cls,txt]=badge(i);return `
     <a class="exp-it" href="key-detail.html?id=${i.k.id}">
       <span class="kind">${i.kind}</span>
@@ -578,6 +576,9 @@ drawTrend();
     {l:'키값 조회',v:0,sub:'KEY_MATERIAL_VIEWED',lvl:''},
     {l:'무결성 위반 감지',v:1,sub:'KEY_INTEGRITY_VIOLATION',lvl:'bad'},
   ];
+  // 자동 갱신 실패 — 정상 운영에서는 스케줄러가 도래 즉시 회전하므로 발생하지 않는다. 남아 있으면 회전 예외(버전 상한 등)·스케줄러 중단 신호
+  const rf=AUDITS.filter(a=>a.action==='KEY_ROTATION_FAILED'&&NOW-parseKst(a.at)<=DAY);
+  S.push({l:'자동 갱신 실패',v:rf.length,sub:'KEY_ROTATION_FAILED'+(rf.length?' · '+[...new Set(rf.map(a=>keyById(a.keyId).name))].join(', '):''),lvl:'bad'});
   document.getElementById('sigList').innerHTML=S.map(s=>`
     <div class="sig-it"><div>${s.l}<small>${s.sub}</small></div><span class="v ${s.v?s.lvl:''}">${s.v}</span></div>`).join('');
 })();
