@@ -166,7 +166,7 @@ npm run lint       # oxlint (ESLint 아님)
 ## 배포 (CI/CD)
 
 main 푸시 → self-hosted runner(개발 서버 내)가 Gradle bootJar 빌드 → 백엔드·프론트엔드 Docker 이미지 빌드 후 DockerHub 푸시 → SSH로 서버에서 pull & 재기동.
-컨테이너 구성: `backend`(8080, `--env-file /home/dguard/kms.env`로 비밀 주입)와 `frontend`(Nginx, 80 포트)가 `ineb-net` 네트워크로 연결. Nginx가 `/api`와 `/swagger-ui`·`/v3/api-docs`를 backend로 리버스 프록시.
+컨테이너 구성: `backend`(8080, `--env-file /home/dguard/kms.env`로 비밀 주입)와 `frontend`(Nginx, 80 포트)가 `ineb-net` 네트워크로 연결. Nginx가 `/api`와 `/swagger-ui`·`/v3/api-docs`를 backend로 리버스 프록시. 정적 파일 캐시 정책(2026-09-07): `index.html`은 `Cache-Control: no-cache`(항상 재검증), `/assets/*`는 1년 immutable — 헤더가 없으면 브라우저 휴리스틱 캐시로 배포 후 첫 진입에 구 번들이 실행되는 문제가 있었음.
 **Homework4 하위 어느 경로든 main에 푸시하면 배포가 트리거되므로 주의.**
 
 ## 주의사항
