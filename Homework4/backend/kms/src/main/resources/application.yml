@@ -20,3 +20,5 @@ kms:
     interval-ms: 60000
     initial-delay-ms: 30000
     integrity-check: true
+    # 사용자(app_user) 무결성 배치 — 위반↔정상 전이 시에만 USER_INTEGRITY_VIOLATION/RESTORED 기록(자동 조치 없음, SSE 로 목록 배지 갱신)
+    user-integrity-check: true
