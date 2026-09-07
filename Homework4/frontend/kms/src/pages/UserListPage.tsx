@@ -18,8 +18,9 @@ import { UserPlainDialog } from '@/components/users/UserPlainDialog'
 export default function UserListPage() {
   const toast = useToast()
   const [keyword, setKeyword] = useState('')
-  const [phoneInput, setPhoneInput] = useState('')
-  const [phone, setPhone] = useState('')
+  const [exactInput, setExactInput] = useState('')
+  // 정확검색 — 한 필드로 연락처·이메일을 받아 '@' 포함 여부로 판별해 phone/email 파라미터 중 하나로 보낸다
+  const [exact, setExact] = useState<{ phone?: string; email?: string }>({})
   const [status, setStatus] = useState<UserStatus | ''>('')
   const [sort, setSort] = useState<{ field: string; dir: 'asc' | 'desc' } | null>(null)
   const [page, setPage] = useState(0)
@@ -41,13 +42,13 @@ export default function UserListPage() {
     if (!pageSize) return
     let cancelled = false
     setLoading(true)
-    const params: UserListParams = { keyword, phone, status, page, size: pageSize, sort: sort?.field, direction: sort?.dir }
+    const params: UserListParams = { keyword, ...exact, status, page, size: pageSize, sort: sort?.field, direction: sort?.dir }
     listUsers(params)
       .then((res) => { if (!cancelled) setData(res) })
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [keyword, phone, status, page, pageSize, sort, reloadTick, toast])
+  }, [keyword, exact, status, page, pageSize, sort, reloadTick, toast])
 
   // 페이지 크기 변동(창 크기 변경)으로 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정
   useEffect(() => {
@@ -66,14 +67,15 @@ export default function UserListPage() {
     setSort((prev) => (prev?.field === field ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { field, dir: 'asc' }))
   }
 
-  function phoneExact() {
-    if (!phoneInput.trim()) {
-      setPhone('')
-      toast('연락처 전체를 입력해주세요')
+  function exactSearch() {
+    const v = exactInput.trim()
+    if (!v) {
+      setExact({})
+      toast('연락처 또는 이메일 전체를 입력해주세요')
       return
     }
     setPage(0)
-    setPhone(phoneInput.trim())
+    setExact(v.includes('@') ? { email: v } : { phone: v })
   }
 
   const rows = data?.content ?? []
@@ -92,10 +94,10 @@ export default function UserListPage() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m16.5 16.5 4.5 4.5" /></svg>
           <input className="input" placeholder="이름 검색" value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0) }} />
         </div>
-        <input className="input mono" style={{ width: 250 }} placeholder="연락처 정확검색 (010-1234-5678)"
-          value={phoneInput} onChange={(e) => { setPhoneInput(e.target.value); if (!e.target.value.trim()) setPhone('') }}
-          onKeyDown={(e) => { if (e.key === 'Enter') phoneExact() }} />
-        <Button variant="ghost" onClick={phoneExact}>검색</Button>
+        <input className="input mono" style={{ width: 250 }} placeholder="연락처·이메일 정확검색"
+          value={exactInput} onChange={(e) => { setExactInput(e.target.value); if (!e.target.value.trim()) setExact({}) }}
+          onKeyDown={(e) => { if (e.key === 'Enter') exactSearch() }} />
+        <Button variant="ghost" onClick={exactSearch}>검색</Button>
         <select className="input" value={status} onChange={(e) => { setStatus(e.target.value as UserStatus | ''); setPage(0) }}>
           <option value="">상태 전체</option>
           <option value="ACTIVE">활성</option>
