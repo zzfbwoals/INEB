@@ -251,6 +251,8 @@ function capOf(v){ /* 암호화(서명)는 current_version만, 복호화(검증)
 /* 비대칭키 공개키 목업 값 — 복사·.pem 다운로드용 */
 const PEM_TEXT='-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2v7…(생략)…IDAQAB\n-----END PUBLIC KEY-----';
 function downloadPem(){downloadText(`${key.name}_v${key.currentVersion}.pem`,PEM_TEXT,'application/x-pem-file');}
+/* 화면에는 본문 앞 16자·뒤 8자만 — 전문은 복사·.pem 으로만 제공 */
+function abbreviatePem(pem){const b=pem.replace(/-----[^-]+-----/g,'').replace(/\s+/g,'');return b.length<=24?b:`${b.slice(0,16)}…${b.slice(-8)}`;}
 function render(){
   key.status=deriveStatus();
   document.getElementById('kdName').textContent=key.name;
@@ -278,7 +280,7 @@ function render(){
     ${a&&a.asym?`<div class="meta-it" style="grid-column:1/-1"><div class="k" style="display:flex;align-items:center;gap:8px">공개키 (v${key.currentVersion}, PEM)
       <button class="copy-btn" onclick="copyText(PEM_TEXT)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>복사</button>
       <button class="copy-btn" onclick="downloadPem()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg>.pem</button></div>
-    <div class="pubkey">${PEM_TEXT.replaceAll('\n','<br>')}</div></div>`:''}`;
+    <div class="pubkey" title="전문은 복사 또는 .pem 다운로드로 확인">${abbreviatePem(PEM_TEXT)}</div></div>`:''}`;
   const lastUse=key.versions.map(v=>v.lastUsedAt).filter(Boolean).sort().pop()||null;
   document.getElementById('kdUsage').innerHTML=`
     <div><div class="k">마지막 사용</div><div class="v" id="kdLastUse" style="font-size:15px" title="${lastUse||''}">${relTime(lastUse)}</div></div>
