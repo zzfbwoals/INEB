@@ -31,6 +31,8 @@ export default function KeyDetailPage() {
   const [tlOverflow, setTlOverflow] = useState(false)
   const metaCardRef = useRef<HTMLDivElement>(null)
   const tlCardRef = useRef<HTMLDivElement>(null)
+  const bottomCardRef = useRef<HTMLDivElement>(null)
+  const [tblMax, setTblMax] = useState<number | null>(null)
 
   // 타임라인 카드는 왼쪽 메타 카드 높이까지만 — 넘치면 하단 페이드 + 더보기(모달). 1열 레이아웃(<=1100px)에서는 제한하지 않는다.
   useLayoutEffect(() => {
@@ -49,6 +51,23 @@ export default function KeyDetailPage() {
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
+  })
+
+  // 버전 목록·사용 이력 카드는 뷰포트 하단까지만 — 행이 많으면 페이지 대신 카드 내부(tbl-wrap)가 스크롤된다.
+  // 남은 높이 = 뷰포트 − 표 상단 − 카드 하단 테두리(1) − .content 하단 여백(60). 최소 180px(헤더+3행)는 확보하고, 1열 레이아웃(<=1100px)에서는 제한하지 않는다.
+  useLayoutEffect(() => {
+    function fit() {
+      const wrap = bottomCardRef.current?.querySelector<HTMLDivElement>('.tbl-wrap')
+      if (!wrap || window.innerWidth <= 1100) {
+        setTblMax(null)
+        return
+      }
+      const top = wrap.getBoundingClientRect().top + window.scrollY
+      setTblMax(Math.max(180, Math.floor(window.innerHeight - top - 61)))
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
   })
 
   const load = useCallback(async () => {
@@ -174,13 +193,13 @@ export default function KeyDetailPage() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" ref={bottomCardRef}>
         <div className="tabs">
           <button type="button" className={`tab ${tab === 'ver' ? 'on' : ''}`} onClick={() => setTab('ver')}>버전 목록</button>
           <button type="button" className={`tab ${tab === 'usage' ? 'on' : ''}`} onClick={() => setTab('usage')}>사용 이력</button>
         </div>
         {tab === 'ver' ? (
-          <div className="tbl-wrap">
+          <div className="tbl-wrap tbl-scroll" style={tblMax !== null ? { maxHeight: tblMax } : undefined}>
             <table>
               <thead><tr><th>버전</th><th>상태</th><th>활성일</th><th>마지막 사용</th><th>사용 횟수</th><th>{capLabel}</th><th>무결성</th><th></th></tr></thead>
               <tbody>
@@ -189,7 +208,7 @@ export default function KeyDetailPage() {
             </table>
           </div>
         ) : (
-          <div className="tbl-wrap">
+          <div className="tbl-wrap tbl-scroll" style={tblMax !== null ? { maxHeight: tblMax } : undefined}>
             <table>
               <thead><tr><th>일시</th><th>연산</th><th>버전</th><th>결과</th><th>실패 사유 / 비고</th></tr></thead>
               <tbody>
