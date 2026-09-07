@@ -24,8 +24,8 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
       <input class="input" id="userSearch" placeholder="이름 검색" oninput="renderUsers()">
     </div>
-    <input class="input mono" id="userPhone" placeholder="연락처 정확검색 (010-1234-5678)" style="width:250px" onkeydown="if(event.key==='Enter')phoneExact()">
-    <button class="btn btn-ghost" onclick="phoneExact()">검색</button>
+    <input class="input mono" id="userExact" placeholder="연락처·이메일 정확검색" style="width:250px" onkeydown="if(event.key==='Enter')exactSearch()">
+    <button class="btn btn-ghost" onclick="exactSearch()">검색</button>
     <select class="input" id="userStatus" onchange="renderUsers()">
       <option value="">상태 전체</option><option value="ACTIVE">활성</option><option value="SUSPENDED">정지</option>
     </select>
@@ -115,10 +115,12 @@ function renderUsers(){
       </td>
     </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:34px">검색 결과가 없습니다</td></tr>';
 }
-function phoneExact(){
-  const v=document.getElementById('userPhone').value.trim();
-  if(!v){toast('연락처 전체를 입력해주세요');return;}
-  toast(v==='010-2847-3421'?'검색 결과 1건':'검색 결과가 없습니다');
+/* 정확검색 — 한 필드로 연락처·이메일 입력, '@' 포함이면 email_hash 아니면 phone_hash 정확검색(API phone/email 파라미터) */
+function exactSearch(){
+  const v=document.getElementById('userExact').value.trim();
+  if(!v){toast('연락처 또는 이메일 전체를 입력해주세요');return;}
+  const hit=v.includes('@')?USERS.some(u=>u.plainEmail===v.toLowerCase()):USERS.some(u=>u.plainPhone===v);
+  toast(hit?'검색 결과 1건':'검색 결과가 없습니다');
 }
 let editUser=null,pwResetMode=false;
 function openUserForm(id){
