@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { fetchMe } from '@/api/auth'
-import { listUsers, type UserListParams, type UserStatus, type UserSummary } from '@/api/users'
+import { listUsers, type UserListParams, type UserPlain, type UserStatus, type UserSummary } from '@/api/users'
 import type { PageResponse } from '@/api/keys'
 import { fmtDate } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
@@ -31,6 +31,8 @@ export default function UserListPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<UserSummary | null>(null)
   const [plainTarget, setPlainTarget] = useState<UserSummary | null>(null)
+  // 원문이 풀린 사용자 — 사유 입력·감사 기록 후 목록 행의 마스킹을 해제한다. 아이콘을 다시 누르면 제거(다시 마스킹)
+  const [revealed, setRevealed] = useState<Record<number, UserPlain>>({})
   const tblRef = useRef<HTMLDivElement>(null)
   const pageSize = useAutoPageSize(tblRef, 58)
 
@@ -55,12 +57,34 @@ export default function UserListPage() {
     if (data && data.totalPages > 0 && page >= data.totalPages) setPage(data.totalPages - 1)
   }, [data, page])
 
-  // 실시간 갱신 — 사용자 관련 행위가 커밋되면 목록 refetch
+  // 실시간 갱신 — 사용자 관련 행위가 커밋되면 목록 refetch. 수정된 사용자는 풀어 둔 원문이 낡을 수 있어 다시 마스킹한다
   useEffect(() => {
     return subscribeUiEvents((e) => {
-      if (e.action.startsWith('USER')) setReloadTick((t) => t + 1)
+      if (!e.action.startsWith('USER')) return
+      setReloadTick((t) => t + 1)
+      if (e.action === 'USER_UPDATED') {
+        const id = Number(e.target.replace('USER#', ''))
+        setRevealed((prev) => {
+          if (!(id in prev)) return prev
+          const next = { ...prev }
+          delete next[id]
+          return next
+        })
+      }
     })
   }, [])
+
+  function togglePlain(u: UserSummary) {
+    if (revealed[u.id]) {
+      setRevealed((prev) => {
+        const next = { ...prev }
+        delete next[u.id]
+        return next
+      })
+      return
+    }
+    setPlainTarget(u)
+  }
 
   function toggleSort(field: string) {
     setPage(0)
@@ -131,8 +155,8 @@ export default function UserListPage() {
                     <span className="uavatar" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}>{u.name.charAt(0)}</span>
                     <b>{u.name}</b>
                   </td>
-                  <td className="mask">{u.phoneMasked}</td>
-                  <td className="mask">{u.emailMasked}</td>
+                  <td className={revealed[u.id] ? 'mono' : 'mask'}>{revealed[u.id]?.phone ?? u.phoneMasked}</td>
+                  <td className={revealed[u.id] ? 'mono' : 'mask'}>{revealed[u.id]?.email ?? u.emailMasked}</td>
                   <td>{u.status === 'ACTIVE'
                     ? <span className="badge b-active">활성</span>
                     : <span className="badge b-deact">정지</span>}</td>
@@ -140,11 +164,16 @@ export default function UserListPage() {
                   <td className="mono" style={{ color: 'var(--text-2)' }}>{fmtDate(u.createdAt)}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                      {isAdmin && (
-                        <button type="button" className="icon-btn" data-tip="원문 보기" aria-label="원문 보기" onClick={() => setPlainTarget(u)}>
+                      {/* 마스킹 상태 = 눈 가림 아이콘(원문 보기), 원문 상태 = 눈 뜬 아이콘(원문 숨기기) */}
+                      {isAdmin && (revealed[u.id] ? (
+                        <button type="button" className="icon-btn" data-tip="원문 숨기기" aria-label="원문 숨기기" onClick={() => togglePlain(u)}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
                         </button>
-                      )}
+                      ) : (
+                        <button type="button" className="icon-btn" data-tip="원문 보기" aria-label="원문 보기" onClick={() => togglePlain(u)}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3l18 18" /><path d="M10.6 10.6a3 3 0 0 0 4.2 4.2" /><path d="M9.9 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1" /><path d="M6.6 6.6A16.6 16.6 0 0 0 2 12s3.5 7 10 7c1.4 0 2.7-.3 3.9-.8" /></svg>
+                        </button>
+                      ))}
                       <button type="button" className="icon-btn" data-tip="수정" aria-label="수정" onClick={() => { setEditTarget(u); setFormOpen(true) }}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" /><path d="m13.5 6.5 3 3" /></svg>
                       </button>
@@ -159,7 +188,10 @@ export default function UserListPage() {
       </div>
 
       <UserFormDialog edit={editTarget} open={formOpen} onClose={() => setFormOpen(false)} onDone={() => setReloadTick((t) => t + 1)} />
-      {plainTarget && <UserPlainDialog user={plainTarget} onClose={() => setPlainTarget(null)} />}
+      {plainTarget && (
+        <UserPlainDialog user={plainTarget} onClose={() => setPlainTarget(null)}
+          onRevealed={(plain) => setRevealed((prev) => ({ ...prev, [plain.id]: plain }))} />
+      )}
     </AppLayout>
   )
 }
