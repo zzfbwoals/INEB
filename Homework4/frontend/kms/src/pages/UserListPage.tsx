@@ -85,7 +85,9 @@ export default function UserListPage() {
       <div className="page-h">
         <div><h2>사용자 관리</h2></div>
         <div className="acts">
-          <Button onClick={() => { setEditTarget(null); setFormOpen(true) }}>등록</Button>
+          <Button className="px-[11px]" data-tip="등록" aria-label="등록" onClick={() => { setEditTarget(null); setFormOpen(true) }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 5v14M5 12h14" /></svg>
+          </Button>
         </div>
       </div>
 
@@ -137,9 +139,15 @@ export default function UserListPage() {
                   <td><IntegrityBadge valid={u.integrityValid} /></td>
                   <td className="mono" style={{ color: 'var(--text-2)' }}>{fmtDate(u.createdAt)}</td>
                   <td>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      {isAdmin && <Button variant="ghost" size="sm" onClick={() => setPlainTarget(u)}>원문 보기</Button>}
-                      <Button variant="ghost" size="sm" onClick={() => { setEditTarget(u); setFormOpen(true) }}>수정</Button>
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                      {isAdmin && (
+                        <button type="button" className="icon-btn" data-tip="원문 보기" aria-label="원문 보기" onClick={() => setPlainTarget(u)}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </button>
+                      )}
+                      <button type="button" className="icon-btn" data-tip="수정" aria-label="수정" onClick={() => { setEditTarget(u); setFormOpen(true) }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" /><path d="m13.5 6.5 3 3" /></svg>
+                      </button>
                     </div>
                   </td>
                 </tr>

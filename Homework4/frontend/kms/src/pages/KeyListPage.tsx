@@ -64,7 +64,9 @@ export default function KeyListPage() {
       <div className="page-h">
         <div><h2>키 목록</h2></div>
         <div className="acts">
-          <Button onClick={() => setCreateOpen(true)}>등록</Button>
+          <Button className="px-[11px]" data-tip="등록" aria-label="등록" onClick={() => setCreateOpen(true)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 5v14M5 12h14" /></svg>
+          </Button>
         </div>
       </div>
 

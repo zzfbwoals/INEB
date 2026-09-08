@@ -205,6 +205,8 @@ html.collapsed .shell {
   top: 0;
   height: 100vh;
   overflow: visible;
+  /* sticky 는 스택 컨텍스트를 만들므로 z-index 가 없으면 본문의 position:relative 요소(검색 필드 등)가 축소 툴팁 위에 그려진다 */
+  z-index: 100;
 }
 .side .brand {
   display: flex;
@@ -1565,6 +1567,7 @@ textarea.input:focus {
 .nmeta {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 16px;
   font-size: 12.5px;
   color: var(--text-3);
@@ -1573,6 +1576,37 @@ textarea.input:focus {
 }
 .nmeta b {
   color: var(--text-2);
+}
+/* 메타 줄 우측 — 수정·삭제 아이콘 버튼 */
+.nmeta .nacts {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 4px;
+}
+/* 테두리 없는 아이콘 버튼 — 호버 시에만 배경, 툴팁은 title 로 */
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: none;
+  border: 0;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: 0.12s;
+}
+.icon-btn:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.icon-btn.danger:hover {
+  color: var(--red);
+  background: var(--red-bg);
 }
 .nbody {
   font-size: 14px;
@@ -1659,4 +1693,42 @@ textarea.input:focus {
   border-color: var(--blue);
   background: var(--blue-bg);
   color: var(--blue);
+}
+
+/* ---- 공용 툴팁 (data-tip) — 사이드바 축소 시 메뉴 툴팁과 같은 디자인. 아이콘 버튼은 title 대신 data-tip 을 쓴다 ---- */
+[data-tip] {
+  position: relative;
+}
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%) translateY(-4px);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--modal-shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.14s,
+    transform 0.14s;
+  z-index: 130;
+}
+[data-tip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+/* 표 셀은 말줄임을 위해 overflow:hidden 이라 툴팁이 잘린다 — 툴팁 버튼이 있는 셀·표 래퍼(내부 스크롤 표 제외)는 넘침 허용 */
+.tbl-wrap table.tbl-fixed tbody td:has([data-tip]) {
+  overflow: visible;
+}
+.tbl-wrap:not(.tbl-scroll):has([data-tip]) {
+  overflow: visible;
 }

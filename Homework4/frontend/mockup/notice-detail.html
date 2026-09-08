@@ -8,7 +8,8 @@
 <style>
 .notice-view{padding:26px 30px;display:flex;flex-direction:column;gap:18px}
 .notice-view h2{font-size:20px;font-weight:800;letter-spacing:-.02em}
-.notice-view .nmeta{display:flex;gap:16px;font-size:12.5px;color:var(--text-3);padding-bottom:16px;border-bottom:1px solid var(--line)}
+.notice-view .nmeta{display:flex;align-items:center;gap:16px;font-size:12.5px;color:var(--text-3);padding-bottom:16px;border-bottom:1px solid var(--line)}
+.notice-view .nmeta .nacts{margin-left:auto;display:inline-flex;gap:4px}
 .notice-view .nbody{font-size:14px;line-height:1.85;color:var(--text-2);white-space:pre-line}
 .file-it{display:flex;align-items:center;gap:11px;background:var(--bg-deep);border:1px solid var(--line-strong);border-radius:10px;padding:11px 14px}
 .file-it .fic{width:32px;height:32px;border-radius:8px;background:var(--blue-bg);color:var(--blue);display:grid;place-items:center;flex:none}
@@ -21,15 +22,7 @@
 <body>
 <div class="shell" id="shell"></div>
 <template id="page-body">
-  <div class="page-h">
-    <div style="display:flex;align-items:center;gap:12px">
-      <a class="btn btn-ghost btn-sm" href="notices.html">← 목록</a>
-    </div>
-    <div class="acts">
-      <button class="btn btn-ghost" onclick="toast('수정 화면은 등록 모달과 동일 구성입니다 (목업)')">수정</button>
-      <button class="btn btn-danger" onclick="confirmDeleteNotice()">삭제</button>
-    </div>
-  </div>
+  <!-- 목록 복귀는 브라우저 뒤로가기 — 헤더 버튼 없음. 수정·삭제는 메타 줄 우측 아이콘 -->
   <div class="card notice-view">
     <h2 id="nvTitle">-</h2>
     <div class="nmeta">
@@ -37,6 +30,10 @@
       <span>작성자 <b style="color:var(--text-2)" id="nvBy">-</b></span>
       <span>등록 <span class="mono" id="nvAt">-</span></span>
       <span>조회수 <b style="color:var(--text-2)" id="nvViews">-</b></span>
+      <span class="nacts">
+        <button class="icon-btn" data-tip="수정" aria-label="수정" onclick="toast('수정 화면은 등록 모달과 동일 구성입니다 (목업)')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="m13.5 6.5 3 3"/></svg></button>
+        <button class="icon-btn danger" data-tip="삭제" aria-label="삭제" onclick="confirmDeleteNotice()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg></button>
+      </span>
     </div>
     <div class="nbody">안녕하세요, 아이넵 KMS 운영팀입니다.
 
@@ -49,16 +46,16 @@
 점검 중 마스터키 재유도 및 KCV 재검증이 수행될 예정이며, enc_ver 변동은 없습니다.
 문의사항은 운영팀으로 연락 부탁드립니다. 감사합니다.</div>
     <div id="nvFiles" style="display:flex;flex-direction:column;gap:9px">
-      <div style="font-size:12.5px;font-weight:700;color:var(--text-2)">첨부파일 <span class="enc-tag">AES-256-GCM 암호화 저장</span></div>
+      <div style="font-size:12.5px;font-weight:700;color:var(--text-2)">첨부파일</div>
       <div class="file-it">
         <span class="fic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l5 5v13H6V3z"/><path d="M14 3v5h5"/></svg></span>
         <div class="fn"><b>2026_08_정기점검_상세일정.pdf</b><span>412 KB · enc_ver 1</span></div>
-        <button class="btn btn-ghost btn-sm" onclick="toast('복호화 다운로드를 시작합니다')">복호화 다운로드</button>
+        <button class="icon-btn" data-tip="다운로드" aria-label="다운로드" onclick="toast('다운로드를 시작합니다')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg></button>
       </div>
       <div class="file-it">
         <span class="fic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l5 5v13H6V3z"/><path d="M14 3v5h5"/></svg></span>
         <div class="fn"><b>점검_체크리스트.xlsx</b><span>88 KB · enc_ver 1</span></div>
-        <button class="btn btn-ghost btn-sm" onclick="toast('복호화 다운로드를 시작합니다')">복호화 다운로드</button>
+        <button class="icon-btn" data-tip="다운로드" aria-label="다운로드" onclick="toast('다운로드를 시작합니다')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg></button>
       </div>
     </div>
   </div>

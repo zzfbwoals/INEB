@@ -121,7 +121,6 @@ export default function KeyDetailPage() {
       <div className="page-h">
         <div>
           <div className="hdr-row">
-            <Button asChild variant="ghost" size="sm"><Link to="/keys">← 목록</Link></Button>
             <h2>{detail.keyName}</h2>
             <StateBadge state={s} />
             <span className="vtag cur">v{detail.currentVersion}</span>

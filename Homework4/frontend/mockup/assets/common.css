@@ -156,7 +156,7 @@ tbody tr.rowlink:hover{background:var(--hover)}
 .shell{display:grid;grid-template-columns:var(--sidew) 1fr;min-height:100vh;transition:grid-template-columns .18s}
 html.collapsed .shell{grid-template-columns:66px 1fr}
 .side{background:var(--bg-deep);border-right:1px solid var(--line);padding:18px 13px;display:flex;
-  flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow:visible}
+  flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow:visible;z-index:100}
 .side .brand{display:flex;align-items:center;gap:9px;padding:4px 8px 18px;min-height:44px;position:relative}
 .side .brand .side-tgl{margin-left:auto;flex:none}
 html.collapsed .side .brand svg.full{display:none}
@@ -276,3 +276,18 @@ html.collapsed .me-menu{left:calc(100% + 10px);bottom:4px}
   html:not(.collapsed) .nav-it:hover::after{opacity:1}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* 공용 툴팁 (data-tip) — 사이드바 축소 툴팁과 동일 디자인, 아이콘 버튼용 */
+[data-tip]{position:relative}
+[data-tip]::after{content:attr(data-tip);position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%) translateY(-4px);background:var(--surface);color:var(--text);border:1px solid var(--line-strong);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;white-space:nowrap;box-shadow:var(--modal-shadow);opacity:0;pointer-events:none;transition:opacity .14s,transform .14s;z-index:130}
+[data-tip]:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 테두리 없는 아이콘 버튼 — 호버 시에만 배경, 툴팁은 data-tip */
+.icon-btn{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:6px;background:none;border:0;color:var(--text-3);cursor:pointer;transition:.12s}
+.icon-btn:hover{color:var(--text);background:var(--hover)}
+.icon-btn:disabled{opacity:.4;cursor:not-allowed}
+.icon-btn.danger:hover{color:var(--red);background:var(--red-bg)}
+
+/* 툴팁 버튼이 있는 표 셀·래퍼는 넘침 허용 (overflow:hidden 에 툴팁이 잘리지 않도록) */
+table.tbl-fixed tbody td:has([data-tip]){overflow:visible}
+.tbl-wrap:not(.tbl-scroll):has([data-tip]){overflow:visible}

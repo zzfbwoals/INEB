@@ -55,7 +55,7 @@ export default function NoticeDetailPage() {
     setDownloading(f.id)
     try {
       await downloadNoticeFile(f.id, f.originalName)
-      toast('복호화 다운로드를 시작합니다.')
+      toast('다운로드를 시작합니다.')
     } catch (err) {
       toast(errorMessage(err), 'error')
     } finally {
@@ -69,14 +69,11 @@ export default function NoticeDetailPage() {
 
   return (
     <AppLayout>
+      {/* 목록 복귀는 브라우저 뒤로가기로 — 헤더에는 감사 로그 이동만 둔다 */}
       <div className="page-h">
-        <div className="hdr-row">
-          <Button asChild variant="ghost" size="sm"><Link to="/notices">← 목록</Link></Button>
-        </div>
+        <div />
         <div className="acts">
           <Button asChild variant="ghost"><Link to={`/audit?target=${encodeURIComponent(`NOTICE#${detail.id}`)}`}>감사 로그</Link></Button>
-          <Button variant="ghost" onClick={() => setEditOpen(true)}>수정</Button>
-          <Button variant="danger" onClick={() => setDeleteOpen(true)}>삭제</Button>
         </div>
       </div>
 
@@ -88,14 +85,26 @@ export default function NoticeDetailPage() {
           <span>등록 <span className="mono">{fmt(detail.createdAt)}</span></span>
           {detail.updatedAt !== detail.createdAt && <span>수정 <span className="mono">{fmt(detail.updatedAt)}</span></span>}
           <span>조회수 <b>{detail.viewCount.toLocaleString()}</b></span>
+          <span className="nacts">
+            <button type="button" className="icon-btn" data-tip="수정" aria-label="수정" onClick={() => setEditOpen(true)}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" /><path d="m13.5 6.5 3 3" /></svg>
+            </button>
+            <button type="button" className="icon-btn danger" data-tip="삭제" aria-label="삭제" onClick={() => setDeleteOpen(true)}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16" /><path d="M10 11v6M14 11v6" /><path d="M6 7l1 13h10l1-13" /><path d="M9 7V4h6v3" /></svg>
+            </button>
+          </span>
         </div>
         <div className="nbody">{detail.content}</div>
         {detail.files.length > 0 && (
           <div className="file-list">
-            <div className="file-list-h">첨부파일 <span className="enc-tag">AES-256-GCM 암호화 저장</span></div>
+            <div className="file-list-h">첨부파일</div>
             {detail.files.map((f) => (
               <NoticeFileRow key={f.id} name={f.originalName} size={f.fileSize} meta={`enc_ver ${f.encVer}`}
-                action={<Button variant="ghost" size="sm" disabled={downloading === f.id} onClick={() => download(f)}>복호화 다운로드</Button>} />
+                action={
+                  <button type="button" className="icon-btn" data-tip="다운로드" aria-label="다운로드" disabled={downloading === f.id} onClick={() => download(f)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16" /></svg>
+                  </button>
+                } />
             ))}
           </div>
         )}

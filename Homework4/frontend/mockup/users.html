@@ -17,7 +17,7 @@
 <template id="page-body">
   <div class="page-h">
     <div><h2>사용자 관리</h2></div>
-    <div class="acts"><button class="btn btn-primary" onclick="openUserForm()">등록</button></div>
+    <div class="acts"><button class="btn btn-primary" style="padding:9px 11px" data-tip="등록" aria-label="등록" onclick="openUserForm()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></button></div>
   </div>
   <div class="filters">
     <div class="search">
@@ -108,9 +108,9 @@ function renderUsers(){
       <td><span class="badge b-ok">정상</span></td>
       <td class="mono" style="color:var(--text-2)">${u.joined}</td>
       <td>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button class="btn btn-ghost btn-sm" onclick="openPlain(${u.id})">원문 보기</button>
-          <button class="btn btn-ghost btn-sm" onclick="openUserForm(${u.id})">수정</button>
+        <div style="display:flex;gap:4px;justify-content:flex-end">
+          <button class="icon-btn" data-tip="원문 보기" aria-label="원문 보기" onclick="openPlain(${u.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <button class="icon-btn" data-tip="수정" aria-label="수정" onclick="openUserForm(${u.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="m13.5 6.5 3 3"/></svg></button>
         </div>
       </td>
     </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:34px">검색 결과가 없습니다</td></tr>';
