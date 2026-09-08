@@ -127,11 +127,12 @@ const AUDITS=[
  {id:1277,at:'2026-07-28 11:20:44',actor:'admin',action:'KEY_ROTATED',target:'KEY#1',keyId:1,detail:'newVersion=3, activationDate=2026-08-01 00:00:00'},
  {id:1276,at:'2026-07-01 10:00:00',actor:'admin',action:'KEY_STATUS_CHANGED',target:'KEY#4',keyId:4,detail:'action=DEACTIVATE, version=1, reason=재봉인 완료'},
 ];
+/* 공지사항 — pinned(상단 고정, 배지 "고정") 는 목록 상단 고정, 번호는 id 그대로 표시 (설계의 expose_yn 은 폐기, 2026-09-08) */
 const NOTICES=[
- {id:12,no:1524,important:true,title:'[점검] 8월 정기 시스템 점검 안내 (08/24 02:00~04:00)',files:2,views:129,by:'류재민',at:'2026-08-17'},
- {id:11,no:1523,important:true,title:'[보안] 마스터키 순환(enc_ver) 정책 변경 사전 공지',files:1,views:86,by:'김보안',at:'2026-08-05'},
- {id:10,no:1522,important:false,title:'KMS 관리 키 명명 규칙 가이드 v2 배포',files:1,views:214,by:'류재민',at:'2026-07-22'},
- {id:9,no:1521,important:false,title:'감사로그 CSV 정규화 규칙 안내 (구분자·Null·KST 포맷)',files:0,views:57,by:'김보안',at:'2026-07-10'},
+ {id:12,pinned:true,title:'[점검] 8월 정기 시스템 점검 안내 (08/24 02:00~04:00)',files:2,views:129,by:'류재민',at:'2026-08-17'},
+ {id:11,pinned:true,title:'[보안] 마스터키 순환(enc_ver) 정책 변경 사전 공지',files:1,views:86,by:'김보안',at:'2026-08-05'},
+ {id:10,pinned:false,title:'KMS 관리 키 명명 규칙 가이드 v2 배포',files:1,views:214,by:'류재민',at:'2026-07-22'},
+ {id:9,pinned:false,title:'감사로그 CSV 정규화 규칙 안내 (구분자·Null·KST 포맷)',files:0,views:57,by:'김보안',at:'2026-07-10'},
 ];
 /* 상태 배지 클래스 / 한글 라벨 */
 const BADGE={PRE_ACTIVE:'b-pre',ACTIVE:'b-active',DEACTIVATED:'b-deact',DESTROYED:'b-destroyed'};

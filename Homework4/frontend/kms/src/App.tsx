@@ -9,6 +9,8 @@ import KeyDetailPage from '@/pages/KeyDetailPage'
 import KeyTestPage from '@/pages/KeyTestPage'
 import UserListPage from '@/pages/UserListPage'
 import AuditLogPage from '@/pages/AuditLogPage'
+import NoticeListPage from '@/pages/NoticeListPage'
+import NoticeDetailPage from '@/pages/NoticeDetailPage'
 
 function RequireAuth({ children }: { children: ReactNode }) {
   if (!getToken()) {
@@ -28,6 +30,8 @@ export default function App() {
           <Route path="/keys/test" element={<RequireAuth><KeyTestPage /></RequireAuth>} />
           <Route path="/keys/:keyUid" element={<RequireAuth><KeyDetailPage /></RequireAuth>} />
           <Route path="/users" element={<RequireAuth><UserListPage /></RequireAuth>} />
+          <Route path="/notices" element={<RequireAuth><NoticeListPage /></RequireAuth>} />
+          <Route path="/notices/:id" element={<RequireAuth><NoticeDetailPage /></RequireAuth>} />
           <Route path="/audit" element={<RequireAuth><AuditLogPage /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

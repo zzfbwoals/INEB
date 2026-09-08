@@ -1528,3 +1528,135 @@ textarea.input:focus {
   border: 1px solid var(--line-strong);
   color: var(--text-2);
 }
+
+/* ---- 4주차: 공지사항 (목업 notices.html / notice-detail.html) ---- */
+.tag-imp {
+  display: inline-block;
+  min-width: 40px;
+  text-align: center;
+  padding: 2px 9px;
+  border-radius: 99px;
+  background: var(--red-bg);
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+.att {
+  margin-left: 7px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.notice-view {
+  padding: 26px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.notice-view h2 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+.nmeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12.5px;
+  color: var(--text-3);
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.nmeta b {
+  color: var(--text-2);
+}
+.nbody {
+  font-size: 14px;
+  line-height: 1.85;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.file-list-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.enc-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--blue);
+  background: var(--blue-bg);
+  padding: 2px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.03em;
+}
+.file-it {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 11px 14px;
+}
+.file-it .fic {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--blue-bg);
+  color: var(--blue);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.file-it .fn {
+  flex: 1;
+  min-width: 0;
+}
+.file-it .fn b {
+  font-size: 13px;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-it .fn span {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 9px;
+  background: var(--raised);
+  color: var(--text-2);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.12s;
+  user-select: none;
+}
+.dropzone:hover,
+.dropzone.over {
+  border-color: var(--blue);
+  background: var(--blue-bg);
+  color: var(--blue);
+}

@@ -81,3 +81,13 @@ export function plusDays(days: number): string {
   d.setDate(d.getDate() + days)
   return d.toISOString().slice(0, 10)
 }
+
+/** 바이트 수 → "412 KB" / "1.2 MB" (1024 기준, 소수 1자리·".0" 제거) */
+export function fmtBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  const units = ['KB', 'MB', 'GB']
+  let v = bytes / 1024
+  let i = 0
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++ }
+  return `${v.toFixed(1).replace(/\.0$/, '')} ${units[i]}`
+}

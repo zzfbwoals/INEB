@@ -78,7 +78,16 @@ npm run lint       # oxlint (ESLint 아님)
 - 신규 단위 테스트: AuditHasher·AuditChainVerifier(변조/삭제/삽입/구간 병합)·PersonalDataCodec·UserIntegrityHasher·PrivacyMask·UserService + AuthService 감사 기록 검증
 - 주의: `KmsApplicationTests`(@SpringBootTest)는 `KMS_MASTER_PASSPHRASE`·DB 필요 — 환경 없으면 실패(코드 문제 아님). audit_log의 `detail`은 설계의 jsonb 대신 varchar(500) 문자열(초과 시 잘림), 검증 응답은 최초 오염 id 대신 위반 구간 목록 `[{fromId,toId,type}]`. audit_log 스키마는 설계의 target_type/target_id 대신 단일 `target` 컬럼
 
-미구현: 게시판·대시보드(4주차). 2주차 산출물 설계 원고: `D:\회사\아이넵\과제\과제4주차_구현설계_KMS키관리.md`
+구현 완료 (4주차 게시판, 2026-09-08, develop 브랜치):
+- 백엔드 `notice/` 패키지: `domain/Notice`(`title, content(text), pinned, created_by(loginId=감사 actor), author_name(표시명 스냅샷), view_count`) + `domain/NoticeFile`(`original_name, content_type, file_size(평문 크기), enc_data(text)=base64(iv|ct+tag), enc_ver`). **첨부 암호문은 DB text 컬럼**(파일시스템·볼륨 없음, 설계의 `saved_name`·`iv` 컬럼 폐기, `AppUser` 개인정보와 동일 봉투). `crypto/AttachmentCodec`(`String encrypt(byte[])` / `byte[] decrypt(String)`, 실패 시 `NOTICE_FILE_CORRUPTED` 409). `NoticeFile→Notice` **단방향 N:1만** — Notice 쪽에 컬렉션을 두면 목록이 암호문까지 읽으므로 금지. 목록·상세·삭제는 `NoticeFileRepository`의 JPQL 프로젝션(`NoticeFileMeta`)·집계·삭제 쿼리만 쓰고 `findById`(암호문 로드)는 다운로드 전용
+- 확정 결정(2026-09-08): **`pinned`(상단 고정 — UI 문구 "상단 고정" 체크, 배지 "고정") 채택·`expose_yn` 폐기** → 설계 문서 개정 대상. 제한 **파일당 20MB · 공지당 5개 · 확장자 제한 없음**(`NoticeService.MAX_*`, `spring.servlet.multipart` 20MB/105MB, `server.tomcat.max-swallow-size` 110MB, Nginx `client_max_body_size 110m`). 권한: admin_user 로그인이면 누구나 CRUD·다운로드(`@PreAuthorize` 없음). notice/notice_file 은 무결성 해시 대상 아님
+- API: `GET /api/notices`(`keyword`·`scope`=TITLE_CONTENT|TITLE|AUTHOR(author_name)·`pinned`·페이징·정렬 createdAt|viewCount, **정렬과 무관하게 `pinned DESC` 최우선**) · `GET /api/notices/{id}?countView=true`(**기본 조회수 +1**, `countView=false`는 SSE 재조회·수정 후 재조회용 — 조회수 인플레이션 방지; 조회는 감사 대상 아님) · `POST /api/notices`(**multipart** 파트 `title`/`content`/`pinned`/`files` 반복 — `files[]` 아님, `@Valid @ModelAttribute NoticeForm` record 바인딩 동작 확인) · `PUT /api/notices/{id}`(같은 multipart, 텍스트 갱신 + **새 첨부 추가만**, 기존 첨부 삭제는 `DELETE /api/files/{id}`) · `DELETE /api/notices/{id}`(첨부 JPQL 삭제 → 공지 삭제, FK cascade 없음) · `GET /api/files/{id}/download`(**감사 기록 후 복호화**, `HttpServletResponse`에 직접 쓰고 finally zeroize, `Content-Disposition` RFC 5987 `filename*=UTF-8''`, CORS `exposedHeaders` 추가) · `DELETE /api/files/{id}`. 오류: `NOTICE_NOT_FOUND`/`NOTICE_FILE_NOT_FOUND` 404, `NOTICE_FILE_LIMIT`/`NOTICE_FILE_TOO_LARGE`/`NOTICE_FILE_EMPTY` 400(`MaxUploadSizeExceededException`도 400으로 매핑, `MissingServletRequestPartException` INVALID_INPUT)
+- 감사: `NOTICE_CREATED`·`NOTICE_UPDATED`(fields=…, 없으면 none)·`NOTICE_DELETED`·`NOTICE_FILE_DOWNLOADED`·`NOTICE_FILE_DELETED` — **첨부 행위도 target 은 `NOTICE#{noticeId}`**(`AuditHook.noticeTarget`, fileId는 detail) → 상세 화면이 target 하나로 SSE 구독·감사 로그 `?target=` 필터
+- 프론트: `/notices`(목록 — 구분 전체/고정/일반·범위 select·즉시검색, `tbl-fixed` 8/12/55/10/15%, 고정 배지·📎 N, 행 클릭 상세, SSE는 `NOTICE_*` 중 다운로드 제외) · `/notices/:id`(상세 — 최초 진입만 `countView`(ref 가드로 dev StrictMode 이중 증가 방지), SSE: UPDATED/FILE_DELETED → `load(false)`, DELETED → 목록 이동; 첨부 카드 `복호화 다운로드`는 blob → 원본명 저장, 다운로드 오류 본문(Blob)은 `unwrapBlobError`로 JSON 복원). `components/notices/`(`NoticeFormDialog` 등록/수정 공용 — 드롭존·클라이언트 20MB/5개 검증·기존 첨부 즉시 삭제, `NoticeDeleteDialog`, `NoticeFileRow`), `api/notices.ts`(FormData + 요청별 multipart 헤더), `lib/format.ts fmtBytes`, index.css 4주차 섹션(`.tag-imp .att .notice-view .nmeta .nbody .file-list .enc-tag .file-it .dropzone`). 목업 `notices.html`·`notice-detail.html`·`dashboard.html`·`data.js`(`important`→`pinned`, iv 문구 제거, 중요 체크·파일 목록 추가) 동기화
+- 단위 테스트: `AttachmentCodecTest`(4)·`NoticeServiceTest`(13). 로컬 스모크(curl·Python UTF-8): 등록/제한 400/조회수/한글 파일명 다운로드 바이트 일치/수정/삭제/감사 5종 확인. 주의: Windows curl `-F`는 한글을 CP949로 보내므로 한글 검증은 UTF-8 클라이언트(브라우저·Python)로
+- 제약(문서화): 요청당 최대 100MB 평문+암호문 사본이 힙에 오름(단일 admin 환경) · 톰캣 multipart 임시파일(평문)은 요청 종료 시 삭제 · 조회수는 세션 중복 방지 없음
+
+미구현: 대시보드(4주차). 2주차 산출물 설계 원고: `D:\회사\아이넵\과제\과제4주차_구현설계_KMS키관리.md`
 
 ## 핵심 아키텍처 (설계 문서 기준)
 
@@ -134,7 +143,7 @@ npm run lint       # oxlint (ESLint 아님)
 | 데이터 | 방식 | 컬럼 |
 |---|---|---|
 | 비밀번호 (admin_user·app_user) | BCrypt (적응형 단방향 해시, salt는 해시 문자열에 내장 — 별도 컬럼 없음) | password_hash |
-| 연락처·이메일·첨부파일 | AES-256-GCM(마스터키) + Base64 저장 | phone_enc, email_enc, iv, enc_ver |
+| 연락처·이메일·첨부파일 | AES-256-GCM(마스터키) + Base64 저장 — `base64(iv\|ct+tag)` iv 동봉, 별도 iv 컬럼 없음 | phone_enc, email_enc, notice_file.enc_data, enc_ver |
 | 행 무결성 | HMAC-SHA256 (`WrappedSecretStore.integrityKey()` — crypto_config에 래핑 보관) | integrity_hash / prev_hash·row_hash |
 
 - 암호화 컬럼은 평문 LIKE 불가 → HMAC 기반 `phone_hash`/`email_hash`로 **정확검색만** 지원
@@ -153,7 +162,7 @@ npm run lint       # oxlint (ESLint 아님)
 
 ### DB 테이블 (10개)
 
-`crypto_config`(salt·kcv, 비밀 아님) · `admin_user` · `crypto_key`(논리 키: key_uid=UUID, algorithm·key_size·mode·purpose, `status`(파생)·`current_version`, `auto_rotate`·`rotation_period_days`·`next_rotation_at`, integrity_hash) · `key_material`(버전 = 상태 주체: `key_id, version, state, deactivation_trigger, wrapped_key(NULL=폐기), iv, wrap_algo, public_key(비대칭), activation_date, destroyed_at, integrity_hash`, UNIQUE(key_id, version), 1:N) · `key_status_history`(version·trigger 포함) · `key_usage_log`(version 포함, iv는 암호문에 내장) · `app_user` · `notice` · `notice_file` · `audit_log`
+`crypto_config`(salt·kcv, 비밀 아님) · `admin_user` · `crypto_key`(논리 키: key_uid=UUID, algorithm·key_size·mode·purpose, `status`(파생)·`current_version`, `auto_rotate`·`rotation_period_days`·`next_rotation_at`, integrity_hash) · `key_material`(버전 = 상태 주체: `key_id, version, state, deactivation_trigger, wrapped_key(NULL=폐기), iv, wrap_algo, public_key(비대칭), activation_date, destroyed_at, integrity_hash`, UNIQUE(key_id, version), 1:N) · `key_status_history`(version·trigger 포함) · `key_usage_log`(version 포함, iv는 암호문에 내장) · `app_user` · `notice`(`title, content, pinned, created_by, author_name, view_count` — expose_yn 폐기) · `notice_file`(`notice_id, original_name, content_type, file_size, enc_data(text, base64(iv|ct+tag)), enc_ver` — saved_name·iv 컬럼 폐기, 파일시스템 미사용) · `audit_log`
 
 ### API 공통 규격
 

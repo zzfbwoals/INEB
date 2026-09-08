@@ -52,13 +52,13 @@
       <div style="font-size:12.5px;font-weight:700;color:var(--text-2)">첨부파일 <span class="enc-tag">AES-256-GCM 암호화 저장</span></div>
       <div class="file-it">
         <span class="fic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l5 5v13H6V3z"/><path d="M14 3v5h5"/></svg></span>
-        <div class="fn"><b>2026_08_정기점검_상세일정.pdf</b><span>412 KB · iv: mB4kTz9wQxLp0aVu · enc_ver 1</span></div>
-        <button class="btn btn-ghost btn-sm" onclick="toast('복호화 스트리밍으로 다운로드를 시작합니다')">복호화 다운로드</button>
+        <div class="fn"><b>2026_08_정기점검_상세일정.pdf</b><span>412 KB · enc_ver 1</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="toast('복호화 다운로드를 시작합니다')">복호화 다운로드</button>
       </div>
       <div class="file-it">
         <span class="fic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l5 5v13H6V3z"/><path d="M14 3v5h5"/></svg></span>
-        <div class="fn"><b>점검_체크리스트.xlsx</b><span>88 KB · iv: Qw7rNv2eXcKd93Ta · enc_ver 1</span></div>
-        <button class="btn btn-ghost btn-sm" onclick="toast('복호화 스트리밍으로 다운로드를 시작합니다')">복호화 다운로드</button>
+        <div class="fn"><b>점검_체크리스트.xlsx</b><span>88 KB · enc_ver 1</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="toast('복호화 다운로드를 시작합니다')">복호화 다운로드</button>
       </div>
     </div>
   </div>
@@ -70,12 +70,12 @@ renderShell('notices');
 const n=NOTICES.find(x=>x.id===Number(qs('id')))||NOTICES[0];
 n.views++;
 document.getElementById('nvTitle').textContent=n.title;
-document.getElementById('nvNo').textContent=n.no;
+document.getElementById('nvNo').textContent=n.id;
 document.getElementById('nvBy').textContent=n.by;
 document.getElementById('nvAt').textContent=n.at+' 10:12';
 document.getElementById('nvViews').textContent=n.views;
 if(!n.files)document.getElementById('nvFiles').style.display='none';
-toast('조회수가 1 증가했습니다 (view_count +1)');
+/* 상세 진입 1회당 view_count +1 (GET /api/notices/{id}) — 실시간 재조회는 countView=false 로 증가 없음 */
 function confirmDeleteNotice(){
   if(confirm('이 공지사항을 삭제할까요?\n암호화된 첨부파일도 함께 정리됩니다.')){location.href='notices.html';}
 }

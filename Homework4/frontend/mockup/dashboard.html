@@ -338,7 +338,8 @@ html.dash-full .stat .num{font-size:30px}
     <div class="modal-b">
       <div class="field"><label>제목 <em>*</em></label><input class="input" id="ntTitle" placeholder="공지 제목을 입력하세요"></div>
       <div class="field"><label>본문 <em>*</em></label><textarea class="input txt" id="ntBody" style="min-height:130px" placeholder="공지 내용을 입력하세요"></textarea></div>
-      <div class="field"><label>첨부파일 <span style="font-weight:400;color:var(--text-3)">— 업로드 시 마스터키로 암호화 저장</span></label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2);cursor:pointer"><input type="checkbox" style="accent-color:var(--red);width:14px;height:14px"> 상단 고정</label>
+      <div class="field"><label>첨부파일 <span style="font-weight:400;color:var(--text-3)">— 마스터키 암호화 저장 · 파일당 20MB · 최대 5개</span></label>
         <button class="btn btn-ghost" style="justify-content:center;border-style:dashed;padding:16px" onclick="toast('파일 선택은 목업에서 생략됩니다 — 암호화 업로드 처리')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V5m0 0 4 4m-4-4L8 9M4 19h16"/></svg>파일을 끌어오거나 클릭하여 선택
         </button></div>
@@ -416,11 +417,11 @@ document.addEventListener('fullscreenchange',()=>{
   document.getElementById('userTotal').textContent=USERS.length;
   document.getElementById('userDelta').innerHTML=`활성 <b>${uAct}</b> · 정지 <b>${USERS.length-uAct}</b> · 최근 30일 가입 <b>${uNew}</b>`;
 
-  const nImp=NOTICES.filter(n=>n.important).length, nFiles=NOTICES.reduce((a,n)=>a+n.files,0);
+  const nImp=NOTICES.filter(n=>n.pinned).length, nFiles=NOTICES.reduce((a,n)=>a+n.files,0);
   const ym=NOW.getFullYear()+'-'+String(NOW.getMonth()+1).padStart(2,'0');
   const nMonth=NOTICES.filter(n=>n.at.slice(0,7)===ym).length;
   document.getElementById('noticeTotal').textContent=NOTICES.length;
-  document.getElementById('noticeDelta').innerHTML=`중요 <b>${nImp}</b> · 이번 달 <b>${nMonth}</b> · 첨부 <b>${nFiles}</b>건 암호화 저장`;
+  document.getElementById('noticeDelta').innerHTML=`고정 <b>${nImp}</b> · 이번 달 <b>${nMonth}</b> · 첨부 <b>${nFiles}</b>건 암호화 저장`;
 
   // 무결성 위반 — 키 메타(crypto_key) / 키 버전(key_material) / 사용자(app_user) / 감사 체인(audit_log 구간)
   const ivKey=KEYS.filter(k=>!k.integrity).length;

@@ -6,8 +6,10 @@ package com.ineb.kms.audit;
  * KEY_CREATED · KEY_UPDATED · KEY_STATUS_CHANGED · KEY_ROTATED · KEY_REACTIVATED · KEY_DESTROYED ·
  * KEY_INTEGRITY_VIOLATION · KEY_MATERIAL_VIEWED · KEY_TEST_ENCRYPT · DECRYPT · SIGN · VERIFY /
  * USER_CREATED · USER_UPDATED · USER_PLAIN_VIEWED · USER_INTEGRITY_VIOLATION · USER_INTEGRITY_RESTORED(배치 검증, actor SYSTEM) /
- * AUDIT_CHAIN_VERIFIED · AUDIT_EXPORTED · AUDIT_CHAIN_VIOLATION · AUDIT_CHAIN_RESTORED(배치 검증, actor SYSTEM)
- * target 형식(2026-09-01 확정): KEY#{keyUid} / USER#{id} / AUTH#{loginId} / AUDIT — 아래 헬퍼로만 만든다.
+ * AUDIT_CHAIN_VERIFIED · AUDIT_EXPORTED · AUDIT_CHAIN_VIOLATION · AUDIT_CHAIN_RESTORED(배치 검증, actor SYSTEM) /
+ * NOTICE_CREATED · NOTICE_UPDATED · NOTICE_DELETED · NOTICE_FILE_DOWNLOADED · NOTICE_FILE_DELETED
+ * (첨부파일 행위도 target 은 소속 공지 — 상세 화면 SSE 매칭·감사 필터를 한 target 으로 묶는다)
+ * target 형식(2026-09-01 확정): KEY#{keyUid} / USER#{id} / AUTH#{loginId} / NOTICE#{id} / AUDIT — 아래 헬퍼로만 만든다.
  */
 public interface AuditHook {
 
@@ -23,5 +25,9 @@ public interface AuditHook {
 
     static String authTarget(String loginId) {
         return "AUTH#" + loginId;
+    }
+
+    static String noticeTarget(Long id) {
+        return "NOTICE#" + id;
     }
 }

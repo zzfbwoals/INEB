@@ -10,6 +10,17 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  # 공지사항 첨부 업로드 — 파일당 20MB · 공지당 5개 (요청 상한 = 20MB×5 + 폼 필드). 초과 시 400 NOTICE_FILE_TOO_LARGE
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 105MB
+
+server:
+  tomcat:
+    # 상한 초과 업로드를 거부할 때 남은 본문을 읽어 버려야 브라우저가 커넥션 리셋 대신 400 응답을 받는다
+    max-swallow-size: 110MB
+
 kms:
   admin:
     # 최초 기동(admin_user 비어 있을 때)에만 사용하는 admin 초기 비밀번호 — DB 비밀번호와 같은 방식으로 암호화, 평문 금지
