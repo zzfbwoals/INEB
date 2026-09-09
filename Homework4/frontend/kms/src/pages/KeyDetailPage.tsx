@@ -6,14 +6,35 @@ import { getHistory, getKey, getUsage, type HistoryItem, type KeyDetail, type Us
 import { ALGOS, PURPOSE_KO, TRIGGER_KO, canEncrypt, canSign } from '@/lib/keyRules'
 import { abbreviatePem, dday, downloadText, fmt, relTime } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogBody, DialogContent } from '@/components/ui/dialog'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { CopyButton } from '@/components/ui/copy'
 import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
 import { KeyActionDialogs, type ActionDialogState } from '@/components/keys/KeyActionDialogs'
 import { KeyEditDialog } from '@/components/keys/KeyEditDialog'
 import { KeyRevealDialog } from '@/components/keys/KeyRevealDialog'
+import { useColumnResize } from '@/lib/useColumnResize'
+import { SortMark, sortClass, type SortState } from '@/components/ui/sort-mark'
+
+/* 버전 목록·사용 이력 표 — 열 기본 폭(%)과 클라이언트 정렬(데이터가 이미 화면에 있으므로 서버 재조회 없음) */
+const VER_COLS = [8, 15, 16, 16, 9, 15, 10, 11]
+const USE_COLS = [20, 14, 12, 10, 44]
+
+function sortRows<T>(rows: T[], sort: SortState, pick: (row: T, field: string) => string | number | boolean | null): T[] {
+  if (!sort) return rows
+  const dir = sort.dir === 'asc' ? 1 : -1
+  return [...rows].sort((a, b) => {
+    const x = pick(a, sort.field), y = pick(b, sort.field)
+    if (x === y) return 0
+    if (x === null) return 1            // 빈 값은 방향과 무관하게 뒤로
+    if (y === null) return -1
+    return (x < y ? -1 : 1) * dir
+  })
+}
+
+function nextSort(prev: SortState, field: string): SortState {
+  return prev?.field === field ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { field, dir: 'asc' }
+}
 
 /* 목업 key-detail.html — 키 상세 */
 export default function KeyDetailPage() {
@@ -34,6 +55,10 @@ export default function KeyDetailPage() {
   const tlCardRef = useRef<HTMLDivElement>(null)
   const bottomCardRef = useRef<HTMLDivElement>(null)
   const [tblMax, setTblMax] = useState<number | null>(null)
+  const [verSort, setVerSort] = useState<SortState>(null)
+  const [useSort, setUseSort] = useState<SortState>(null)
+  const verCols = useColumnResize('keyVersions', VER_COLS)
+  const useCols = useColumnResize('keyUsage', USE_COLS)
 
   // 타임라인 카드는 왼쪽 메타 카드 높이까지만 — 넘치면 하단 페이드 + 더보기(모달). 1열 레이아웃(<=1100px)에서는 제한하지 않는다.
   useLayoutEffect(() => {
@@ -116,6 +141,26 @@ export default function KeyDetailPage() {
   const rule = ALGOS[detail.algorithm]
   const d = dday(detail.nextRotationAt)
   const stats = usage?.stats ?? detail.usageStats
+  const versionRows = sortRows(detail.versions, verSort, (v, f) => {
+    switch (f) {
+      case 'version': return v.version
+      case 'state': return v.state
+      case 'activationDate': return v.activationDate ?? null
+      case 'lastUsedAt': return v.lastUsedAt
+      case 'usageCount': return v.usageCount
+      case 'integrityValid': return v.integrityValid
+      default: return null
+    }
+  })
+  const usageRows = sortRows(usage?.logs.content ?? [], useSort, (u, f) => {
+    switch (f) {
+      case 'usedAt': return u.usedAt
+      case 'operation': return u.operation
+      case 'version': return u.version
+      case 'result': return u.result
+      default: return null
+    }
+  })
 
   return (
     <AppLayout>
@@ -208,20 +253,39 @@ export default function KeyDetailPage() {
         </div>
         {tab === 'ver' ? (
           <div className="tbl-wrap tbl-scroll" style={tblMax !== null ? { maxHeight: tblMax } : undefined}>
-            <table>
-              <thead><tr><th>버전</th><th>상태</th><th>활성일</th><th>마지막 사용</th><th>사용 횟수</th><th>{capLabel}</th><th>무결성</th><th></th></tr></thead>
+            <table className="tbl-fixed" ref={verCols.tableRef}>
+              <thead>
+                <tr>
+                  <th className={sortClass(verSort, 'version')} style={{ width: `${verCols.widths[0]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'version'))}>버전<SortMark sort={verSort} field="version" />{verCols.resizer(0)}</th>
+                  <th className={sortClass(verSort, 'state')} style={{ width: `${verCols.widths[1]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'state'))}>상태<SortMark sort={verSort} field="state" />{verCols.resizer(1)}</th>
+                  <th className={sortClass(verSort, 'activationDate')} style={{ width: `${verCols.widths[2]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'activationDate'))}>활성일<SortMark sort={verSort} field="activationDate" />{verCols.resizer(2)}</th>
+                  <th className={sortClass(verSort, 'lastUsedAt')} style={{ width: `${verCols.widths[3]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'lastUsedAt'))}>마지막 사용<SortMark sort={verSort} field="lastUsedAt" />{verCols.resizer(3)}</th>
+                  <th className={sortClass(verSort, 'usageCount')} style={{ width: `${verCols.widths[4]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'usageCount'))}>사용 횟수<SortMark sort={verSort} field="usageCount" />{verCols.resizer(4)}</th>
+                  <th style={{ width: `${verCols.widths[5]}%` }}>{capLabel}{verCols.resizer(5)}</th>
+                  <th className={sortClass(verSort, 'integrityValid')} style={{ width: `${verCols.widths[6]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'integrityValid'))}>무결성<SortMark sort={verSort} field="integrityValid" />{verCols.resizer(6)}</th>
+                  <th style={{ width: `${verCols.widths[7]}%` }}></th>
+                </tr>
+              </thead>
               <tbody>
-                {detail.versions.map((v) => <VersionRow key={v.version} v={v} detail={detail} onAction={setAction} onReveal={setRevealVersion} />)}
+                {versionRows.map((v) => <VersionRow key={v.version} v={v} detail={detail} onAction={setAction} onReveal={setRevealVersion} />)}
               </tbody>
             </table>
           </div>
         ) : (
           <div className="tbl-wrap tbl-scroll" style={tblMax !== null ? { maxHeight: tblMax } : undefined}>
-            <table>
-              <thead><tr><th>일시</th><th>연산</th><th>버전</th><th>결과</th><th>실패 사유 / 비고</th></tr></thead>
+            <table className="tbl-fixed" ref={useCols.tableRef}>
+              <thead>
+                <tr>
+                  <th className={sortClass(useSort, 'usedAt')} style={{ width: `${useCols.widths[0]}%` }} onClick={() => setUseSort((p) => nextSort(p, 'usedAt'))}>일시<SortMark sort={useSort} field="usedAt" />{useCols.resizer(0)}</th>
+                  <th className={sortClass(useSort, 'operation')} style={{ width: `${useCols.widths[1]}%` }} onClick={() => setUseSort((p) => nextSort(p, 'operation'))}>연산<SortMark sort={useSort} field="operation" />{useCols.resizer(1)}</th>
+                  <th className={sortClass(useSort, 'version')} style={{ width: `${useCols.widths[2]}%` }} onClick={() => setUseSort((p) => nextSort(p, 'version'))}>버전<SortMark sort={useSort} field="version" />{useCols.resizer(2)}</th>
+                  <th className={sortClass(useSort, 'result')} style={{ width: `${useCols.widths[3]}%` }} onClick={() => setUseSort((p) => nextSort(p, 'result'))}>결과<SortMark sort={useSort} field="result" />{useCols.resizer(3)}</th>
+                  <th style={{ width: `${useCols.widths[4]}%` }}>실패 사유 / 비고</th>
+                </tr>
+              </thead>
               <tbody>
-                {(usage?.logs.content.length ?? 0) === 0 && <tr><td colSpan={5} className="tbl-empty" style={{ padding: 28 }}>이 키에 대한 사용 기록이 없습니다</td></tr>}
-                {usage?.logs.content.map((u, i) => (
+                {usageRows.length === 0 && <tr><td colSpan={5} className="tbl-empty" style={{ padding: 28 }}>이 키에 대한 사용 기록이 없습니다</td></tr>}
+                {usageRows.map((u, i) => (
                   <tr key={i}>
                     <td className="mono">{u.usedAt}</td>
                     <td className="mono">{u.operation}</td>
@@ -242,9 +306,6 @@ export default function KeyDetailPage() {
           <DialogBody style={{ maxHeight: '62vh', overflowY: 'auto' }}>
             <div className="timeline" style={{ padding: 0 }}><TimelineItems history={history} /></div>
           </DialogBody>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setTlModal(false)}>닫기</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
