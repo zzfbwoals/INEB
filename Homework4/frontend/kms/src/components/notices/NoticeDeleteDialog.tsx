@@ -36,7 +36,6 @@ export function NoticeDeleteDialog({ notice, open, onClose }: { notice: NoticeDe
           </p>
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button variant="danger" disabled={pending} onClick={submit}>삭제</Button>
         </DialogFooter>
       </DialogContent>

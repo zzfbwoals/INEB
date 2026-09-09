@@ -70,11 +70,6 @@ export default function KeyListPage() {
     <AppLayout>
       <div className="page-h">
         <div><h2>키 목록</h2></div>
-        <div className="acts">
-          <Button className="px-[11px]" data-tip="등록" aria-label="등록" onClick={() => setCreateOpen(true)}>
-            <Plus size={16} strokeWidth={2.2} />
-          </Button>
-        </div>
       </div>
 
       <div className="filters">
@@ -100,6 +95,9 @@ export default function KeyListPage() {
           <option value="ENC_DEC_SIGN_VERIFY">암/복호화 및 서명/검증</option>
           <option value="SIGN_VERIFY">서명/검증</option>
         </select>
+        <Button className="px-[11px] ml-auto" data-tip="등록" aria-label="등록" onClick={() => setCreateOpen(true)}>
+          <Plus size={16} strokeWidth={2.2} />
+        </Button>
       </div>
 
       <div className="card">

@@ -17,9 +17,9 @@
 <template id="page-body">
   <div class="page-h">
     <div><h2>사용자 관리</h2></div>
-    <div class="acts"><button class="btn btn-primary" style="padding:9px 11px" data-tip="등록" aria-label="등록" onclick="openUserForm()"><i data-lucide="plus" width="16" height="16" stroke-width="2.2"></i></button></div>
   </div>
   <div class="filters">
+    <button class="btn btn-primary" style="padding:9px 11px;margin-left:auto;order:99" data-tip="등록" aria-label="등록" onclick="openUserForm()"><i data-lucide="plus" width="16" height="16" stroke-width="2.2"></i></button>
     <div class="search">
       <i data-lucide="search" width="14" height="14" stroke-width="2"></i>
       <input class="input" id="userSearch" placeholder="이름 검색" oninput="renderUsers()">
@@ -71,7 +71,6 @@
       <div class="field"><label>조회 사유 <em>*</em> <span class="badge b-bad" style="margin-left:6px">ADMIN 한정</span></label><input class="input" id="plainReason" placeholder="예: CS 본인확인 요청 처리"></div>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdPlain')">취소</button>
       <button class="btn btn-primary" id="plainBtn" onclick="viewPlain()">조회</button>
     </div>
   </div>

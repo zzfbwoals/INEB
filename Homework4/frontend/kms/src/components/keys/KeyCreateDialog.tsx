@@ -138,7 +138,6 @@ export function KeyCreateDialog({ open, onOpenChange, onCreated }: { open: boole
             </div>
           </DialogBody>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>취소</Button>
             <Button type="submit" disabled={pending}>{pending ? '생성 중…' : '생성'}</Button>
           </DialogFooter>
         </form>

@@ -337,3 +337,13 @@ tbody tr.row-ghost td .row-tag,tbody tr.row-ghost td .actchip{display:inline-blo
 .tab.on{color:var(--text);border-color:var(--blue)}
 .tab:hover{color:var(--text)}
 .modal-h.has-extra .tabs{padding:0;border-bottom:0;margin-bottom:-1px}
+
+.tip-up[data-tip]::after{top:auto;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(4px)}
+.tip-up[data-tip]:hover::after{transform:translateX(-50%) translateY(0)}
+.icon-btn.primary{color:var(--blue)}
+.icon-btn.primary:hover{color:var(--blue);background:var(--blue-bg)}
+.tip-left[data-tip]::after{top:50%;left:auto;right:calc(100% + 8px);transform:translateY(-50%) translateX(4px)}
+.tip-left[data-tip]:hover::after{transform:translateY(-50%) translateX(0)}
+.acts.icon-acts{gap:4px;align-items:center;align-self:flex-end}
+.icon-btn.sm{width:22px;height:22px;border-radius:5px}
+.pin-mark{display:inline-flex;align-items:center;color:var(--red)}

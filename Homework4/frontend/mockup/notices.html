@@ -43,9 +43,9 @@
   <div class="board-head">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
       <div><h2>공지사항</h2></div>
-      <button class="btn btn-primary" style="padding:9px 11px" data-tip="등록" aria-label="등록" onclick="openModal('mdNotice')"><i data-lucide="plus" width="16" height="16" stroke-width="2.2"></i></button>
     </div>
     <div class="board-bar">
+    <button class="btn btn-primary" style="padding:9px 11px;margin-left:auto;order:99" data-tip="등록" aria-label="등록" onclick="openModal('mdNotice')"><i data-lucide="plus" width="16" height="16" stroke-width="2.2"></i></button>
       <span class="total">총 <b id="ntTotal">4</b>건</span>
       <select class="input" style="width:110px"><option>전체</option><option>고정</option><option>일반</option></select>
       <select class="input" style="width:120px"><option>제목+내용</option><option>제목</option><option>작성자</option></select>
@@ -93,7 +93,6 @@
         </div></div>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdNotice')">취소</button>
       <button class="btn btn-primary" onclick="toast('공지사항이 등록되었습니다');closeModal('mdNotice')">등록</button>
     </div>
   </div>
@@ -110,7 +109,7 @@ function renderNotices(){
   const imp=rows.filter(n=>n.pinned),normal=rows.filter(n=>!n.pinned);
   const row=n=>`
     <tr class="rowlink ${n.pinned?'important':''}" onclick="location.href='notice-detail.html?id=${n.id}'">
-      <td>${n.pinned?'<span class="tag-imp">고정</span>':n.id}</td>
+      <td>${n.pinned?'<span class="pin-mark" data-tip="상단 고정"><i data-lucide="pin" width="14" height="14"></i></span>':n.id}</td>
       <td>${n.by}</td>
       <td class="tt"><a href="notice-detail.html?id=${n.id}" onclick="event.stopPropagation()">${n.title}</a>${n.files?`<span class="att">📎 ${n.files}</span>`:''}</td>
       <td class="mono">${n.views}</td>

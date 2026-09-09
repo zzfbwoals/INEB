@@ -41,7 +41,6 @@ export function UserPlainDialog({ user, onClose, onRevealed }: {
           </div>
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button disabled={pending} onClick={run}>조회</Button>
         </DialogFooter>
       </DialogContent>

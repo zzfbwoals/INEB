@@ -1,3 +1,4 @@
+import { Ban, ChevronDown, Download, FlaskConical, Pencil, Play, Power, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
@@ -8,7 +9,7 @@ import { subscribeUiEvents } from '@/lib/events'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/dialog'
 import { errorMessage, useToast } from '@/components/ui/toast'
-import { CopyButton, DOWNLOAD_ICON } from '@/components/ui/copy'
+import { CopyButton } from '@/components/ui/copy'
 import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
 import { KeyActionDialogs, type ActionDialogState } from '@/components/keys/KeyActionDialogs'
 import { KeyEditDialog } from '@/components/keys/KeyEditDialog'
@@ -125,18 +126,19 @@ export default function KeyDetailPage() {
             <StateBadge state={s} />
             <span className="vtag cur">v{detail.currentVersion}</span>
           </div>
-          <div className="desc mono" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="desc mono" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, minHeight: 26 }}>
             <span>{detail.keyUid}</span>
-            <CopyButton text={detail.keyUid} title="UID 복사" />
+            <CopyButton text={detail.keyUid} label="UID 복사" />
           </div>
         </div>
-        <div className="acts">
-          <Button asChild variant="ghost"><Link to={`/audit?target=${encodeURIComponent(`KEY#${detail.keyUid}`)}`}>감사 로그</Link></Button>
-          {s !== 'DESTROYED' && <Button asChild variant="ghost"><Link to={`/keys/test?id=${detail.keyUid}`}>동작 테스트</Link></Button>}
-          {pre && <Button onClick={() => setAction({ kind: 'ACTIVATE', version: pre.version })}>활성화</Button>}
-          {actives.length > 0 && <Button variant="ghost" onClick={() => setAction({ kind: 'DEACTIVATE', version: null })}>정지</Button>}
-          {(s === 'ACTIVE' || s === 'DEACTIVATED') && <Button onClick={() => setAction({ kind: 'ROTATE' })}>갱신</Button>}
-          {s !== 'DESTROYED' && destroyable && <Button variant="danger" onClick={() => setAction({ kind: 'DESTROY', version: null })}>삭제</Button>}
+        {/* 헤더 액션 — 배경 없는 아이콘 버튼 + 툴팁 (Button 의 hover filter 가 스택 컨텍스트를 만들어 툴팁이 옆 카드에 가려지므로 .icon-btn 사용) */}
+        <div className="acts icon-acts">
+          <Link className="icon-btn" data-tip="감사 로그" aria-label="감사 로그" to={`/audit?target=${encodeURIComponent(`KEY#${detail.keyUid}`)}`}><ShieldCheck size={17} /></Link>
+          {s !== 'DESTROYED' && <Link className="icon-btn" data-tip="동작 테스트" aria-label="동작 테스트" to={`/keys/test?id=${detail.keyUid}`}><FlaskConical size={17} /></Link>}
+          {pre && <button type="button" className="icon-btn primary" data-tip="활성화" aria-label="활성화" onClick={() => setAction({ kind: 'ACTIVATE', version: pre.version })}><Play size={17} /></button>}
+          {actives.length > 0 && <button type="button" className="icon-btn" data-tip="정지" aria-label="정지" onClick={() => setAction({ kind: 'DEACTIVATE', version: null })}><Ban size={17} /></button>}
+          {(s === 'ACTIVE' || s === 'DEACTIVATED') && <button type="button" className="icon-btn primary" data-tip="갱신" aria-label="갱신" onClick={() => setAction({ kind: 'ROTATE' })}><RefreshCw size={17} /></button>}
+          {s !== 'DESTROYED' && destroyable && <button type="button" className="icon-btn danger" data-tip="삭제" aria-label="삭제" onClick={() => setAction({ kind: 'DESTROY', version: null })}><Trash2 size={17} /></button>}
         </div>
       </div>
 
@@ -144,7 +146,11 @@ export default function KeyDetailPage() {
         <div className="card" ref={metaCardRef}>
           <div className="card-h">
             <h3>키 메타정보</h3>
-            {s !== 'DESTROYED' && <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>수정</Button>}
+            {s !== 'DESTROYED' && (
+              <button type="button" className="icon-btn" data-tip="수정" aria-label="수정" onClick={() => setEditOpen(true)}>
+                <Pencil size={15} />
+              </button>
+            )}
           </div>
           <div className="meta-grid">
             <Meta k="알고리즘 / 사이즈" v={`${detail.algorithm} · ${rule.sizeLabel ? rule.sizeLabel(detail.keySize) : detail.keySize + ' bit'}`} />
@@ -162,9 +168,9 @@ export default function KeyDetailPage() {
                 <div className="k" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   공개키 (v{detail.currentVersion}, PEM)
                   <CopyButton text={detail.publicKeyPem} />
-                  <button type="button" className="copy-btn"
+                  <button type="button" className="icon-btn sm" data-tip=".pem 다운로드" aria-label=".pem 다운로드"
                     onClick={() => downloadText(`${detail.keyName}_v${detail.currentVersion}.pem`, detail.publicKeyPem!, 'application/x-pem-file')}>
-                    {DOWNLOAD_ICON}.pem
+                    <Download size={13} />
                   </button>
                 </div>
                 <div className="pubkey" title="전문은 복사 또는 .pem 다운로드로 확인">{abbreviatePem(detail.publicKeyPem)}</div>
@@ -186,7 +192,10 @@ export default function KeyDetailPage() {
           <div className="timeline"><TimelineItems history={history} /></div>
           {tlOverflow && (
             <div className="tl-more">
-              <Button variant="ghost" size="sm" onClick={() => setTlModal(true)}>더보기</Button>
+              {/* 카드가 overflow:hidden 이라 툴팁은 위로(tip-up) */}
+              <button type="button" className="icon-btn tip-up" data-tip="더보기" aria-label="더보기" onClick={() => setTlModal(true)}>
+                <ChevronDown size={16} />
+              </button>
             </div>
           )}
         </div>
@@ -280,14 +289,19 @@ function VersionRow({ v, detail, onAction, onReveal }: { v: VersionInfo; detail:
   const role = canEncrypt(detail.purpose) ? (canSign(detail.purpose) ? '복호화·검증' : '복호화') : '검증'
   const cap = v.state !== 'ACTIVE' ? '✗ / ✗' : v.canEncrypt ? '✓ / ✓'
     : <>✗ / ✓<span className="roletag">{role} 전용</span></>
+  /* 버전별 액션 — 아이콘 버튼 + 툴팁. 표가 내부 스크롤(overflow)이라 아래·위 툴팁이 잘리므로 왼쪽(tip-left)으로 띄운다 */
+  const destroy = <button type="button" className="icon-btn danger tip-left" data-tip="삭제" aria-label="삭제" onClick={() => onAction({ kind: 'DESTROY', version: v.version })}><Trash2 size={15} /></button>
   let act: React.ReactNode = null
-  if (v.state === 'PRE_ACTIVE') act = <><Button variant="ghost" size="sm" onClick={() => onAction({ kind: 'ACTIVATE', version: v.version })}>활성화</Button> <Button variant="ghost" size="sm" onClick={() => onAction({ kind: 'DESTROY', version: v.version })}>삭제</Button></>
+  if (v.state === 'PRE_ACTIVE') act = <>
+    <button type="button" className="icon-btn tip-left" data-tip="활성화" aria-label="활성화" onClick={() => onAction({ kind: 'ACTIVATE', version: v.version })}><Play size={15} /></button>
+    {destroy}
+  </>
   else if (v.state === 'ACTIVE') act = isLatest
     ? <span className="help" title="최신 버전은 단독 정지 불가 — 키 정지 또는 갱신 후 정지">최신 버전</span>
-    : <Button variant="ghost" size="sm" title="정지 시 이 버전의 복호화·검증이 차단됩니다" onClick={() => onAction({ kind: 'DEACTIVATE', version: v.version })}>정지</Button>
+    : <button type="button" className="icon-btn tip-left" data-tip="정지" aria-label="정지" onClick={() => onAction({ kind: 'DEACTIVATE', version: v.version })}><Ban size={15} /></button>
   else if (v.state === 'DEACTIVATED') act = <>
-    {v.deactivationTrigger === 'INTEGRITY' && <><Button size="sm" onClick={() => onAction({ kind: 'REACTIVATE', version: v.version })}>재활성화</Button> </>}
-    <Button variant="ghost" size="sm" onClick={() => onAction({ kind: 'DESTROY', version: v.version })}>삭제</Button>
+    {v.deactivationTrigger === 'INTEGRITY' && <button type="button" className="icon-btn primary tip-left" data-tip="재활성화" aria-label="재활성화" onClick={() => onAction({ kind: 'REACTIVATE', version: v.version })}><Power size={15} /></button>}
+    {destroy}
   </>
   const revealable = v.state !== 'DESTROYED'
   return (
@@ -305,7 +319,7 @@ function VersionRow({ v, detail, onAction, onReveal }: { v: VersionInfo; detail:
       <td className="mono">{v.usageCount.toLocaleString()}</td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{cap}</td>
       <td>{v.state === 'DESTROYED' ? <span style={{ color: 'var(--text-3)' }}>—</span> : <IntegrityBadge valid={v.integrityValid} />}</td>
-      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>{act}</td>
+      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }} title="" onClick={(e) => e.stopPropagation()}>{act}</td>
     </tr>
   )
 }

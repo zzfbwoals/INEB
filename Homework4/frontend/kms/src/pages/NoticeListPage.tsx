@@ -1,4 +1,4 @@
-import { Plus, Search } from 'lucide-react'
+import { Pin, Plus, Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
@@ -70,11 +70,6 @@ export default function NoticeListPage() {
     <AppLayout>
       <div className="page-h">
         <div><h2>공지사항</h2></div>
-        <div className="acts">
-          <Button className="px-[11px]" data-tip="등록" aria-label="등록" onClick={() => setFormOpen(true)}>
-            <Plus size={16} strokeWidth={2.2} />
-          </Button>
-        </div>
       </div>
 
       <div className="filters">
@@ -92,6 +87,9 @@ export default function NoticeListPage() {
           <Search size={14} />
           <input className="input" placeholder="검색어 입력" value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0) }} />
         </div>
+        <Button className="px-[11px] ml-auto" data-tip="등록" aria-label="등록" onClick={() => setFormOpen(true)}>
+          <Plus size={16} strokeWidth={2.2} />
+        </Button>
       </div>
 
       <div className="card">
@@ -112,7 +110,7 @@ export default function NoticeListPage() {
               )}
               {rows.map((n) => (
                 <tr key={n.id} className="rowlink" onClick={() => navigate(`/notices/${n.id}`)}>
-                  <td>{n.pinned ? <span className="tag-imp">고정</span> : <span className="mono" style={{ color: 'var(--text-3)' }}>{n.id}</span>}</td>
+                  <td>{n.pinned ? <span className="pin-mark" data-tip="상단 고정"><Pin size={14} /></span> : <span className="mono" style={{ color: 'var(--text-3)' }}>{n.id}</span>}</td>
                   <td>{n.authorName}</td>
                   <td>
                     <b>{n.title}</b>

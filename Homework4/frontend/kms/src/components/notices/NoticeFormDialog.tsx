@@ -116,7 +116,6 @@ export function NoticeFormDialog({ edit, open, onClose, onDone }: {
           </div>
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button disabled={pending} onClick={submit}>{edit ? '저장' : '등록'}</Button>
         </DialogFooter>
       </DialogContent>

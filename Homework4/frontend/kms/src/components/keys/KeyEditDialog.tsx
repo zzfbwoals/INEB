@@ -63,7 +63,6 @@ export function KeyEditDialog({ detail, open, onClose, onDone }: { detail: KeyDe
           )}
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button disabled={pending} onClick={submit}>저장</Button>
         </DialogFooter>
       </DialogContent>

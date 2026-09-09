@@ -100,7 +100,6 @@ export function UserFormDialog({ edit, open, onClose, onDone }: {
               {pwReset ? '재설정 취소' : '비밀번호 재설정'}
             </Button>
           )}
-          <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button disabled={pending} onClick={submit}>저장</Button>
         </DialogFooter>
       </DialogContent>

@@ -1,11 +1,10 @@
-import { Download, Pencil, Trash2 } from 'lucide-react'
+import { Download, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import { downloadNoticeFile, getNotice, type NoticeDetail, type NoticeFileItem } from '@/api/notices'
 import { fmt } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
-import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { NoticeFileRow } from '@/components/notices/NoticeFileRow'
 import { NoticeFormDialog } from '@/components/notices/NoticeFormDialog'
@@ -70,14 +69,7 @@ export default function NoticeDetailPage() {
 
   return (
     <AppLayout>
-      {/* 목록 복귀는 브라우저 뒤로가기로 — 헤더에는 감사 로그 이동만 둔다 */}
-      <div className="page-h">
-        <div />
-        <div className="acts">
-          <Button asChild variant="ghost"><Link to={`/audit?target=${encodeURIComponent(`NOTICE#${detail.id}`)}`}>감사 로그</Link></Button>
-        </div>
-      </div>
-
+      {/* 목록 복귀는 브라우저 뒤로가기 — 헤더 없음. 감사 로그·수정·삭제는 메타 줄 우측 아이콘 */}
       <div className="card notice-view">
         <h2>{detail.pinned && <span className="tag-imp">고정</span>}{detail.title}</h2>
         <div className="nmeta">
@@ -87,6 +79,9 @@ export default function NoticeDetailPage() {
           {detail.updatedAt !== detail.createdAt && <span>수정 <span className="mono">{fmt(detail.updatedAt)}</span></span>}
           <span>조회수 <b>{detail.viewCount.toLocaleString()}</b></span>
           <span className="nacts">
+            <Link className="icon-btn" data-tip="감사 로그" aria-label="감사 로그" to={`/audit?target=${encodeURIComponent(`NOTICE#${detail.id}`)}`}>
+              <ShieldCheck size={15} />
+            </Link>
             <button type="button" className="icon-btn" data-tip="수정" aria-label="수정" onClick={() => setEditOpen(true)}>
               <Pencil size={15} />
             </button>

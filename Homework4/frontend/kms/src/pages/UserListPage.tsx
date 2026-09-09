@@ -115,11 +115,6 @@ export default function UserListPage() {
     <AppLayout>
       <div className="page-h">
         <div><h2>사용자 관리</h2></div>
-        <div className="acts">
-          <Button className="px-[11px]" data-tip="등록" aria-label="등록" onClick={() => { setEditTarget(null); setFormOpen(true) }}>
-            <Plus size={16} strokeWidth={2.2} />
-          </Button>
-        </div>
       </div>
 
       <div className="filters">
@@ -136,6 +131,9 @@ export default function UserListPage() {
           <option value="ACTIVE">활성</option>
           <option value="SUSPENDED">정지</option>
         </select>
+        <Button className="px-[11px] ml-auto" data-tip="등록" aria-label="등록" onClick={() => { setEditTarget(null); setFormOpen(true) }}>
+          <Plus size={16} strokeWidth={2.2} />
+        </Button>
       </div>
 
       <div className="card">
