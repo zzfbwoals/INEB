@@ -38,6 +38,15 @@ class AuditHasherTest {
     }
 
     @Test
+    @DisplayName("암호화된 행은 detail 에 저장된 암호문 그대로 해시·검증한다 (복호화 불필요), 암호문이 바뀌면 실패한다")
+    void verifyRowUsesStoredCipherText() {
+        String enc = "base64-cipher-text";
+        String rowHash = hasher.rowHash("EMPTY", "admin", "KEY_CREATED", "KEY#uid-1", enc, at);
+        assertTrue(hasher.verifyRow(new AuditLog("admin", "KEY_CREATED", "KEY#uid-1", enc, "EMPTY", rowHash, at)));
+        assertFalse(hasher.verifyRow(new AuditLog("admin", "KEY_CREATED", "KEY#uid-1", enc + "x", "EMPTY", rowHash, at)));
+    }
+
+    @Test
     @DisplayName("created_at 은 KST yyyy-MM-dd HH:mm:ss 로 정규화된다 — 같은 초의 나노초 차이는 해시에 영향 없다")
     void createdAtNormalizedToSeconds() {
         String a = hasher.rowHash("EMPTY", "admin", "LOGOUT", "AUTH#admin", "", Instant.parse("2026-09-01T03:00:00.123Z"));

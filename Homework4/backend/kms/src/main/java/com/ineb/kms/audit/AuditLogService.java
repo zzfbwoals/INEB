@@ -2,8 +2,10 @@ package com.ineb.kms.audit;
 
 import com.ineb.kms.audit.dto.AuditLogItem;
 import com.ineb.kms.audit.dto.AuditVerifyResponse;
+import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.KstTime;
 import com.ineb.kms.common.PageResponse;
+import com.ineb.kms.crypto.PersonalDataCodec;
 import com.ineb.kms.domain.AuditLog;
 import com.ineb.kms.repository.AuditLogRepository;
 import java.time.Instant;
@@ -27,12 +29,14 @@ public class AuditLogService {
     private final AuditLogRepository repository;
     private final AuditChainService chainService;
     private final AuditChainVerifier verifier;
+    private final PersonalDataCodec codec;
 
     public AuditLogService(AuditLogRepository repository, AuditChainService chainService,
-                           AuditChainVerifier verifier) {
+                           AuditChainVerifier verifier, PersonalDataCodec codec) {
         this.repository = repository;
         this.chainService = chainService;
         this.verifier = verifier;
+        this.codec = codec;
     }
 
     /**
@@ -49,7 +53,7 @@ public class AuditLogService {
         Page<AuditLog> result = repository.findAll(spec(actor, action, target, from, to),
                 PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100),
                         Sort.by(dir, field).and(Sort.by(Sort.Direction.DESC, "id"))));
-        return PageResponse.of(result, AuditLogService::toItem);
+        return PageResponse.of(result, this::toItem);
     }
 
     /** CSV 내려받기 — 목록과 같은 필터. 내려받기 자체도 관리자 행위이므로 AUDIT_EXPORTED 로 기록한다. */
@@ -65,7 +69,7 @@ public class AuditLogService {
                     .append(csv(row.getActor())).append(',')
                     .append(csv(row.getAction())).append(',')
                     .append(csv(row.getTarget())).append(',')
-                    .append(csv(row.getDetail())).append('\n');
+                    .append(csv(plainDetail(row))).append('\n');
         }
         chainService.append(requestedBy, "AUDIT_EXPORTED", "AUDIT", "rows=" + rows.getNumberOfElements());
         return sb.toString();
@@ -147,9 +151,18 @@ public class AuditLogService {
         };
     }
 
-    private static AuditLogItem toItem(AuditLog row) {
+    private AuditLogItem toItem(AuditLog row) {
         return new AuditLogItem(row.getId(), row.getActor(), row.getAction(), row.getTarget(),
-                row.getDetail(), KstTime.format(row.getCreatedAt()));
+                plainDetail(row), KstTime.format(row.getCreatedAt()));
+    }
+
+    /** 화면·CSV 에는 복호화한 상세를 보여준다. 복호화가 안 되는 값(암호화 이전 평문 행)은 그대로 보여준다 */
+    private String plainDetail(AuditLog row) {
+        try {
+            return codec.decrypt(row.getDetail());
+        } catch (BusinessException e) {
+            return row.getDetail();
+        }
     }
 
     private static String csv(String value) {

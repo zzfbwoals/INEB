@@ -76,7 +76,7 @@ npm run lint       # oxlint (ESLint 아님)
 - **체인 배치 검증 (2026-09-02)**: DB 직접 변조는 앱 이벤트가 없어 SSE 로 잡히지 않으므로 `AuditChainScheduler`(60초, `kms.scheduler.audit-chain-check` 기본 true)가 전체 체인을 재검증 — **상태 전이 시에만** `AUDIT_CHAIN_VIOLATION`/`AUDIT_CHAIN_RESTORED`(actor SYSTEM) 감사 기록 → append 가 SSE 브로드캐스트로 이어져 열린 화면의 배지가 최대 60초 내 자동 갱신(지속 위반 스팸 없음)
 - **실시간 화면 갱신 (SSE, 2026-09-02)**: 모든 감사 기록이 `AuditChainService`→`AuditEventStream`으로 커밋 후 `{action, target}` 브로드캐스트 (`GET /api/events`, text/event-stream). EventSource는 헤더 불가라 **이 경로만 `?token=` 쿼리 JWT 허용**(`JwtAuthenticationFilter.resolveToken`). 프론트 `lib/events.ts`(`subscribeUiEvents`) — 키 상세(`KEY#uid` 일치 시 refetch)·키/사용자 목록(접두 매칭)·감사 로그(전체 이벤트 → 목록+체인 상태 refetch) 구독. 테스트 페이지는 입력 초기화 방지를 위해 미구독. Nginx `/api/events`는 `proxy_buffering off` 별도 location. 하트비트 25초(@Scheduled)
 - 신규 단위 테스트: AuditHasher·AuditChainVerifier(변조/삭제/삽입/구간 병합)·PersonalDataCodec·UserIntegrityHasher·PrivacyMask·UserService + AuthService 감사 기록 검증
-- 주의: `KmsApplicationTests`(@SpringBootTest)는 `KMS_MASTER_PASSPHRASE`·DB 필요 — 환경 없으면 실패(코드 문제 아님). audit_log의 `detail`은 설계의 jsonb 대신 varchar(500) 문자열(초과 시 잘림), 검증 응답은 최초 오염 id 대신 위반 구간 목록 `[{fromId,toId,type}]`. audit_log 스키마는 설계의 target_type/target_id 대신 단일 `target` 컬럼
+- 주의: `KmsApplicationTests`(@SpringBootTest)는 `KMS_MASTER_PASSPHRASE`·DB 필요 — 환경 없으면 실패(코드 문제 아님). audit_log의 `detail`은 설계의 jsonb 대신 varchar(500) 문자열(초과 시 잘림) — 2026-09-09부터 `detail`은 text 로 넓혀 마스터키 암호문을 저장(레거시 평문 행 공존), 검증 응답은 최초 오염 id 대신 위반 구간 목록 `[{fromId,toId,type}]`. audit_log 스키마는 설계의 target_type/target_id 대신 단일 `target` 컬럼
 
 구현 완료 (4주차 게시판, 2026-09-08, develop 브랜치):
 - 백엔드 `notice/` 패키지: `domain/Notice`(`title, content(text), pinned, created_by(loginId=감사 actor), author_name(표시명 스냅샷), view_count`) + `domain/NoticeFile`(`original_name, content_type, file_size(평문 크기), enc_data(text)=base64(iv|ct+tag), enc_ver`). **첨부 암호문은 DB text 컬럼**(파일시스템·볼륨 없음, 설계의 `saved_name`·`iv` 컬럼 폐기, `AppUser` 개인정보와 동일 봉투). `crypto/AttachmentCodec`(`String encrypt(byte[])` / `byte[] decrypt(String)`, 실패 시 `NOTICE_FILE_CORRUPTED` 409). `NoticeFile→Notice` **단방향 N:1만** — Notice 쪽에 컬렉션을 두면 목록이 암호문까지 읽으므로 금지. 목록·상세·삭제는 `NoticeFileRepository`의 JPQL 프로젝션(`NoticeFileMeta`)·집계·삭제 쿼리만 쓰고 `findById`(암호문 로드)는 다운로드 전용
@@ -157,7 +157,7 @@ npm run lint       # oxlint (ESLint 아님)
   - crypto_key: `key_uid|key_name|algorithm|key_size|mode|purpose|status|current_version|auto_rotate|rotation_period_days` (2026-08-28 개정)
   - key_material: `key_id|version|state|wrapped_key|iv|wrap_algo|activation_date` — 위반 시 해당 버전 자동 DEACTIVATED
   - app_user: `name|password_hash|status|enc_ver`
-- `audit_log`는 **append-only** (UPDATE/DELETE 금지), 해시 체인: `row_hash = H(prev_hash + 현재 행 핵심 데이터)`, 최초 행의 prev_hash는 `"EMPTY"`. 검증 API가 행 변조와 중간 삭제/삽입을 구간으로 반환
+- `audit_log`는 **append-only** (UPDATE/DELETE 금지), 해시 체인: `row_hash = H(prev_hash + 현재 행 핵심 데이터)`, 최초 행의 prev_hash는 `"EMPTY"`. **detail 암호화(2026-09-09 설계 변경)**: 상세는 마스터키 AES-256-GCM(`PersonalDataCodec`, `base64(iv|ct+tag)`) 암호문을 **`detail`(text) 컬럼에 그대로 저장**하고, 해시 정규화의 detail 자리에도 그 암호문이 들어가므로 검증에 마스터키가 필요 없다. 암호화 이전 평문 행은 append-only 라 재암호화하지 않으며, 조회·CSV 는 복호화를 시도해 실패하면(=평문 행) 그대로 보여준다(별도 마커 없음). 기존 DB 의 varchar(500)→text 는 `config/AuditLogSchemaMigration`(SmartInitializingSingleton, 매 기동 ALTER — 같은 타입이면 no-op)이 처리하므로 수동 마이그레이션 불필요. 검증 API가 행 변조와 중간 삭제/삽입을 구간으로 반환
 - 모든 관리자 행위(로그인, 키 생성/상태변경, 원문 조회, 수정 등)를 감사로그에 자동 기록 — AOP나 공통 계층으로 처리 권장
 
 ### DB 테이블 (10개)
@@ -180,6 +180,7 @@ main 푸시 → self-hosted runner(개발 서버 내)가 Gradle bootJar 빌드 �
 
 ## 주의사항
 
+- **변경 보고 규칙(사용자 반복 지시, 2026-09-09)**: 스키마·API·화면·정책이 바뀌는 작업을 보고할 때마다 답변 끝에 **설계 문서 개정 안내를 "원본 → 수정" 표로 반드시 포함**한다(설계 문서 p.13 요구사항 표 / p.14 [표 6-1] DB / p.17 [표 7-1] API / p.24 [표 10-1] 데이터 보호 / p.27 [표 11-1] 화면 등 위치 지목, 원문 그대로 인용 + 바로 붙여 넣을 수정 문장). 문서와 무관한 변경이면 "설계 문서 변경 없음"을 한 줄 명시. UI 변경 시 `frontend/mockup` 동기화도 같이.
 - 안내서와 설계 문서가 다른 부분은 **설계 문서(류재민 설계)가 확정안**이다: Java 25/Boot 4/React 19/TS, PBKDF2 10,000회, 암호문 Base64 문자열 저장. 단 **키 생명주기는 2026-08-28 KMIP 4종+네이버식 버전 운영으로 재확정**되어 설계 문서(7종)보다 CLAUDE.md의 생명주기 절이 우선 (설계 문서 개정 예정)
 - 비밀번호는 **BCrypt** (2026-08-20 사용자 지시로 SHA-256+Salt에서 변경, password_salt 컬럼 없음 — 설계 문서 docx에는 아직 미반영일 수 있음)
 - 실제 고객 데이터·운영 키 사용 금지, 샘플 데이터만 사용

@@ -1,5 +1,6 @@
 package com.ineb.kms.audit;
 
+import com.ineb.kms.crypto.PersonalDataCodec;
 import com.ineb.kms.domain.AuditLog;
 import com.ineb.kms.repository.AuditLogRepository;
 import jakarta.persistence.EntityManager;
@@ -18,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 트랜잭션 경계: {@link #append}는 호출자 트랜잭션에 참여한다 — 본 작업이 롤백되면 감사 기록도 함께
  * 사라져 "성공한 작업 = 감사 기록 존재"가 보장된다. 로그인 실패처럼 예외를 던지는 경로는
  * {@link #appendDetached}(REQUIRES_NEW)로 기록을 남긴다.
+ * <p>
+ * 상세(detail)는 개인정보와 같은 봉투(PersonalDataCodec, base64(iv|ct+tag))로 마스터키 암호화해 detail 컬럼에 저장한다.
  */
 @Service
 public class AuditChainService {
@@ -31,13 +34,16 @@ public class AuditChainService {
     private final AuditHasher hasher;
     private final EntityManager entityManager;
     private final AuditEventStream eventStream;
+    private final PersonalDataCodec codec;
 
     public AuditChainService(AuditLogRepository repository, AuditHasher hasher,
-                             EntityManager entityManager, AuditEventStream eventStream) {
+                             EntityManager entityManager, AuditEventStream eventStream,
+                             PersonalDataCodec codec) {
         this.repository = repository;
         this.hasher = hasher;
         this.entityManager = entityManager;
         this.eventStream = eventStream;
+        this.codec = codec;
     }
 
     @Transactional
@@ -59,9 +65,11 @@ public class AuditChainService {
         String safeActor = actor == null || actor.isBlank() ? "SYSTEM" : actor;
         String safeDetail = detail == null ? ""
                 : detail.substring(0, Math.min(detail.length(), DETAIL_MAX));
+        // 상세는 마스터키로 암호화한 값을 detail 에 저장하고, 체인 해시도 저장되는 암호문으로 계산한다 (검증에 마스터키 불필요)
+        String encDetail = codec.encrypt(safeDetail);
         Instant now = Instant.now();
-        String rowHash = hasher.rowHash(prevHash, safeActor, action, target, safeDetail, now);
-        repository.save(new AuditLog(safeActor, action, target, safeDetail, prevHash, rowHash, now));
+        String rowHash = hasher.rowHash(prevHash, safeActor, action, target, encDetail, now);
+        repository.save(new AuditLog(safeActor, action, target, encDetail, prevHash, rowHash, now));
         eventStream.publish(action, target);   // 커밋 후 접속 중인 화면에 실시간 브로드캐스트
     }
 }

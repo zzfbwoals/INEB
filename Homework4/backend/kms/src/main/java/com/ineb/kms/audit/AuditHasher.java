@@ -45,7 +45,7 @@ public class AuditHasher {
         return hmac(normalized);
     }
 
-    /** 저장된 row_hash 와 재계산 값을 상수 시간 비교 */
+    /** 저장된 row_hash 와 재계산 값을 상수 시간 비교 — detail 은 저장된 값(암호문) 그대로 넣으므로 복호화 없이 검증한다 */
     public boolean verifyRow(AuditLog row) {
         String computed = rowHash(row.getPrevHash(), row.getActor(), row.getAction(),
                 row.getTarget(), row.getDetail(), row.getCreatedAt());
