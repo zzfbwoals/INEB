@@ -2,33 +2,25 @@ package com.ineb.kms.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import org.hibernate.annotations.Immutable;
 
 /**
- * 감사 로그 (append-only 해시 체인). UPDATE/DELETE 금지 — @Immutable 로 엔티티 변경을 차단하고
- * repository 에는 저장·조회만 둔다. row_hash = HMAC(prev_hash|actor|action|target|detail|created_at(KST)),
- * 최초 행의 prev_hash 는 "EMPTY". created_at 이 해시에 들어가므로 @PrePersist 가 아니라 생성 시점에 확정한다.
+ * 감사 로그 섀도(복사본) — audit_log 와 같은 내용을 같은 트랜잭션에서 이중 기록한다(AuditChainService).
+ * 체인 검증이 "어디가 깨졌는지"를 알려주면, 섀도와의 비교(AuditShadowComparer)가 "무엇이 지워지고·끼어들고·바뀌었는지"를 보여준다.
  * <p>
- * detail 암호화(2026-09-09 설계 변경): 상세는 마스터키 AES-256-GCM 으로 암호화한 base64(iv|ct+tag) 를 detail(text) 컬럼에
- * 그대로 저장한다. 해시 정규화의 detail 자리에는 저장된 값(암호문)이 들어가므로 검증에 마스터키가 필요 없다.
- * 암호화 이전에 쌓인 평문 행은 append-only 라 재암호화하지 않으며, 조회 시 복호화에 실패하는 값은 평문으로 취급한다.
- * 기존 DB 의 varchar(500) 은 기동 시 AuditLogSchemaMigration 이 text 로 바꾼다.
+ * DB 계정(dguard)이 owner 라 권한 분리가 불가능하므로 섀도는 무결성 보장이 아니라 **포렌식 증거**다 — 탐지는 체인이 담당한다.
+ * UPDATE/DELETE/TRUNCATE 는 트리거(AuditLogSchemaMigration)로 막아 우발적 수정을 방지하고, 트리거 해제 흔적은 기동 시 감사 기록으로 남긴다.
+ * id 는 원본 id 를 그대로 쓴다(생성 전략 없음). 삽입은 네이티브 ON CONFLICT DO NOTHING 으로만 한다(AuditLogShadowRepository).
  */
 @Entity
-@Table(name = "audit_log")
+@Table(name = "audit_log_shadow")
 @Immutable
-public class AuditLog implements ChainRow {
-
-    /** 체인 시작점 — 최초 행의 prev_hash */
-    public static final String CHAIN_ANCHOR = "EMPTY";
+public class AuditLogShadow implements ChainRow {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, length = 50)
@@ -40,7 +32,6 @@ public class AuditLog implements ChainRow {
     @Column(nullable = false, length = 120)
     private String target;
 
-    /** 상세 — 마스터키 암호문 base64(iv|ct+tag). 암호화 도입 이전 행은 평문 */
     @Column(nullable = false, columnDefinition = "text")
     private String detail;
 
@@ -53,11 +44,13 @@ public class AuditLog implements ChainRow {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    protected AuditLog() {
+    protected AuditLogShadow() {
     }
 
-    public AuditLog(String actor, String action, String target, String detail,
-                    String prevHash, String rowHash, Instant createdAt) {
+    /** 테스트·비교용 — 실제 저장은 리포지토리의 네이티브 INSERT 로만 한다 */
+    public AuditLogShadow(Long id, String actor, String action, String target, String detail,
+                          String prevHash, String rowHash, Instant createdAt) {
+        this.id = id;
         this.actor = actor;
         this.action = action;
         this.target = target;

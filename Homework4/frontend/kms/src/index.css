@@ -1121,7 +1121,10 @@ body.col-resizing .tbl-wrap thead th.sortable:not(.on) {
   width: calc(100% - 40px);
   max-width: 520px;
   max-height: 86vh;
-  overflow-y: auto;
+  /* 모달 전체가 아니라 본문(.modal-b)만 스크롤 — 헤더(.modal-h)·푸터(.modal-f)는 고정 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow: var(--modal-shadow);
   animation: pop 0.2s;
   z-index: 201;
@@ -1152,6 +1155,24 @@ body.col-resizing .tbl-wrap thead th.sortable:not(.on) {
   font-size: 16px;
   font-weight: 700;
 }
+/* 제목 아래 부가 요소(탭 등)를 두는 헤더 — ✕ 는 위쪽에 정렬 */
+.modal-h-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+.modal-h.has-extra {
+  align-items: flex-start;
+  padding-bottom: 0;
+}
+/* 탭이 헤더의 밑줄을 그대로 쓰도록 자체 여백·밑줄 제거, 활성 탭 밑줄이 헤더 선에 겹치게 */
+.modal-h.has-extra .tabs {
+  padding: 0;
+  border-bottom: 0;
+  margin-bottom: -1px;
+}
 .modal-h .x {
   width: 30px;
   height: 30px;
@@ -1165,11 +1186,21 @@ body.col-resizing .tbl-wrap thead th.sortable:not(.on) {
   background: var(--hover);
   color: var(--text);
 }
+/* 본문·푸터를 form 으로 감싼 모달(키 등록)도 본문이 줄어들며 스크롤되도록 form 을 flex 열로 */
+.modal > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
 .modal-b {
   padding: 22px;
   display: flex;
   flex-direction: column;
   gap: 15px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .modal-f {
   display: flex;
@@ -1817,4 +1848,106 @@ body.col-resizing,
 body.col-resizing * {
   cursor: col-resize !important;
   user-select: none;
+}
+
+/* ---- 감사 로그 섀도 비교 표시 — 수정·삽입 행 강조, 지워진 행 유령 행, 원본|현재 diff ---- */
+.tbl-wrap tbody tr.row-bad td {
+  background: var(--red-bg);
+}
+.tbl-wrap tbody tr.row-bad.rowlink:hover td {
+  filter: brightness(0.97);
+}
+.tbl-wrap tbody tr.row-ghost td {
+  color: var(--text-3);
+  text-decoration: line-through;
+  background: var(--raised);
+  cursor: pointer;
+}
+.tbl-wrap tbody tr.row-ghost td .row-tag,
+.tbl-wrap tbody tr.row-ghost td .actchip {
+  text-decoration: none;
+}
+/* 위반 종류 표시 — 배경 없는 빨간 글씨 (행 높이에 영향 없음) */
+.row-tag {
+  color: var(--red);
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-right: 6px;
+}
+.linkish {
+  color: var(--blue);
+  font-weight: 600;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+/* 내용이 길어도 헤더·탭은 고정하고 diff 카드 목록만 스크롤 */
+/* 위반 상세처럼 본문 안의 목록만 스크롤하고 탭은 고정할 때 — 본문 스크롤을 끄고 .scroll-list 가 대신 스크롤 */
+.modal.scroll-body .modal-b {
+  overflow: hidden;
+}
+.scroll-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* 감사 로그 단건 상세 — 라벨|값 */
+.kv-grid {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 8px 10px;
+  font-size: 12.5px;
+  align-items: start;
+}
+.kv-grid .k {
+  color: var(--text-3);
+}
+.kv-grid .mono {
+  overflow-wrap: anywhere;
+}
+.diff-grid {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr;
+  gap: 6px 10px;
+  font-size: 12.5px;
+  align-items: start;
+}
+.diff-grid .h {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.diff-grid .k {
+  color: var(--text-3);
+}
+.diff-grid .mono {
+  overflow-wrap: anywhere;
+}
+/* git diff 색 — 원본(빠진 값) 빨강 "-", 현재(들어온 값) 초록 "+" */
+.diff-grid .del {
+  background: rgba(248, 81, 73, 0.15);
+  color: var(--red);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.diff-grid .del::before {
+  content: '- ';
+  font-weight: 700;
+}
+.diff-grid .add {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.diff-grid .add::before {
+  content: '+ ';
+  font-weight: 700;
 }

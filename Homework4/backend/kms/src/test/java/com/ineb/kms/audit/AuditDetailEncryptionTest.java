@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.ineb.kms.audit.dto.AuditLogItem;
@@ -15,6 +17,7 @@ import com.ineb.kms.crypto.PersonalDataCodec;
 import com.ineb.kms.crypto.WrappedSecretStore;
 import com.ineb.kms.domain.AuditLog;
 import com.ineb.kms.repository.AuditLogRepository;
+import com.ineb.kms.repository.AuditLogShadowRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import java.lang.reflect.Field;
@@ -36,6 +39,7 @@ class AuditDetailEncryptionTest {
     private PersonalDataCodec codec;
     private AuditHasher hasher;
     private AuditLogRepository repository;
+    private AuditLogShadowRepository shadowRepository;
     private final AtomicReference<AuditLog> saved = new AtomicReference<>();
 
     @BeforeEach
@@ -50,21 +54,23 @@ class AuditDetailEncryptionTest {
         repository = mock(AuditLogRepository.class);
         when(repository.findTopByOrderByIdDesc()).thenReturn(Optional.empty());
         when(repository.save(any(AuditLog.class))).thenAnswer(inv -> {
-            AuditLog row = inv.getArgument(0);
+            AuditLog row = withId(inv.getArgument(0), 42);   // IDENTITY 는 persist 시 id 가 채워진다
             saved.set(row);
             return row;
         });
+        shadowRepository = mock(AuditLogShadowRepository.class);
+        when(shadowRepository.insertIgnore(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(1);
     }
 
     @Test
-    @DisplayName("append 는 detail 을 마스터키로 암호화해 detail 컬럼에 저장하고, 체인 해시는 그 암호문으로 계산한다")
+    @DisplayName("append 는 detail 을 암호화해 저장하고 암호문으로 해시하며, 같은 id 로 섀도에도 이중 기록한다")
     void appendEncryptsDetail() {
         EntityManager em = mock(EntityManager.class);
         Query query = mock(Query.class);
         when(em.createNativeQuery(anyString())).thenReturn(query);
         when(query.getResultList()).thenReturn(List.of());
         AuditEventStream stream = mock(AuditEventStream.class);
-        AuditChainService service = new AuditChainService(repository, hasher, em, stream, codec);
+        AuditChainService service = new AuditChainService(repository, shadowRepository, hasher, em, stream, codec);
 
         service.append("admin", "NOTICE_CREATED", "NOTICE#1", "title=점검 안내, files=2");
 
@@ -75,6 +81,9 @@ class AuditDetailEncryptionTest {
         assertTrue(hasher.verifyRow(row));
         assertEquals(hasher.rowHash(AuditLog.CHAIN_ANCHOR, "admin", "NOTICE_CREATED", "NOTICE#1",
                 row.getDetail(), row.getCreatedAt()), row.getRowHash());
+        // 섀도 이중 기록 — 원본과 같은 id·같은 값(암호문·해시 포함)
+        verify(shadowRepository).insertIgnore(eq(42L), eq("admin"), eq("NOTICE_CREATED"), eq("NOTICE#1"),
+                eq(row.getDetail()), eq(AuditLog.CHAIN_ANCHOR), eq(row.getRowHash()), eq(row.getCreatedAt()));
     }
 
     @Test
@@ -89,8 +98,8 @@ class AuditDetailEncryptionTest {
                 "bm90LWEtdmFsaWQtY2lwaGVyLXRleHQtYnV0LWJhc2U2NA==", "h2", "h3", at), 3);
         when(repository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(encrypted, legacy, legacyBase64Like)));
-        AuditLogService service = new AuditLogService(repository, mock(AuditChainService.class),
-                new AuditChainVerifier(hasher), codec);
+        AuditLogService service = new AuditLogService(repository, shadowRepository, mock(AuditChainService.class),
+                new AuditShadowComparer(new AuditChainVerifier(hasher)), mock(AuditShadowGuard.class), codec);
 
         PageResponse<AuditLogItem> page = service.list(null, null, null, null, null, 0, 20, null, null);
 

@@ -10,20 +10,25 @@ const DialogClose = DialogPrimitive.Close
 function DialogContent({
   className,
   title,
+  headerExtra,
   children,
   wide,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & { title: string; wide?: boolean }) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & { title: string; wide?: boolean; headerExtra?: React.ReactNode }) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="modal-bk" />
       <DialogPrimitive.Content data-slot="dialog-content" className={cn('modal', wide && 'wide', className)} {...props}>
-        <div className="modal-h">
-          <DialogPrimitive.Title asChild>
-            <h3>{title}</h3>
-          </DialogPrimitive.Title>
+        {/* headerExtra: 제목 바로 아래 고정되는 부가 요소(탭 등) — 본문과 함께 스크롤되지 않는다 */}
+        <div className={cn('modal-h', headerExtra && 'has-extra')}>
+          <div className="modal-h-main">
+            <DialogPrimitive.Title asChild>
+              <h3>{title}</h3>
+            </DialogPrimitive.Title>
+            {headerExtra}
+          </div>
           <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
-          <DialogPrimitive.Close className="x" aria-label="닫기">
+          <DialogPrimitive.Close className="x" aria-label="닫기" data-tip="닫기">
             ✕
           </DialogPrimitive.Close>
         </div>

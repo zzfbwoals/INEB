@@ -1,5 +1,6 @@
 package com.ineb.kms.audit;
 
+import com.ineb.kms.audit.dto.AuditForensicsResponse;
 import com.ineb.kms.audit.dto.AuditLogItem;
 import com.ineb.kms.audit.dto.AuditVerifyResponse;
 import com.ineb.kms.common.ApiResponse;
@@ -67,18 +68,24 @@ public class AuditLogController {
                 .body(withBom);
     }
 
-    /** 체인 상태 조회 — 검증만 수행하고 감사 기록은 남기지 않는다 (감사 로그 화면 진입 시 자동 호출) */
+    /** 체인 상태 조회 — 원본 체인·섀도 비교 요약·보호 트리거 상태. 검증만 수행하고 감사 기록은 남기지 않는다 (화면 진입·SSE 시 자동 호출) */
     @GetMapping("/chain-status")
     public ApiResponse<AuditVerifyResponse> chainStatus() {
         return ApiResponse.ok(auditLogService.status());
+    }
+
+    /** 섀도 비교 상세 — 지워진·끼어든·바뀐 행의 원본 내용 (화면의 "위반 상세"). 읽기 전용 */
+    @GetMapping("/forensics")
+    public ApiResponse<AuditForensicsResponse> forensics() {
+        return ApiResponse.ok(auditLogService.forensics());
     }
 
     /** 전체 해시 체인 재검증 — 검증 실행도 감사 기록(AUDIT_CHAIN_VERIFIED)되므로 POST */
     @PostMapping("/verify")
     public ApiResponse<AuditVerifyResponse> verify(@AuthenticationPrincipal AuthPrincipal principal) {
         AuditVerifyResponse result = auditLogService.verify(principal.loginId());
-        return ApiResponse.ok(result, result.valid()
+        return ApiResponse.ok(result, result.healthy()
                 ? "해시 체인 검증을 통과했습니다."
-                : "해시 체인 위반이 감지되었습니다.");
+                : "감사 로그 위반이 감지되었습니다.");
     }
 }

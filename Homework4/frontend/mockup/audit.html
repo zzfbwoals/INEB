@@ -16,11 +16,13 @@
   <div class="page-h">
     <div style="display:flex;align-items:center;gap:10px">
       <h2>감사 로그</h2>
-      <!-- 진입 시 자동 검증(GET /api/audit-logs/chain-status) 결과 — 정상: b-active / 위반: b-bad "체인 위반 N건" -->
-      <span class="badge b-active">체인 정상</span>
+      <!-- 진입 시 자동 검증(GET /api/audit-logs/chain-status) 결과 — 정상(healthy): b-active "체인 정상" /
+           위반: b-bad "체인 위반 N건 · 삭제 N · 삽입 N · 수정 N"(섀도 비교 카운트, 0 은 생략) + 보호 트리거 해제 시 "섀도 보호 해제" + [위반 상세] -->
+      <span class="badge b-bad">체인 위반 2건</span>
+      <button class="icon-btn" data-tip="위반 상세" aria-label="위반 상세" onclick="openModal('mdForensics')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01" stroke-width="3" stroke-linecap="round"/></svg></button>
+      <button class="icon-btn" data-tip="체인 재검증" aria-label="체인 재검증" onclick="toast('해시 체인 검증을 통과했습니다.')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg></button>
     </div>
     <div class="acts">
-      <button class="btn btn-ghost" onclick="toast('해시 체인 검증을 통과했습니다.')">체인 재검증</button>
       <button class="btn btn-primary" onclick="toast('CSV 다운로드를 시작합니다.')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M4 19h16"/></svg>CSV 내려받기</button>
     </div>
@@ -41,6 +43,45 @@
     <div class="pager" id="auditPager"></div>
   </div>
 </template>
+<!-- 감사 로그 단건 상세 — 정상 행 클릭. 목록에서 말줄임된 상세 전문을 보여준다 -->
+<div class="modal-bk" id="mdAuditDetail" onclick="bkClose(event,this)">
+  <div class="modal wide">
+    <div class="modal-h"><h3 id="adTitle">감사 로그</h3><button class="x" data-tip="닫기" aria-label="닫기" onclick="closeModal('mdAuditDetail')">✕</button></div>
+    <div class="modal-b">
+      <div class="meta-box"><div class="kv-grid">
+        <div class="k">일시</div><div class="mono" id="adAt">-</div>
+        <div class="k">행위자</div><div><b id="adActor">-</b></div>
+        <div class="k">행위</div><div><span class="actchip" id="adAction">-</span></div>
+        <div class="k">대상</div><div class="mono" id="adTarget">-</div>
+        <div class="k">상세</div><div class="mono" id="adDetail" style="white-space:pre-wrap">-</div>
+      </div></div>
+    </div>
+  </div>
+</div>
+<!-- 위반 상세 모달 — 섀도(복사본)와 비교한 삭제·삽입·수정 행. 섀도는 무결성 보장이 아니라 원본 증거(탐지는 체인) -->
+<div class="modal-bk" id="mdForensics" onclick="bkClose(event,this)">
+  <!-- 헤더·탭 고정, diff 카드 목록만 스크롤(.scroll-list). 목록 행 클릭 시에는 탭 없이 그 행의 diff 하나만 -->
+  <div class="modal wide scroll-body">
+    <div class="modal-h has-extra">
+      <div class="modal-h-main"><h3>감사 로그 위반 상세</h3>
+        <div class="tabs"><button class="tab">삭제됨 1</button><button class="tab">삽입됨 1</button><button class="tab on">수정됨 1</button></div></div>
+      <button class="x" data-tip="닫기" aria-label="닫기" onclick="closeModal('mdForensics')">✕</button>
+    </div>
+    <div class="modal-b">
+      <div class="scroll-list">
+      <div class="meta-box">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="mono" style="color:var(--text-3)">#1288</span><span style="font-size:12px;color:var(--text-3)">행위자, 상세</span></div>
+        <div class="diff-grid">
+          <div class="h">필드</div><div class="h">원본</div><div class="h">현재</div>
+          <div class="k">행위자</div><div class="mono del">admin</div><div class="mono add">intruder</div>
+          <div class="k">행위</div><div class="mono">KEY_STATUS_CHANGED</div><div class="mono">KEY_STATUS_CHANGED</div>
+          <div class="k">상세</div><div class="mono del">action=DEACTIVATE, version=2</div><div class="mono add">(복호화 실패 · 변조 추정)</div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+</div>
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
@@ -57,16 +98,34 @@ function renderAudit(){
   const totalPages=Math.max(Math.ceil(list.length/size),1);
   if(auditPage>=totalPages)auditPage=totalPages-1;
   const rows=list.slice(auditPage*size,(auditPage+1)*size);
-  document.getElementById('auditTbody').innerHTML=rows.map(a=>`
-  <tr>
+  /* 섀도 비교 표시(목업): 수정·삽입 행은 row-bad + 배지, 지워진 행은 섀도 값으로 유령 행(취소선 "삭제됨")을 id 위치에 끼워 넣는다.
+     실제 앱은 GET /api/audit-logs/forensics 결과를 목록에 병합 — 기본 정렬(id 내림차순)·필터 없음일 때만 유령 행 인라인, 페이지당 3개 상한 */
+  const MOD=new Set([rows[1]?.id]), INS=new Set([rows[0]?.id]);
+  const GHOST={id:(rows[2]?.id??0)+0.5, at:rows[2]?.at??'', actor:'admin', action:'LOGIN_SUCCESS', target:'AUTH#admin', detail:'role=ADMIN'};
+  const rowHtml=a=>`
+  <tr class="${MOD.has(a.id)||INS.has(a.id)?'row-bad rowlink':'rowlink'}" onclick="${MOD.has(a.id)||INS.has(a.id)?`openModal('mdForensics')`:`openAuditDetail(${a.id})`}">
     <td class="mono" style="color:var(--text-3)">#${a.id}</td>
     <td class="mono">${a.at}</td>
     <td><b>${a.actor}</b></td>
     <td><span class="actchip">${a.action}</span></td>
     <td class="mono" style="color:var(--text-2)">${a.target}</td>
-    <td class="mono" style="color:var(--text-3)" title="${a.detail}">${a.detail}</td>
-  </tr>`).join('');
+    <td class="mono" style="color:var(--text-3)" title="${a.detail}">${MOD.has(a.id)?'<span class="row-tag">수정됨</span>':INS.has(a.id)?'<span class="row-tag">삽입됨</span>':''}${a.detail}</td>
+  </tr>`;
+  const ghostHtml=g=>`
+  <tr class="row-ghost" onclick="openModal('mdForensics')">
+    <td class="mono">#${Math.floor(g.id)}</td><td class="mono">${g.at}</td><td><b>${g.actor}</b></td>
+    <td><span class="actchip">${g.action}</span></td><td class="mono">${g.target}</td>
+    <td class="mono"><span class="row-tag">삭제됨</span>${g.detail}</td>
+  </tr>`;
+  document.getElementById('auditTbody').innerHTML=rows.map((a,i)=>(auditPage===0&&i===2?ghostHtml(GHOST):'')+rowHtml(a)).join('');
   renderPager(document.getElementById('auditPager'),AUDITS.length,auditPage,totalPages,'goAuditPage');
+}
+function openAuditDetail(id){
+  const a=AUDITS.find(x=>x.id===id); if(!a)return;
+  document.getElementById('adTitle').textContent='감사 로그 #'+a.id;
+  document.getElementById('adAt').textContent=a.at; document.getElementById('adActor').textContent=a.actor;
+  document.getElementById('adAction').textContent=a.action; document.getElementById('adTarget').textContent=a.target;
+  document.getElementById('adDetail').textContent=a.detail; openModal('mdAuditDetail');
 }
 renderAudit();
 </script>
