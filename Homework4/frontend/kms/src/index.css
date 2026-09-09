@@ -1732,3 +1732,43 @@ textarea.input:focus {
 .tbl-wrap:not(.tbl-scroll):has([data-tip]) {
   overflow: visible;
 }
+
+/* ---- 열 너비 조절 (lib/useColumnResize) — th 우측 가장자리 드래그, 더블클릭 시 기본값 복원 ---- */
+.tbl-wrap thead th {
+  position: relative;
+}
+.col-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -5px;
+  width: 10px;
+  cursor: col-resize;
+  z-index: 2;
+}
+/* 기본은 옅은 회색 구분선, 호버 시 파란색으로 길어지며 강조 */
+.col-resizer::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--line-strong);
+  transition:
+    background 0.15s,
+    top 0.15s,
+    bottom 0.15s;
+}
+.col-resizer:hover::after,
+.col-resizer.active::after {
+  top: 6px;
+  bottom: 6px;
+  background: var(--blue);
+}
+body.col-resizing,
+body.col-resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}

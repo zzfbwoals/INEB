@@ -67,6 +67,7 @@ function renderShell(active){
   const t=document.createElement('div');t.id='toast';t.innerHTML='<span class="dot"></span><span id="toastMsg"></span>';
   document.body.append(t);
   renderThemeChecks();
+  enableColResize();
   document.addEventListener('click',e=>{
     const menu=document.getElementById('meMenu');
     if(!menu.classList.contains('open'))return;
@@ -149,4 +150,31 @@ function renderPager(el,total,page,totalPages,goFn,unit='건'){
     +pageBlock(page,totalPages).map(p=>`<button class="${p===page?'on':''}" onclick="${goFn}(${p})">${p+1}</button>`).join('')
     +`<button ${page>=totalPages-1?'disabled':''} onclick="${goFn}(${page+1})">›</button>`
     +`<button ${page>=totalPages-1?'disabled':''} onclick="${goFn}(${totalPages-1})">»</button>`;
+}
+
+/* 열 너비 조절 — 각 표의 th 에 드래그 핸들을 붙인다(마지막 열 제외). 드래그한 열과 오른쪽 열의 폭을 맞바꿔 합계를 유지하고,
+   더블클릭하면 처음 폭으로 복원한다. 프론트 lib/useColumnResize 와 같은 동작. */
+function enableColResize(){
+  document.querySelectorAll('table.tbl-fixed, table.bd-table').forEach(table=>{
+    const ths=[...table.querySelectorAll('thead th')];
+    if(ths.length<2)return;
+    table.style.tableLayout='fixed';
+    const total=()=>table.getBoundingClientRect().width||1;
+    const init=ths.map(th=>th.getBoundingClientRect().width/total()*100);
+    const apply=w=>ths.forEach((th,i)=>th.style.width=w[i]+'%');
+    let widths=[...init];apply(widths);
+    ths.slice(0,-1).forEach((th,i)=>{
+      const h=document.createElement('span');h.className='col-resizer';h.setAttribute('aria-hidden','true');
+      h.addEventListener('click',e=>e.stopPropagation());
+      h.addEventListener('dblclick',e=>{e.stopPropagation();widths=[...init];apply(widths);});
+      h.addEventListener('mousedown',e=>{
+        e.preventDefault();e.stopPropagation();h.classList.add('active');
+        const startX=e.clientX,start=[...widths],pair=start[i]+start[i+1],tw=total();
+        const move=ev=>{const d=(ev.clientX-startX)/tw*100;const a=Math.min(Math.max(start[i]+d,4),pair-4);widths=[...start];widths[i]=a;widths[i+1]=pair-a;apply(widths);};
+        const up=()=>{window.removeEventListener('mousemove',move);window.removeEventListener('mouseup',up);document.body.classList.remove('col-resizing');h.classList.remove('active');};
+        document.body.classList.add('col-resizing');window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+      });
+      th.appendChild(h);
+    });
+  });
 }

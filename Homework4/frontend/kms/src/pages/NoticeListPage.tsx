@@ -6,6 +6,7 @@ import type { PageResponse } from '@/api/keys'
 import { fmtDate } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
+import { useColumnResize } from '@/lib/useColumnResize'
 import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
@@ -13,6 +14,9 @@ import { NoticeFormDialog } from '@/components/notices/NoticeFormDialog'
 
 /* 목업 notices.html — 공지사항 목록. 상단 고정(pinned) 공지는 서버 정렬로 항상 상단, 검색은 범위(제목+내용/제목/작성자) 즉시검색.
    페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
+/* 열 기본 폭(%) — 번호·작성자·제목·조회수·등록일 */
+const COLS = [8, 12, 55, 10, 15]
+
 export default function NoticeListPage() {
   const navigate = useNavigate()
   const toast = useToast()
@@ -27,6 +31,7 @@ export default function NoticeListPage() {
   const [formOpen, setFormOpen] = useState(false)
   const tblRef = useRef<HTMLDivElement>(null)
   const pageSize = useAutoPageSize(tblRef, 50)
+  const { tableRef, widths, resizer } = useColumnResize('notices', COLS)
 
   useEffect(() => {
     if (!pageSize) return
@@ -89,14 +94,14 @@ export default function NoticeListPage() {
 
       <div className="card">
         <div className="tbl-wrap" ref={tblRef}>
-          <table className="tbl-fixed">
+          <table className="tbl-fixed" ref={tableRef}>
             <thead>
               <tr>
-                <th style={{ width: '8%' }}>번호</th>
-                <th style={{ width: '12%' }}>작성자</th>
-                <th style={{ width: '55%' }}>제목</th>
-                <th className="sortable" style={{ width: '10%' }} onClick={() => toggleSort('viewCount')}>조회수 ↕</th>
-                <th className="sortable" style={{ width: '15%' }} onClick={() => toggleSort('createdAt')}>등록일 ↕</th>
+                <th style={{ width: `${widths[0]}%` }}>번호{resizer(0)}</th>
+                <th style={{ width: `${widths[1]}%` }}>작성자{resizer(1)}</th>
+                <th style={{ width: `${widths[2]}%` }}>제목{resizer(2)}</th>
+                <th className="sortable" style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('viewCount')}>조회수 ↕{resizer(3)}</th>
+                <th className="sortable" style={{ width: `${widths[4]}%` }} onClick={() => toggleSort('createdAt')}>등록일 ↕</th>
               </tr>
             </thead>
             <tbody>

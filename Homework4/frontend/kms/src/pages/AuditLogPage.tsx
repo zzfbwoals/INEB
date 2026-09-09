@@ -7,10 +7,14 @@ import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
+import { useColumnResize } from '@/lib/useColumnResize'
 import { Pager } from '@/components/ui/pager'
 
 /* 목업 audit.html — 감사 로그. append-only 해시 체인 + 재검증 + CSV 내려받기.
    페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
+/* 열 기본 폭(%) — ID·일시·행위자·행위·대상·상세 */
+const COLS = [6, 14, 9, 15, 22, 34]
+
 export default function AuditLogPage() {
   const toast = useToast()
   const [searchParams] = useSearchParams()
@@ -28,6 +32,7 @@ export default function AuditLogPage() {
   const [reloadTick, setReloadTick] = useState(0)
   const tblRef = useRef<HTMLDivElement>(null)
   const pageSize = useAutoPageSize(tblRef, 46)
+  const { tableRef, widths, resizer } = useColumnResize('audit', COLS)
 
   // 화면 진입 시 체인 상태 자동 검증 (읽기 전용 — 감사 기록 없음)
   useEffect(() => {
@@ -121,15 +126,15 @@ export default function AuditLogPage() {
 
       <div className="card">
         <div className="tbl-wrap" ref={tblRef}>
-          <table className="tbl-fixed">
+          <table className="tbl-fixed" ref={tableRef}>
             <thead>
               <tr>
-                <th className="sortable" style={{ width: '7%' }} onClick={() => toggleSort('id')}>ID ↕</th>
-                <th className="sortable" style={{ width: '15%' }} onClick={() => toggleSort('createdAt')}>일시 (KST) ↕</th>
-                <th className="sortable" style={{ width: '10%' }} onClick={() => toggleSort('actor')}>행위자 ↕</th>
-                <th className="sortable" style={{ width: '17%' }} onClick={() => toggleSort('action')}>행위 ↕</th>
-                <th className="sortable" style={{ width: '26%' }} onClick={() => toggleSort('target')}>대상 ↕</th>
-                <th style={{ width: '25%' }}>상세</th>
+                <th className="sortable" style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('id')}>ID ↕{resizer(0)}</th>
+                <th className="sortable" style={{ width: `${widths[1]}%` }} onClick={() => toggleSort('createdAt')}>일시 (KST) ↕{resizer(1)}</th>
+                <th className="sortable" style={{ width: `${widths[2]}%` }} onClick={() => toggleSort('actor')}>행위자 ↕{resizer(2)}</th>
+                <th className="sortable" style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('action')}>행위 ↕{resizer(3)}</th>
+                <th className="sortable" style={{ width: `${widths[4]}%` }} onClick={() => toggleSort('target')}>대상 ↕{resizer(4)}</th>
+                <th style={{ width: `${widths[5]}%` }}>상세</th>
               </tr>
             </thead>
             <tbody>

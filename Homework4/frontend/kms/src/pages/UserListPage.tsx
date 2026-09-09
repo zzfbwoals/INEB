@@ -6,6 +6,7 @@ import type { PageResponse } from '@/api/keys'
 import { fmtDate } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
+import { useColumnResize } from '@/lib/useColumnResize'
 import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
@@ -15,6 +16,9 @@ import { UserPlainDialog } from '@/components/users/UserPlainDialog'
 
 /* 목업 users.html — 사용자 관리. 연락처·이메일은 마스킹 표시, 정확검색은 HMAC 해시(전체 값 입력).
    페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
+/* 열 기본 폭(%) — 사용자·연락처·이메일·상태·무결성·가입일·액션 */
+const COLS = [20, 17, 24, 10, 9, 12, 8]
+
 export default function UserListPage() {
   const toast = useToast()
   const [keyword, setKeyword] = useState('')
@@ -35,6 +39,7 @@ export default function UserListPage() {
   const [revealed, setRevealed] = useState<Record<number, UserPlain>>({})
   const tblRef = useRef<HTMLDivElement>(null)
   const pageSize = useAutoPageSize(tblRef, 58)
+  const { tableRef, widths, resizer } = useColumnResize('users', COLS)
 
   useEffect(() => {
     fetchMe().then((me) => setIsAdmin(me.role === 'ADMIN')).catch(() => {})
@@ -133,16 +138,16 @@ export default function UserListPage() {
 
       <div className="card">
         <div className="tbl-wrap" ref={tblRef}>
-          <table className="tbl-fixed">
+          <table className="tbl-fixed" ref={tableRef}>
             <thead>
               <tr>
-                <th className="sortable" style={{ width: '16%' }} onClick={() => toggleSort('name')}>사용자 ↕</th>
-                <th style={{ width: '15%' }}>연락처</th>
-                <th style={{ width: '20%' }}>이메일</th>
-                <th style={{ width: '9%' }}>상태</th>
-                <th style={{ width: '8%' }}>무결성</th>
-                <th className="sortable" style={{ width: '11%' }} onClick={() => toggleSort('createdAt')}>가입일 ↕</th>
-                <th style={{ width: '21%' }}></th>
+                <th className="sortable" style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('name')}>사용자 ↕{resizer(0)}</th>
+                <th style={{ width: `${widths[1]}%` }}>연락처{resizer(1)}</th>
+                <th style={{ width: `${widths[2]}%` }}>이메일{resizer(2)}</th>
+                <th style={{ width: `${widths[3]}%` }}>상태{resizer(3)}</th>
+                <th style={{ width: `${widths[4]}%` }}>무결성{resizer(4)}</th>
+                <th className="sortable" style={{ width: `${widths[5]}%` }} onClick={() => toggleSort('createdAt')}>가입일 ↕{resizer(5)}</th>
+                <th style={{ width: `${widths[6]}%` }}></th>
               </tr>
             </thead>
             <tbody>

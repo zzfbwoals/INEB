@@ -6,11 +6,15 @@ import { PURPOSE_KO, algoLabel } from '@/lib/keyRules'
 import { dday, fmtDate } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
+import { useColumnResize } from '@/lib/useColumnResize'
 import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
 import { KeyCreateDialog } from '@/components/keys/KeyCreateDialog'
+
+/* 열 기본 폭(%) — 키명·알고리즘·모드·용도·상태·버전·갱신 주기·다음 갱신·무결성 */
+const COLS = [17, 12, 6, 13, 14, 11, 8, 12, 8]
 
 /* 목업 keys.html — 키 목록. 페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
 export default function KeyListPage() {
@@ -28,6 +32,7 @@ export default function KeyListPage() {
   const [reloadTick, setReloadTick] = useState(0)
   const tblRef = useRef<HTMLDivElement>(null)
   const pageSize = useAutoPageSize(tblRef, 50)
+  const { tableRef, widths, resizer } = useColumnResize('keys', COLS)
 
   useEffect(() => {
     if (!pageSize) return
@@ -97,18 +102,18 @@ export default function KeyListPage() {
 
       <div className="card">
         <div className="tbl-wrap" ref={tblRef}>
-          <table className="tbl-fixed">
+          <table className="tbl-fixed" ref={tableRef}>
             <thead>
               <tr>
-                <th className="sortable" style={{ width: '17%' }} onClick={() => toggleSort('keyName')}>키명 ↕</th>
-                <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('algorithm')}>알고리즘 ↕</th>
-                <th className="sortable" style={{ width: '6%' }} onClick={() => toggleSort('mode')}>모드 ↕</th>
-                <th className="sortable" style={{ width: '13%' }} onClick={() => toggleSort('purpose')}>용도 ↕</th>
-                <th className="sortable" style={{ width: '14%' }} onClick={() => toggleSort('status')}>상태 ↕</th>
-                <th style={{ width: '11%' }}>버전</th>
-                <th style={{ width: '8%' }}>갱신 주기</th>
-                <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신 ↕</th>
-                <th style={{ width: '8%' }}>무결성</th>
+                <th className="sortable" style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('keyName')}>키명 ↕{resizer(0)}</th>
+                <th className="sortable" style={{ width: `${widths[1]}%` }} onClick={() => toggleSort('algorithm')}>알고리즘 ↕{resizer(1)}</th>
+                <th className="sortable" style={{ width: `${widths[2]}%` }} onClick={() => toggleSort('mode')}>모드 ↕{resizer(2)}</th>
+                <th className="sortable" style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('purpose')}>용도 ↕{resizer(3)}</th>
+                <th className="sortable" style={{ width: `${widths[4]}%` }} onClick={() => toggleSort('status')}>상태 ↕{resizer(4)}</th>
+                <th style={{ width: `${widths[5]}%` }}>버전{resizer(5)}</th>
+                <th style={{ width: `${widths[6]}%` }}>갱신 주기{resizer(6)}</th>
+                <th className="sortable" style={{ width: `${widths[7]}%` }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신 ↕{resizer(7)}</th>
+                <th style={{ width: `${widths[8]}%` }}>무결성</th>
               </tr>
             </thead>
             <tbody>
