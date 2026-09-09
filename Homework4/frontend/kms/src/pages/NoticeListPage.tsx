@@ -7,6 +7,7 @@ import { fmtDate } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
 import { useColumnResize } from '@/lib/useColumnResize'
+import { SortMark, sortClass } from '@/components/ui/sort-mark'
 import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
@@ -100,8 +101,8 @@ export default function NoticeListPage() {
                 <th style={{ width: `${widths[0]}%` }}>번호{resizer(0)}</th>
                 <th style={{ width: `${widths[1]}%` }}>작성자{resizer(1)}</th>
                 <th style={{ width: `${widths[2]}%` }}>제목{resizer(2)}</th>
-                <th className="sortable" style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('viewCount')}>조회수 ↕{resizer(3)}</th>
-                <th className="sortable" style={{ width: `${widths[4]}%` }} onClick={() => toggleSort('createdAt')}>등록일 ↕</th>
+                <th className={sortClass(sort, 'viewCount')} style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('viewCount')}>조회수<SortMark sort={sort} field="viewCount" />{resizer(3)}</th>
+                <th className={sortClass(sort, 'createdAt')} style={{ width: `${widths[4]}%` }} onClick={() => toggleSort('createdAt')}>등록일<SortMark sort={sort} field="createdAt" /></th>
               </tr>
             </thead>
             <tbody>

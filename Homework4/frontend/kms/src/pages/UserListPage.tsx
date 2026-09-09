@@ -7,6 +7,7 @@ import { fmtDate } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
 import { useColumnResize } from '@/lib/useColumnResize'
+import { SortMark, sortClass } from '@/components/ui/sort-mark'
 import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
@@ -141,12 +142,12 @@ export default function UserListPage() {
           <table className="tbl-fixed" ref={tableRef}>
             <thead>
               <tr>
-                <th className="sortable" style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('name')}>사용자 ↕{resizer(0)}</th>
+                <th className={sortClass(sort, 'name')} style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('name')}>사용자<SortMark sort={sort} field="name" />{resizer(0)}</th>
                 <th style={{ width: `${widths[1]}%` }}>연락처{resizer(1)}</th>
                 <th style={{ width: `${widths[2]}%` }}>이메일{resizer(2)}</th>
                 <th style={{ width: `${widths[3]}%` }}>상태{resizer(3)}</th>
                 <th style={{ width: `${widths[4]}%` }}>무결성{resizer(4)}</th>
-                <th className="sortable" style={{ width: `${widths[5]}%` }} onClick={() => toggleSort('createdAt')}>가입일 ↕{resizer(5)}</th>
+                <th className={sortClass(sort, 'createdAt')} style={{ width: `${widths[5]}%` }} onClick={() => toggleSort('createdAt')}>가입일<SortMark sort={sort} field="createdAt" />{resizer(5)}</th>
                 <th style={{ width: `${widths[6]}%` }}></th>
               </tr>
             </thead>

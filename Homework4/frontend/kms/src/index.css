@@ -811,11 +811,57 @@ textarea.input:focus {
   white-space: nowrap;
   user-select: none;
 }
+/* 정렬 가능한 열 — 호버 시 글자색이 진해지고 밑줄이 왼쪽에서 자라난다. 정렬 중인 열(.on)은 파란 글자 + 방향 화살표 */
 .tbl-wrap thead th.sortable {
   cursor: pointer;
+  transition: color 0.15s;
+}
+.tbl-wrap thead th.sortable::after {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 6px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--blue);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.18s ease;
 }
 .tbl-wrap thead th.sortable:hover {
-  color: var(--text-2);
+  color: var(--text);
+}
+.tbl-wrap thead th.sortable:hover::after {
+  transform: scaleX(1);
+}
+/* 열 경계 핸들 위에 있거나 드래그 중이면 정렬 호버 효과를 끈다 (핸들 호버 애니메이션만 보이도록) */
+.tbl-wrap thead th.sortable:has(.col-resizer:hover)::after,
+body.col-resizing .tbl-wrap thead th.sortable::after {
+  transform: scaleX(0);
+}
+.tbl-wrap thead th.sortable:has(.col-resizer:hover):not(.on),
+body.col-resizing .tbl-wrap thead th.sortable:not(.on) {
+  color: var(--text-3);
+}
+.tbl-wrap thead th.sortable.on {
+  color: var(--blue);
+}
+.sort-mark {
+  display: inline-block;
+  vertical-align: -1px;
+  margin-left: 4px;
+  animation: sortin 0.18s ease;
+}
+@keyframes sortin {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 .tbl-wrap tbody td {
   padding: 12px 16px;

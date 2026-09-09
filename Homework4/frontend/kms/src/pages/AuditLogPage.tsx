@@ -8,6 +8,7 @@ import { errorMessage, useToast } from '@/components/ui/toast'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
 import { useColumnResize } from '@/lib/useColumnResize'
+import { SortMark, sortClass } from '@/components/ui/sort-mark'
 import { Pager } from '@/components/ui/pager'
 
 /* 목업 audit.html — 감사 로그. append-only 해시 체인 + 재검증 + CSV 내려받기.
@@ -129,11 +130,11 @@ export default function AuditLogPage() {
           <table className="tbl-fixed" ref={tableRef}>
             <thead>
               <tr>
-                <th className="sortable" style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('id')}>ID ↕{resizer(0)}</th>
-                <th className="sortable" style={{ width: `${widths[1]}%` }} onClick={() => toggleSort('createdAt')}>일시 (KST) ↕{resizer(1)}</th>
-                <th className="sortable" style={{ width: `${widths[2]}%` }} onClick={() => toggleSort('actor')}>행위자 ↕{resizer(2)}</th>
-                <th className="sortable" style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('action')}>행위 ↕{resizer(3)}</th>
-                <th className="sortable" style={{ width: `${widths[4]}%` }} onClick={() => toggleSort('target')}>대상 ↕{resizer(4)}</th>
+                <th className={sortClass(sort, 'id')} style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('id')}>ID<SortMark sort={sort} field="id" />{resizer(0)}</th>
+                <th className={sortClass(sort, 'createdAt')} style={{ width: `${widths[1]}%` }} onClick={() => toggleSort('createdAt')}>일시 (KST)<SortMark sort={sort} field="createdAt" />{resizer(1)}</th>
+                <th className={sortClass(sort, 'actor')} style={{ width: `${widths[2]}%` }} onClick={() => toggleSort('actor')}>행위자<SortMark sort={sort} field="actor" />{resizer(2)}</th>
+                <th className={sortClass(sort, 'action')} style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('action')}>행위<SortMark sort={sort} field="action" />{resizer(3)}</th>
+                <th className={sortClass(sort, 'target')} style={{ width: `${widths[4]}%` }} onClick={() => toggleSort('target')}>대상<SortMark sort={sort} field="target" />{resizer(4)}</th>
                 <th style={{ width: `${widths[5]}%` }}>상세</th>
               </tr>
             </thead>

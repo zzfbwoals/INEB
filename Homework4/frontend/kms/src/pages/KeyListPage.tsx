@@ -7,6 +7,7 @@ import { dday, fmtDate } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
 import { useColumnResize } from '@/lib/useColumnResize'
+import { SortMark, sortClass } from '@/components/ui/sort-mark'
 import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
@@ -105,14 +106,14 @@ export default function KeyListPage() {
           <table className="tbl-fixed" ref={tableRef}>
             <thead>
               <tr>
-                <th className="sortable" style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('keyName')}>키명 ↕{resizer(0)}</th>
-                <th className="sortable" style={{ width: `${widths[1]}%` }} onClick={() => toggleSort('algorithm')}>알고리즘 ↕{resizer(1)}</th>
-                <th className="sortable" style={{ width: `${widths[2]}%` }} onClick={() => toggleSort('mode')}>모드 ↕{resizer(2)}</th>
-                <th className="sortable" style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('purpose')}>용도 ↕{resizer(3)}</th>
-                <th className="sortable" style={{ width: `${widths[4]}%` }} onClick={() => toggleSort('status')}>상태 ↕{resizer(4)}</th>
+                <th className={sortClass(sort, 'keyName')} style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('keyName')}>키명<SortMark sort={sort} field="keyName" />{resizer(0)}</th>
+                <th className={sortClass(sort, 'algorithm')} style={{ width: `${widths[1]}%` }} onClick={() => toggleSort('algorithm')}>알고리즘<SortMark sort={sort} field="algorithm" />{resizer(1)}</th>
+                <th className={sortClass(sort, 'mode')} style={{ width: `${widths[2]}%` }} onClick={() => toggleSort('mode')}>모드<SortMark sort={sort} field="mode" />{resizer(2)}</th>
+                <th className={sortClass(sort, 'purpose')} style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('purpose')}>용도<SortMark sort={sort} field="purpose" />{resizer(3)}</th>
+                <th className={sortClass(sort, 'status')} style={{ width: `${widths[4]}%` }} onClick={() => toggleSort('status')}>상태<SortMark sort={sort} field="status" />{resizer(4)}</th>
                 <th style={{ width: `${widths[5]}%` }}>버전{resizer(5)}</th>
                 <th style={{ width: `${widths[6]}%` }}>갱신 주기{resizer(6)}</th>
-                <th className="sortable" style={{ width: `${widths[7]}%` }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신 ↕{resizer(7)}</th>
+                <th className={sortClass(sort, 'nextRotationAt')} style={{ width: `${widths[7]}%` }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신<SortMark sort={sort} field="nextRotationAt" />{resizer(7)}</th>
                 <th style={{ width: `${widths[8]}%` }}>무결성</th>
               </tr>
             </thead>

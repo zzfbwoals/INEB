@@ -47,8 +47,8 @@
   <div class="card">
     <div class="tbl-wrap"><table class="tbl-fixed">
       <thead><tr>
-        <th class="sortable" style="width:17%" onclick="sortKeys('name')">키명 ↕</th><th class="sortable" style="width:12%" onclick="sortKeys('algo')">알고리즘 ↕</th>
-        <th class="sortable" style="width:6%" onclick="sortKeys('mode')">모드 ↕</th><th class="sortable" style="width:13%" onclick="sortKeys('purpose')">용도 ↕</th><th class="sortable" style="width:14%" onclick="sortKeys('status')">상태 ↕</th><th style="width:11%">버전</th><th style="width:8%">갱신 주기</th><th class="sortable" style="width:12%" onclick="sortKeys('expire')">다음 갱신 ↕</th><th style="width:8%">무결성</th>
+        <th class="sortable" style="width:17%" onclick="sortKeys('name')">키명</th><th class="sortable" style="width:12%" onclick="sortKeys('algo')">알고리즘</th>
+        <th class="sortable" style="width:6%" onclick="sortKeys('mode')">모드</th><th class="sortable" style="width:13%" onclick="sortKeys('purpose')">용도</th><th class="sortable" style="width:14%" onclick="sortKeys('status')">상태</th><th style="width:11%">버전</th><th style="width:8%">갱신 주기</th><th class="sortable" style="width:12%" onclick="sortKeys('expire')">다음 갱신</th><th style="width:8%">무결성</th>
       </tr></thead>
       <tbody id="keyTbody"></tbody>
     </table></div>
@@ -103,7 +103,7 @@
 <script>
 renderShell('keys');
 let keySort={f:null,dir:1},keyPage=0;
-function sortKeys(f){keySort.dir=keySort.f===f?-keySort.dir:1;keySort.f=f;keyPage=0;renderKeys();}
+function sortKeys(f){keySort.dir=keySort.f===f?-keySort.dir:1;keySort.f=f;markSort(f,keySort.dir);keyPage=0;renderKeys();}
 function goKeyPage(p){keyPage=p;renderKeys();}
 window.addEventListener('resize',()=>renderKeys());
 function renderKeys(){

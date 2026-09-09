@@ -32,7 +32,7 @@
   </div>
   <div class="card">
     <div class="tbl-wrap"><table class="tbl-fixed">
-      <thead><tr><th class="sortable" style="width:20%" onclick="sortUsers('name')">사용자 ↕</th><th style="width:17%">연락처</th><th style="width:24%">이메일</th><th style="width:10%">상태</th><th style="width:9%">무결성</th><th class="sortable" style="width:12%" onclick="sortUsers('joined')">가입일 ↕</th><th style="width:8%"></th></tr></thead>
+      <thead><tr><th class="sortable" style="width:20%" onclick="sortUsers('name')">사용자</th><th style="width:17%">연락처</th><th style="width:24%">이메일</th><th style="width:10%">상태</th><th style="width:9%">무결성</th><th class="sortable" style="width:12%" onclick="sortUsers('joined')">가입일</th><th style="width:8%"></th></tr></thead>
       <tbody id="userTbody"></tbody>
     </table></div>
     <div class="pager" id="userPager"></div>
@@ -83,7 +83,7 @@
 renderShell('users');
 let userPage=0,userSort={f:null,dir:1};
 function goUserPage(p){userPage=p;renderUsers();}
-function sortUsers(f){userSort.dir=userSort.f===f?-userSort.dir:1;userSort.f=f;userPage=0;renderUsers();}
+function sortUsers(f){userSort.dir=userSort.f===f?-userSort.dir:1;userSort.f=f;markSort(f,userSort.dir);userPage=0;renderUsers();}
 window.addEventListener('resize',()=>renderUsers());
 function renderUsers(){
   const q=document.getElementById('userSearch').value.trim();

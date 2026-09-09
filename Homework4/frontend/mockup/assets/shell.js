@@ -178,3 +178,15 @@ function enableColResize(){
     });
   });
 }
+
+/* 정렬 표시 — 현재 정렬 열의 th 에 .on 과 방향 화살표(.sort-mark)를 붙인다. 프론트 components/ui/sort-mark 와 동일 */
+function markSort(field,dir){
+  document.querySelectorAll('thead th.sortable').forEach(th=>{
+    th.classList.remove('on');th.querySelector('.sort-mark')?.remove();
+    const m=(th.getAttribute('onclick')||'').match(/\('(\w+)'\)/);
+    if(m&&m[1]===field){th.classList.add('on');
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','sort-mark');svg.setAttribute('width','11');svg.setAttribute('height','11');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','2.5');
+      const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',dir>0?'m6 14 6-6 6 6':'m6 10 6 6 6-6');svg.appendChild(path);
+      const h=th.querySelector('.col-resizer');h?th.insertBefore(svg,h):th.appendChild(svg);}
+  });
+}
