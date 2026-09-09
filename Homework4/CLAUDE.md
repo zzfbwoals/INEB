@@ -47,7 +47,7 @@ npm run lint       # oxlint (ESLint 아님)
 ## 기술 스택
 
 - **백엔드**: Java 25, Spring Boot **4.0.7** (스타터 아티팩트명이 Boot 3와 다름: `spring-boot-starter-webmvc`, 테스트도 `spring-boot-starter-webmvc-test`/`data-jpa-test`/`security-test`로 분리), Spring Data JPA, Spring Security + JWT(jjwt 0.13, HS256), springdoc-openapi 3.x, PostgreSQL 17
-- **프론트엔드**: React 19 + TypeScript, Vite 8(rolldown 기반), React Compiler(babel preset), oxlint, Tailwind CSS v4(@tailwindcss/vite), Shadcn/ui(CLI 대신 `src/components/ui/`에 직접 벤더링, 목업 디자인 시스템으로 커스터마이징), react-router v7, Axios, Recharts 도입 예정. 경로 별칭 `@/` → `src/`
+- **프론트엔드**: React 19 + TypeScript, Vite 8(rolldown 기반), React Compiler(babel preset), oxlint, Tailwind CSS v4(@tailwindcss/vite), Shadcn/ui(CLI 대신 `src/components/ui/`에 직접 벤더링, 목업 디자인 시스템으로 커스터마이징), react-router v7, Axios, **아이콘은 lucide-react**(2026-09-09부터 — 앱의 인라인 SVG 전부 교체, 브랜드 로고·로그인 장식·차트만 인라인 유지; 정적 목업은 같은 세트의 `lucide` UMD 를 `mockup/assets/lucide.min.js` 로 동봉해 `<i data-lucide="name" width=.. height=..>` 로 쓰고 `shell.js` 의 MutationObserver 가 svg 로 치환), Recharts 도입 예정. 경로 별칭 `@/` → `src/`
 - **DB**: 원격 개발 서버 `192.168.200.52:5432/INEB`, 계정 dguard, `ddl-auto: update` (스키마는 JPA 엔티티가 생성)
 - Swagger UI: `/swagger-ui`, `/v3/api-docs` (SecurityConfig에서 permitAll, Nginx도 프록시)
 

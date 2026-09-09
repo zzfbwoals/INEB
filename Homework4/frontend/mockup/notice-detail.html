@@ -31,8 +31,8 @@
       <span>등록 <span class="mono" id="nvAt">-</span></span>
       <span>조회수 <b style="color:var(--text-2)" id="nvViews">-</b></span>
       <span class="nacts">
-        <button class="icon-btn" data-tip="수정" aria-label="수정" onclick="toast('수정 화면은 등록 모달과 동일 구성입니다 (목업)')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="m13.5 6.5 3 3"/></svg></button>
-        <button class="icon-btn danger" data-tip="삭제" aria-label="삭제" onclick="confirmDeleteNotice()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg></button>
+        <button class="icon-btn" data-tip="수정" aria-label="수정" onclick="toast('수정 화면은 등록 모달과 동일 구성입니다 (목업)')"><i data-lucide="pencil" width="15" height="15" stroke-width="2"></i></button>
+        <button class="icon-btn danger" data-tip="삭제" aria-label="삭제" onclick="confirmDeleteNotice()"><i data-lucide="trash-2" width="15" height="15" stroke-width="2"></i></button>
       </span>
     </div>
     <div class="nbody">안녕하세요, 아이넵 KMS 운영팀입니다.
@@ -48,19 +48,20 @@
     <div id="nvFiles" style="display:flex;flex-direction:column;gap:9px">
       <div style="font-size:12.5px;font-weight:700;color:var(--text-2)">첨부파일</div>
       <div class="file-it">
-        <span class="fic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l5 5v13H6V3z"/><path d="M14 3v5h5"/></svg></span>
+        <span class="fic"><i data-lucide="file" width="15" height="15" stroke-width="2"></i></span>
         <div class="fn"><b>2026_08_정기점검_상세일정.pdf</b><span>412 KB · enc_ver 1</span></div>
-        <button class="icon-btn" data-tip="다운로드" aria-label="다운로드" onclick="toast('다운로드를 시작합니다')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg></button>
+        <button class="icon-btn" data-tip="다운로드" aria-label="다운로드" onclick="toast('다운로드를 시작합니다')"><i data-lucide="download" width="16" height="16" stroke-width="2"></i></button>
       </div>
       <div class="file-it">
-        <span class="fic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l5 5v13H6V3z"/><path d="M14 3v5h5"/></svg></span>
+        <span class="fic"><i data-lucide="file" width="15" height="15" stroke-width="2"></i></span>
         <div class="fn"><b>점검_체크리스트.xlsx</b><span>88 KB · enc_ver 1</span></div>
-        <button class="icon-btn" data-tip="다운로드" aria-label="다운로드" onclick="toast('다운로드를 시작합니다')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg></button>
+        <button class="icon-btn" data-tip="다운로드" aria-label="다운로드" onclick="toast('다운로드를 시작합니다')"><i data-lucide="download" width="16" height="16" stroke-width="2"></i></button>
       </div>
     </div>
   </div>
 </template>
 <script src="assets/data.js"></script>
+<script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
 <script>
 renderShell('notices');

@@ -1,3 +1,4 @@
+import { Eye, EyeOff, Pencil, Plus, Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { fetchMe } from '@/api/auth'
@@ -116,14 +117,14 @@ export default function UserListPage() {
         <div><h2>사용자 관리</h2></div>
         <div className="acts">
           <Button className="px-[11px]" data-tip="등록" aria-label="등록" onClick={() => { setEditTarget(null); setFormOpen(true) }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 5v14M5 12h14" /></svg>
+            <Plus size={16} strokeWidth={2.2} />
           </Button>
         </div>
       </div>
 
       <div className="filters">
         <div className="search">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m16.5 16.5 4.5 4.5" /></svg>
+          <Search size={14} />
           <input className="input" placeholder="이름 검색" value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0) }} />
         </div>
         <input className="input mono" style={{ width: 250 }} placeholder="연락처·이메일 정확검색"
@@ -173,15 +174,15 @@ export default function UserListPage() {
                       {/* 마스킹 상태 = 눈 가림 아이콘(원문 보기), 원문 상태 = 눈 뜬 아이콘(원문 숨기기) */}
                       {isAdmin && (revealed[u.id] ? (
                         <button type="button" className="icon-btn" data-tip="원문 숨기기" aria-label="원문 숨기기" onClick={() => togglePlain(u)}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+                          <Eye size={15} />
                         </button>
                       ) : (
                         <button type="button" className="icon-btn" data-tip="원문 보기" aria-label="원문 보기" onClick={() => togglePlain(u)}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3l18 18" /><path d="M10.6 10.6a3 3 0 0 0 4.2 4.2" /><path d="M9.9 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1" /><path d="M6.6 6.6A16.6 16.6 0 0 0 2 12s3.5 7 10 7c1.4 0 2.7-.3 3.9-.8" /></svg>
+                          <EyeOff size={15} />
                         </button>
                       ))}
                       <button type="button" className="icon-btn" data-tip="수정" aria-label="수정" onClick={() => { setEditTarget(u); setFormOpen(true) }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" /><path d="m13.5 6.5 3 3" /></svg>
+                        <Pencil size={15} />
                       </button>
                     </div>
                   </td>

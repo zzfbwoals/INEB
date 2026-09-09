@@ -1,3 +1,12 @@
+/* 아이콘: lucide UMD(assets/lucide.min.js). 정적 마크업·innerHTML 렌더 모두 <i data-lucide="name" width=.. height=..> 로 쓰면
+   아래 옵저버가 svg 로 치환한다(속성·class 는 svg 로 복사됨). React 앱의 lucide-react 와 같은 아이콘 세트 */
+(function(){
+  if(typeof lucide==='undefined')return;
+  const has=n=>n.nodeType===1&&(n.matches('i[data-lucide]')||n.querySelector('i[data-lucide]'));
+  new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(has(n)){lucide.createIcons();return}})
+    .observe(document.documentElement,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',()=>lucide.createIcons());
+})();
 /* 공통 셸(사이드바·상단바·프로필 메뉴) — 추후 React Layout 컴포넌트에 해당 */
 const LOGO_FULL=`<svg class="full" width="72" height="22" viewBox="0 0 172 52" fill="none" aria-label="iNEB">
   <rect x="2" y="20" width="9" height="30" rx="1.5" fill="#3B9EFF"/><circle cx="6.5" cy="10" r="6.5" fill="#7CC0FF"/>
@@ -9,17 +18,17 @@ const LOGO_FULL=`<svg class="full" width="72" height="22" viewBox="0 0 172 52" f
 <svg class="mark" width="15" height="26" viewBox="0 0 13 52" fill="none"><rect x="2" y="20" width="9" height="30" rx="1.5" fill="#3B9EFF"/><circle cx="6.5" cy="10" r="6.5" fill="#7CC0FF"/><rect x="3.5" y="12" width="6" height="16" rx="1" fill="#7CC0FF"/></svg>`;
 
 const IC={
- dash:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg>',
- key:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5"/><path d="m11 12 9.6-9.6"/><path d="m15.2 7.8 3 3L22 7l-3-3"/></svg>',
- test:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6L4.5 18a2.4 2.4 0 0 0 2.1 3.5h10.8a2.4 2.4 0 0 0 2.1-3.5L14 9V3"/></svg>',
- user:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.2c3 .3 5 2.5 5 5.3"/></svg>',
- notice:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v12H8l-4 4V5z"/><path d="M8 9h8M8 12.5h5"/></svg>',
- audit:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4.5 6v5c0 5 3.2 8.6 7.5 10 4.3-1.4 7.5-5 7.5-10V6L12 3z"/><path d="m9 11.5 2.2 2.2L15.5 9"/></svg>',
- sun:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
- moon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></svg>',
- sys:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 21h6m-3-4v4"/></svg>',
- out:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4h-8v16h8M10 12h11m0 0-3.5-3.5M21 12l-3.5 3.5"/></svg>',
- chk:'<svg class="chk" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="m4.5 12.5 5 5 10-11"/></svg>',
+ dash:'<i data-lucide="layout-dashboard" width="16" height="16" stroke-width="2"></i>',
+ key:'<i data-lucide="key-round" width="16" height="16" stroke-width="2"></i>',
+ test:'<i data-lucide="flask-conical" width="16" height="16" stroke-width="2"></i>',
+ user:'<i data-lucide="users" width="16" height="16" stroke-width="2"></i>',
+ notice:'<i data-lucide="message-square-text" width="16" height="16" stroke-width="2"></i>',
+ audit:'<i data-lucide="shield-check" width="16" height="16" stroke-width="2"></i>',
+ sun:'<i data-lucide="sun" width="14" height="14" stroke-width="2"></i>',
+ moon:'<i data-lucide="moon" width="14" height="14" stroke-width="2"></i>',
+ sys:'<i data-lucide="monitor" width="14" height="14" stroke-width="2"></i>',
+ out:'<i data-lucide="log-out" width="14" height="14" stroke-width="2"></i>',
+ chk:'<i data-lucide="check" width="13" height="13" class="chk" stroke-width="2.6"></i>',
 };
 
 const NAV=[
@@ -41,7 +50,7 @@ function renderShell(active){
   }).join('');
   document.getElementById('shell').innerHTML=`
   <aside class="side">
-    <div class="brand">${LOGO_FULL}<button class="tgl side-tgl" onclick="toggleSide()" title="사이드바 열기/닫기" aria-label="사이드바 열기/닫기"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg></button></div>
+    <div class="brand">${LOGO_FULL}<button class="tgl side-tgl" onclick="toggleSide()" title="사이드바 열기/닫기" aria-label="사이드바 열기/닫기"><i data-lucide="panel-left" width="17" height="17" stroke-width="2"></i></button></div>
     ${nav}
     <div class="side-profile">
       <div class="me-menu" id="meMenu" role="menu">
@@ -56,7 +65,7 @@ function renderShell(active){
       <button class="sp-btn" id="avatarBtn" onclick="toggleMeMenu(event)" aria-haspopup="menu" aria-label="프로필 메뉴">
         <span class="avatar-btn">류</span>
         <span class="sp-who"><b>류재민</b><span>ADMIN</span></span>
-        <svg class="sp-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 14.5 5-5 5 5"/></svg>
+        <i data-lucide="chevron-up" width="13" height="13" class="sp-chev" stroke-width="2.2"></i>
       </button>
     </div>
   </aside>

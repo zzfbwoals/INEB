@@ -80,7 +80,7 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
       </div>
       <div class="desc mono" style="margin-top:8px;display:flex;align-items:center;gap:8px">
         <span id="kdUid"></span>
-        <button class="copy-btn" onclick="copyEl('kdUid')" title="UID 복사"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>복사</button>
+        <button class="copy-btn" onclick="copyEl('kdUid')" title="UID 복사"><i data-lucide="copy" width="12" height="12" stroke-width="2"></i>복사</button>
       </div>
     </div>
     <div class="acts" id="kdActs"></div>
@@ -214,7 +214,7 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
         <textarea class="input" id="rvReason" placeholder="예: 연동 시스템 키 배포를 위한 값 확인" style="min-height:70px"></textarea></div>
       <div class="field" id="rvResult" style="display:none"><label id="rvLabel">키 재료 (Base64)</label>
         <div class="result-box ok" id="rvValue" style="word-break:break-all;user-select:none"></div>
-        <div style="margin-top:8px"><button class="copy-btn" onclick="copyEl('rvValue')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>복사</button></div></div>
+        <div style="margin-top:8px"><button class="copy-btn" onclick="copyEl('rvValue')"><i data-lucide="copy" width="12" height="12" stroke-width="2"></i>복사</button></div></div>
     </div>
     <div class="modal-f">
       <button class="btn btn-ghost" onclick="closeModal('mdReveal')">닫기</button>
@@ -224,6 +224,7 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
 </div>
 
 <script src="assets/data.js"></script>
+<script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
 <script>
 renderShell('keys');
@@ -276,8 +277,8 @@ function render(){
     <div class="meta-it"><div class="k">생성일</div><div class="v mono">${key.created}</div></div>
     <div class="meta-it"><div class="k">integrity_hash</div><div class="v mono" style="font-size:11.5px;color:var(--text-3)">a3f9c2…e81d <b style="color:${key.integrity?'var(--green)':'var(--red)'}">${key.integrity?'✓':'✕'}</b></div></div>
     ${a&&a.asym?`<div class="meta-it" style="grid-column:1/-1"><div class="k" style="display:flex;align-items:center;gap:8px">공개키 (v${key.currentVersion}, PEM)
-      <button class="copy-btn" onclick="copyText(PEM_TEXT)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>복사</button>
-      <button class="copy-btn" onclick="downloadPem()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg>.pem</button></div>
+      <button class="copy-btn" onclick="copyText(PEM_TEXT)"><i data-lucide="copy" width="12" height="12" stroke-width="2"></i>복사</button>
+      <button class="copy-btn" onclick="downloadPem()"><i data-lucide="download" width="12" height="12" stroke-width="2"></i>.pem</button></div>
     <div class="pubkey" title="전문은 복사 또는 .pem 다운로드로 확인">${abbreviatePem(PEM_TEXT)}</div></div>`:''}`;
   const lastUse=key.versions.map(v=>v.lastUsedAt).filter(Boolean).sort().pop()||null;
   document.getElementById('kdUsage').innerHTML=`

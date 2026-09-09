@@ -22,11 +22,11 @@
 <template id="page-body">
   <div class="page-h">
     <div><h2>키 목록</h2></div>
-    <div class="acts"><button class="btn btn-primary" style="padding:9px 11px" data-tip="등록" aria-label="등록" onclick="openKeyNew()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></button></div>
+    <div class="acts"><button class="btn btn-primary" style="padding:9px 11px" data-tip="등록" aria-label="등록" onclick="openKeyNew()"><i data-lucide="plus" width="16" height="16" stroke-width="2.2"></i></button></div>
   </div>
   <div class="filters">
     <div class="search">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
+      <i data-lucide="search" width="14" height="14" stroke-width="2"></i>
       <input class="input" id="keySearch" placeholder="키명 검색" oninput="renderKeys()">
     </div>
     <select class="input" id="keyAlgo" onchange="renderKeys()">
@@ -99,6 +99,7 @@
 </div>
 
 <script src="assets/data.js"></script>
+<script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
 <script>
 renderShell('keys');

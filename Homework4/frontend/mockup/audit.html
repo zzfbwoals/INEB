@@ -19,12 +19,12 @@
       <!-- 진입 시 자동 검증(GET /api/audit-logs/chain-status) 결과 — 정상(healthy): b-active "체인 정상" /
            위반: b-bad "체인 위반 N건 · 삭제 N · 삽입 N · 수정 N"(섀도 비교 카운트, 0 은 생략) + 보호 트리거 해제 시 "섀도 보호 해제" + [위반 상세] -->
       <span class="badge b-bad">체인 위반 2건</span>
-      <button class="icon-btn" data-tip="위반 상세" aria-label="위반 상세" onclick="openModal('mdForensics')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01" stroke-width="3" stroke-linecap="round"/></svg></button>
-      <button class="icon-btn" data-tip="체인 재검증" aria-label="체인 재검증" onclick="toast('해시 체인 검증을 통과했습니다.')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg></button>
+      <button class="icon-btn" data-tip="위반 상세" aria-label="위반 상세" onclick="openModal('mdForensics')"><i data-lucide="list" width="15" height="15" stroke-width="2"></i></button>
+      <button class="icon-btn" data-tip="체인 재검증" aria-label="체인 재검증" onclick="toast('해시 체인 검증을 통과했습니다.')"><i data-lucide="rotate-cw" width="15" height="15" stroke-width="2"></i></button>
     </div>
     <div class="acts">
       <button class="btn btn-primary" onclick="toast('CSV 다운로드를 시작합니다.')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M4 19h16"/></svg>CSV 내려받기</button>
+        <i data-lucide="download" width="14" height="14" stroke-width="2"></i>CSV 내려받기</button>
     </div>
   </div>
   <div class="filters">
@@ -83,6 +83,7 @@
   </div>
 </div>
 <script src="assets/data.js"></script>
+<script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
 <script>
 renderShell('audit');

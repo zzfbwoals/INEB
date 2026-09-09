@@ -1,3 +1,4 @@
+import { Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createNotice, deleteNoticeFile, updateNotice, MAX_FILES, MAX_FILE_SIZE, type NoticeDetail, type NoticeFileItem } from '@/api/notices'
 import { Button } from '@/components/ui/button'
@@ -96,7 +97,7 @@ export function NoticeFormDialog({ edit, open, onClose, onDone }: {
               onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
               onDragLeave={() => setDragOver(false)}
               onDrop={(e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files) }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 16V5m0 0 4 4m-4-4L8 9M4 19h16" /></svg>
+              <Upload size={15} />
               파일을 끌어오거나 클릭하여 선택
             </div>
             <input ref={inputRef} type="file" multiple hidden onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = '' }} />

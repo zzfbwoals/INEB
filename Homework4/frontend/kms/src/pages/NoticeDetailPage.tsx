@@ -1,3 +1,4 @@
+import { Download, Pencil, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
@@ -87,10 +88,10 @@ export default function NoticeDetailPage() {
           <span>조회수 <b>{detail.viewCount.toLocaleString()}</b></span>
           <span className="nacts">
             <button type="button" className="icon-btn" data-tip="수정" aria-label="수정" onClick={() => setEditOpen(true)}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" /><path d="m13.5 6.5 3 3" /></svg>
+              <Pencil size={15} />
             </button>
             <button type="button" className="icon-btn danger" data-tip="삭제" aria-label="삭제" onClick={() => setDeleteOpen(true)}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16" /><path d="M10 11v6M14 11v6" /><path d="M6 7l1 13h10l1-13" /><path d="M9 7V4h6v3" /></svg>
+              <Trash2 size={15} />
             </button>
           </span>
         </div>
@@ -102,7 +103,7 @@ export default function NoticeDetailPage() {
               <NoticeFileRow key={f.id} name={f.originalName} size={f.fileSize} meta={`enc_ver ${f.encVer}`}
                 action={
                   <button type="button" className="icon-btn" data-tip="다운로드" aria-label="다운로드" disabled={downloading === f.id} onClick={() => download(f)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16" /></svg>
+                    <Download size={16} />
                   </button>
                 } />
             ))}

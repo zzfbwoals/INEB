@@ -43,14 +43,14 @@
   <div class="board-head">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
       <div><h2>공지사항</h2></div>
-      <button class="btn btn-primary" style="padding:9px 11px" data-tip="등록" aria-label="등록" onclick="openModal('mdNotice')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="btn btn-primary" style="padding:9px 11px" data-tip="등록" aria-label="등록" onclick="openModal('mdNotice')"><i data-lucide="plus" width="16" height="16" stroke-width="2.2"></i></button>
     </div>
     <div class="board-bar">
       <span class="total">총 <b id="ntTotal">4</b>건</span>
       <select class="input" style="width:110px"><option>전체</option><option>고정</option><option>일반</option></select>
       <select class="input" style="width:120px"><option>제목+내용</option><option>제목</option><option>작성자</option></select>
       <div class="search" style="flex:none;min-width:220px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
+        <i data-lucide="search" width="14" height="14" stroke-width="2"></i>
         <input class="input" id="ntSearch" placeholder="검색어 입력" oninput="renderNotices()">
       </div>
     </div>
@@ -81,12 +81,12 @@
       <label class="ack"><input type="checkbox"> 상단 고정</label>
       <div class="field"><label>첨부파일 <span style="font-weight:400;color:var(--text-3)">— 마스터키 암호화 저장 · 파일당 20MB · 최대 5개</span></label>
         <button class="btn btn-ghost" style="justify-content:center;border-style:dashed;padding:16px" onclick="toast('파일 선택은 목업에서 생략됩니다 — 암호화 업로드 처리')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V5m0 0 4 4m-4-4L8 9M4 19h16"/></svg>파일을 끌어오거나 클릭하여 선택
+          <i data-lucide="upload" width="15" height="15" stroke-width="2"></i>파일을 끌어오거나 클릭하여 선택
         </button>
         <!-- 선택된 파일 목록 (multipart files 파트로 함께 전송) -->
         <div style="display:flex;flex-direction:column;gap:9px;margin-top:9px">
           <div class="file-it">
-            <span class="fic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l5 5v13H6V3z"/><path d="M14 3v5h5"/></svg></span>
+            <span class="fic"><i data-lucide="file" width="15" height="15" stroke-width="2"></i></span>
             <div class="fn"><b>2026_08_정기점검_상세일정.pdf</b><span>412 KB · 업로드 예정</span></div>
             <button class="btn btn-ghost btn-sm" onclick="toast('목록에서 제거됩니다 (목업)')">제거</button>
           </div>
@@ -100,6 +100,7 @@
 </div>
 
 <script src="assets/data.js"></script>
+<script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
 <script>
 renderShell('notices');

@@ -1,3 +1,4 @@
+import { Plus, Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
@@ -71,14 +72,14 @@ export default function KeyListPage() {
         <div><h2>키 목록</h2></div>
         <div className="acts">
           <Button className="px-[11px]" data-tip="등록" aria-label="등록" onClick={() => setCreateOpen(true)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 5v14M5 12h14" /></svg>
+            <Plus size={16} strokeWidth={2.2} />
           </Button>
         </div>
       </div>
 
       <div className="filters">
         <div className="search">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m16.5 16.5 4.5 4.5" /></svg>
+          <Search size={14} />
           <input className="input" placeholder="키명 검색" value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0) }} />
         </div>
         <select className="input" value={algorithm} onChange={(e) => { setAlgorithm(e.target.value as KeyAlgorithm | ''); setPage(0) }}>

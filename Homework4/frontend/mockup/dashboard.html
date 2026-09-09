@@ -154,10 +154,10 @@ html.dash-full .stat .num{font-size:30px}
       <!-- SSE(GET /api/events) 수신 시 마지막 이벤트 시각 갱신. 연결 끊기면 점을 회색으로 -->
       <span class="live" id="liveTag"><i></i>실시간 · 마지막 이벤트 <span id="lastEvt"></span></span>
       <button class="btn btn-ghost" onclick="refreshDash()" title="새로고침" aria-label="새로고침" style="padding:7px 9px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>
+        <i data-lucide="rotate-cw" width="14" height="14" style="vertical-align:-2px" stroke-width="2"></i>
       </button>
       <button class="btn btn-ghost" id="fsBtn" onclick="toggleFullscreen()" title="대시보드 전체화면 (ESC로 종료)" aria-label="대시보드 전체화면" style="padding:7px 9px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+        <i data-lucide="maximize" width="14" height="14" style="vertical-align:-2px" stroke-width="2"></i>
       </button>
     </div>
   </div>
@@ -177,14 +177,14 @@ html.dash-full .stat .num{font-size:30px}
       <button class="btn btn-ghost btn-sm" onclick="openKeyNew()"><span class="qic" data-ic="key"></span>키 등록</button>
       <button class="btn btn-ghost btn-sm" onclick="openUserNew()"><span class="qic" data-ic="user"></span>사용자 등록</button>
       <button class="btn btn-ghost btn-sm" onclick="openModal('mdNotice')"><span class="qic" data-ic="notice"></span>공지사항 등록</button>
-      <button class="btn btn-ghost btn-sm" onclick="verifyChain()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/><path d="m9 12 2 2 4-4"/></svg>체인 재검증</button>
+      <button class="btn btn-ghost btn-sm" onclick="verifyChain()"><i data-lucide="shield-check" width="13" height="13" stroke-width="2"></i>체인 재검증</button>
     </div>
   </div>
 
   <!-- 요약 카드 4종 (GET /api/dashboard/summary) -->
   <div class="grid4">
     <a class="card stat" href="keys.html">
-      <div class="lb"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5"/><path d="m11 12 9.6-9.6"/><path d="m15.2 7.8 3 3L22 7l-3-3"/></svg></span>전체 KMS 키</div>
+      <div class="lb"><span class="ic"><i data-lucide="key-round" width="13" height="13" stroke-width="2"></i></span>전체 KMS 키</div>
       <div class="row">
         <svg class="donut" id="keyDonut" width="52" height="52" viewBox="0 0 64 64"></svg>
         <div style="min-width:0">
@@ -195,18 +195,18 @@ html.dash-full .stat .num{font-size:30px}
       <div class="delta" id="keyVer"></div>
     </a>
     <a class="card stat" href="users.html">
-      <div class="lb"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg></span>서비스 사용자</div>
+      <div class="lb"><span class="ic"><i data-lucide="user" width="13" height="13" stroke-width="2"></i></span>서비스 사용자</div>
       <div class="num" id="userTotal">0</div>
       <div class="delta" id="userDelta"></div>
     </a>
     <a class="card stat" href="notices.html">
-      <div class="lb"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v12H8l-4 4V5z"/></svg></span>공지사항</div>
+      <div class="lb"><span class="ic"><i data-lucide="message-square" width="13" height="13" stroke-width="2"></i></span>공지사항</div>
       <div class="num" id="noticeTotal">0</div>
       <div class="delta" id="noticeDelta"></div>
     </a>
     <!-- 무결성 대상 4종(crypto_key · key_material · app_user · audit_log)별 집계. 0건이면 warn-ring 없음 -->
     <a class="card stat" id="ivCard" href="keys.html">
-      <div class="lb"><span class="ic" id="ivIcon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4m0 3.2v.1"/></svg></span>무결성 위반</div>
+      <div class="lb"><span class="ic" id="ivIcon"><i data-lucide="triangle-alert" width="13" height="13" stroke-width="2"></i></span>무결성 위반</div>
       <div class="num" id="ivTotal">0</div>
       <div class="iv-grid" id="ivGrid"></div>
       <div class="delta" id="ivHint"></div>
@@ -341,7 +341,7 @@ html.dash-full .stat .num{font-size:30px}
       <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2);cursor:pointer"><input type="checkbox" style="accent-color:var(--red);width:14px;height:14px"> 상단 고정</label>
       <div class="field"><label>첨부파일 <span style="font-weight:400;color:var(--text-3)">— 마스터키 암호화 저장 · 파일당 20MB · 최대 5개</span></label>
         <button class="btn btn-ghost" style="justify-content:center;border-style:dashed;padding:16px" onclick="toast('파일 선택은 목업에서 생략됩니다 — 암호화 업로드 처리')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V5m0 0 4 4m-4-4L8 9M4 19h16"/></svg>파일을 끌어오거나 클릭하여 선택
+          <i data-lucide="upload" width="15" height="15" stroke-width="2"></i>파일을 끌어오거나 클릭하여 선택
         </button></div>
     </div>
     <div class="modal-f">
@@ -352,6 +352,7 @@ html.dash-full .stat .num{font-size:30px}
 </div>
 
 <script src="assets/data.js"></script>
+<script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
 <script>
 renderShell('dashboard');
@@ -386,8 +387,8 @@ document.addEventListener('fullscreenchange',()=>{
   const b=document.getElementById('fsBtn');
   if(b){
     b.innerHTML=on
-      ?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5"/></svg>'
-      :'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>';
+      ?'<i data-lucide="minimize" width="14" height="14" style="vertical-align:-2px" stroke-width="2"></i>'
+      :'<i data-lucide="maximize" width="14" height="14" style="vertical-align:-2px" stroke-width="2"></i>';
     b.title=on?'전체화면 종료 (ESC)':'대시보드 전체화면 (ESC로 종료)';
     b.setAttribute('aria-label',on?'전체화면 종료':'대시보드 전체화면');
   }

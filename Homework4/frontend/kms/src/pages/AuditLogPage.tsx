@@ -1,3 +1,4 @@
+import { Download, List, RotateCw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
@@ -129,11 +130,11 @@ export default function AuditLogPage() {
           {summary && summary.guard !== 'ACTIVE' && <span className="badge b-bad">섀도 보호 {summary.guard === 'DISABLED' ? '해제' : '누락'}</span>}
           {unhealthy && forensics && (
             <button type="button" className="icon-btn" data-tip="위반 상세" aria-label="위반 상세" onClick={() => setForensicsOpen({ mode: 'all', tab: 'deleted' })}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 6h13M8 12h13M8 18h13" /><path d="M3 6h.01M3 12h.01M3 18h.01" strokeWidth="3" strokeLinecap="round" /></svg>
+              <List size={15} />
             </button>
           )}
           <button type="button" className="icon-btn" data-tip="체인 재검증" aria-label="체인 재검증" disabled={verifying} onClick={runVerify}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 12a8 8 0 1 1-2.3-5.7" /><path d="M20 4v5h-5" /></svg>
+            <RotateCw size={15} />
           </button>
         </div>
         <div className="acts">
@@ -145,7 +146,7 @@ export default function AuditLogPage() {
               toast(errorMessage(err), 'error')
             }
           }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M4 19h16" /></svg>
+            <Download size={14} />
             CSV 내려받기
           </Button>
         </div>

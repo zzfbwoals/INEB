@@ -51,7 +51,7 @@
         <button class="btn btn-primary" style="align-self:flex-start" id="encBtn" onclick="runEncrypt()">암호화 실행</button>
         <div class="field"><label id="encOutLabel">암호문</label><div class="result-box" id="encOut">결과가 여기에 표시됩니다</div>
           <div class="fmt" id="encFmt"></div>
-          <div style="margin-top:6px"><button class="copy-btn" id="encCopy" style="display:none" onclick="copyEl('encOut')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>복사</button></div></div>
+          <div style="margin-top:6px"><button class="copy-btn" id="encCopy" style="display:none" onclick="copyEl('encOut')"><i data-lucide="copy" width="12" height="12" stroke-width="2"></i>복사</button></div></div>
       </div>
     </div>
     <div class="card test-card">
@@ -68,6 +68,7 @@
   </div>
 </template>
 <script src="assets/data.js"></script>
+<script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
 <script>
 renderShell('test');

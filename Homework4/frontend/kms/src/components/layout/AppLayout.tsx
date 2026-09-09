@@ -1,3 +1,4 @@
+import { Check, ChevronUp, FlaskConical, KeyRound, LayoutDashboard, LogOut, MessageSquareText, Monitor, Moon, PanelLeft, ShieldCheck, Sun, Users } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router'
 import { fetchMe, logout, type Me } from '@/api/auth'
@@ -13,75 +14,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-/* 목업 shell.js의 아이콘 세트 */
+/* 아이콘은 lucide-react — 목업 shell.js 의 인라인 SVG 와 같은 선형(24px·stroke 2) 세트 */
 const icons = {
-  dash: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="3" width="8" height="8" rx="2" />
-      <rect x="13" y="3" width="8" height="5" rx="2" />
-      <rect x="13" y="10" width="8" height="11" rx="2" />
-      <rect x="3" y="13" width="8" height="8" rx="2" />
-    </svg>
-  ),
-  key: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="7.5" cy="15.5" r="5" />
-      <path d="m11 12 9.6-9.6" />
-      <path d="m15.2 7.8 3 3L22 7l-3-3" />
-    </svg>
-  ),
-  test: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M9 3h6M10 3v6L4.5 18a2.4 2.4 0 0 0 2.1 3.5h10.8a2.4 2.4 0 0 0 2.1-3.5L14 9V3" />
-    </svg>
-  ),
-  user: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="9" cy="8" r="3.5" />
-      <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
-      <circle cx="17" cy="9" r="2.6" />
-      <path d="M16.5 14.2c3 .3 5 2.5 5 5.3" />
-    </svg>
-  ),
-  notice: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 5h16v12H8l-4 4V5z" />
-      <path d="M8 9h8M8 12.5h5" />
-    </svg>
-  ),
-  audit: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 3 4.5 6v5c0 5 3.2 8.6 7.5 10 4.3-1.4 7.5-5 7.5-10V6L12 3z" />
-      <path d="m9 11.5 2.2 2.2L15.5 9" />
-    </svg>
-  ),
-  sun: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-    </svg>
-  ),
-  moon: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z" />
-    </svg>
-  ),
-  sys: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="4" width="18" height="13" rx="2" />
-      <path d="M9 21h6m-3-4v4" />
-    </svg>
-  ),
-  out: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M14 4h-8v16h8M10 12h11m0 0-3.5-3.5M21 12l-3.5 3.5" />
-    </svg>
-  ),
-  chk: (
-    <svg className="chk" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6">
-      <path d="m4.5 12.5 5 5 10-11" />
-    </svg>
-  ),
+  dash: <LayoutDashboard size={16} />,
+  key: <KeyRound size={16} />,
+  test: <FlaskConical size={16} />,
+  user: <Users size={16} />,
+  notice: <MessageSquareText size={16} />,
+  audit: <ShieldCheck size={16} />,
+  sun: <Sun size={14} />,
+  moon: <Moon size={14} />,
+  sys: <Monitor size={14} />,
+  out: <LogOut size={14} />,
+  chk: <Check className="chk" size={13} strokeWidth={2.6} />,
 } as const
 
 /* 사이드바 메뉴 — to 가 있으면 라우팅, 없으면 미구현(추후 주차) 표시만 */
@@ -161,10 +106,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <LogoMark className="mark" />
           {/* 확장 시 우측 축소 버튼 / 축소 시 마크 호버로 나타나는 확대 버튼 */}
           <button type="button" className="tgl side-tgl" onClick={toggleSide} title="사이드바 열기/닫기" aria-label="사이드바 열기/닫기">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="16" rx="2.5" />
-              <path d="M9.5 4v16" />
-            </svg>
+            <PanelLeft size={17} />
           </button>
         </div>
 
@@ -202,9 +144,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   <b>{me?.name ?? '···'}</b>
                   <span>{me?.role ?? ''}</span>
                 </span>
-                <svg className="sp-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <path d="m7 14.5 5-5 5 5" />
-                </svg>
+                <ChevronUp className="sp-chev" size={13} strokeWidth={2.2} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="top" align="start">
