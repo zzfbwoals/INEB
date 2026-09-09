@@ -1863,8 +1863,10 @@ body.col-resizing * {
   background: var(--raised);
   cursor: pointer;
 }
+/* 취소선은 셀에서 자식으로 전파되므로 none 으로는 못 끈다 — inline-block(원자 인라인)에는 전파되지 않는 규칙을 이용 */
 .tbl-wrap tbody tr.row-ghost td .row-tag,
 .tbl-wrap tbody tr.row-ghost td .actchip {
+  display: inline-block;
   text-decoration: none;
 }
 /* 위반 종류 표시 — 배경 없는 빨간 글씨 (행 높이에 영향 없음) */

@@ -315,7 +315,7 @@ tbody tr.row-bad td{background:var(--red-bg)}
 tbody tr.row-ghost td{color:var(--text-3);text-decoration:line-through;background:var(--raised);cursor:pointer}
 .modal.scroll-body .modal-b{overflow:hidden}
 .scroll-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
-tbody tr.row-ghost td .row-tag,tbody tr.row-ghost td .actchip{text-decoration:none}
+tbody tr.row-ghost td .row-tag,tbody tr.row-ghost td .actchip{display:inline-block;text-decoration:none}
 .row-tag{color:var(--red);font-size:11.5px;font-weight:700;margin-right:6px}
 .diff-grid{display:grid;grid-template-columns:80px 1fr 1fr;gap:6px 10px;font-size:12.5px;align-items:start}
 .diff-grid .h{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em}
