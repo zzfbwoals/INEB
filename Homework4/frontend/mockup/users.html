@@ -30,7 +30,7 @@
   </div>
   <div class="card">
     <div class="tbl-wrap"><table class="tbl-fixed">
-      <thead><tr><th class="sortable" style="width:20%" onclick="sortUsers('name')">사용자</th><th style="width:17%">연락처</th><th style="width:24%">이메일</th><th style="width:10%">상태</th><th style="width:9%">무결성</th><th class="sortable" style="width:12%" onclick="sortUsers('joined')">가입일</th><th style="width:8%"></th></tr></thead>
+      <thead><tr><th class="sortable" style="width:26%" onclick="sortUsers('name')">사용자</th><th style="width:21%">연락처</th><th style="width:28%">이메일</th><th class="sortable" style="width:14%" onclick="sortUsers('joined')">가입일</th><th style="width:11%"></th></tr></thead>
       <tbody id="userTbody"></tbody>
     </table></div>
     <div class="pager" id="userPager"></div>
@@ -97,21 +97,20 @@ function renderUsers(){
   renderPager(document.getElementById('userPager'),total,userPage,totalPages,'goUserPage','명');
   document.getElementById('userTbody').innerHTML=rows.map(u=>`
     <tr>
-      <td><span class="uavatar" style="background:var(--blue-bg);color:var(--blue)">${u.name[0]}</span><b>${u.name}</b></td>
+      <td><span class="uav"><span class="uavatar" style="background:var(--blue-bg);color:var(--blue)">${u.name[0]}</span>${userDot(u.status)}</span><b class="nm">${u.name}</b></td>
       <td class="${revealed.has(u.id)?'mono':'mask'}">${revealed.has(u.id)?u.plainPhone:u.phone}</td>
       <td class="${revealed.has(u.id)?'mono':'mask'}">${revealed.has(u.id)?u.plainEmail:u.email}</td>
-      <td>${u.status==='ACTIVE'?'<span class="badge b-active">활성</span>':'<span class="badge b-inactive">정지</span>'}</td>
-      <td><span class="badge b-ok">정상</span></td>
       <td class="mono" style="color:var(--text-2)">${u.joined}</td>
       <td>
         <div style="display:flex;gap:4px;justify-content:flex-end">
+          <a class="icon-btn" data-tip="감사 로그" aria-label="감사 로그" href="audit.html?target=USER%23${u.id}"><i data-lucide="shield-check" width="15" height="15" stroke-width="2"></i></a>
           ${revealed.has(u.id)
             ?`<button class="icon-btn" data-tip="원문 숨기기" aria-label="원문 숨기기" onclick="togglePlain(${u.id})"><i data-lucide="eye" width="15" height="15" stroke-width="2"></i></button>`
             :`<button class="icon-btn" data-tip="원문 보기" aria-label="원문 보기" onclick="togglePlain(${u.id})"><i data-lucide="eye-off" width="15" height="15" stroke-width="2"></i></button>`}
           <button class="icon-btn" data-tip="수정" aria-label="수정" onclick="openUserForm(${u.id})"><i data-lucide="pencil" width="15" height="15" stroke-width="2"></i></button>
         </div>
       </td>
-    </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:34px">검색 결과가 없습니다</td></tr>';
+    </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:34px">검색 결과가 없습니다</td></tr>';
 }
 let editUser=null,pwResetMode=false;
 function openUserForm(id){

@@ -6,7 +6,9 @@ import { PURPOSE_KO, STATE_KO, algoLabel, canEncrypt, canSign, maxPlaintextBytes
 import { Button } from '@/components/ui/button'
 import { CopyButton } from '@/components/ui/copy'
 import { errorMessage, useToast } from '@/components/ui/toast'
-import { StateBadge } from '@/components/keys/StateBadge'
+import { StateDot } from '@/components/keys/StateBadge'
+import { ChevronDown } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 type Mode = 'enc' | 'sig'
 
@@ -158,16 +160,23 @@ export default function KeyTestPage() {
         </div>
         <div className="field">
           <label>버전</label>
-          <select className="input" value={selVersion} onChange={(e) => setSelVersion(Number(e.target.value))} disabled={!detail}>
-            {!detail && <option value={0}>—</option>}
-            {detail?.versions.map((v) => (
-              <option key={v.version} value={v.version}>
-                v{v.version} · {STATE_KO[v.state]}{v.version === detail.currentVersion ? ' (최신)' : ''}
-              </option>
-            ))}
-          </select>
+          {/* 콤보박스 — 네이티브 select 는 상태 점을 못 그리므로 드롭다운 목록으로 (항목: v3 + 상태 점) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="vsel" disabled={!detail}>
+                <span>{detail ? <>v{selVersion}<StateDot state={detail.versions.find((v) => v.version === selVersion)?.state ?? 'ACTIVE'} /></> : '—'}</span>
+                <ChevronDown size={14} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" style={{ minWidth: 88 }}>
+              {detail?.versions.map((v) => (
+                <DropdownMenuItem key={v.version} className={selVersion === v.version ? 'on' : ''} onSelect={() => setSelVersion(v.version)}>
+                  v{v.version}<StateDot state={v.state} />
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        {detail && <div className="keyinfo"><StateBadge state={detail.status} /></div>}
       </div>
 
       <div className="test-grid">

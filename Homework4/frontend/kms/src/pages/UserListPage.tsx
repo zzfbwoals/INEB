@@ -1,6 +1,6 @@
-import { Eye, EyeOff, Pencil, Plus, Search } from 'lucide-react'
+import { Eye, EyeOff, Pencil, Plus, Search, ShieldCheck } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import { fetchMe } from '@/api/auth'
 import { listUsers, type UserListParams, type UserPlain, type UserStatus, type UserSummary } from '@/api/users'
@@ -13,14 +13,14 @@ import { SortMark, sortClass } from '@/components/ui/sort-mark'
 import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
-import { IntegrityBadge } from '@/components/keys/StateBadge'
+import { UserDot } from '@/components/keys/StateBadge'
 import { UserFormDialog } from '@/components/users/UserFormDialog'
 import { UserPlainDialog } from '@/components/users/UserPlainDialog'
 
 /* 목업 users.html — 사용자 관리. 연락처·이메일은 마스킹 표시, 검색은 이름·연락처·이메일 통합 부분검색(서버가 복호화해 판정).
    페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
-/* 열 기본 폭(%) — 사용자·연락처·이메일·상태·무결성·가입일·액션 */
-const COLS = [20, 17, 24, 10, 9, 12, 8]
+/* 열 기본 폭(%) — 사용자·연락처·이메일·가입일·액션. 상태는 아바타 색상점, 무결성 위반은 행 전체 빨간 배경(row-bad) */
+const COLS = [26, 21, 28, 14, 11]
 
 export default function UserListPage() {
   const toast = useToast()
@@ -137,10 +137,8 @@ export default function UserListPage() {
                 <th className={sortClass(sort, 'name')} style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('name')}>사용자<SortMark sort={sort} field="name" />{resizer(0)}</th>
                 <th style={{ width: `${widths[1]}%` }}>연락처{resizer(1)}</th>
                 <th style={{ width: `${widths[2]}%` }}>이메일{resizer(2)}</th>
-                <th style={{ width: `${widths[3]}%` }}>상태{resizer(3)}</th>
-                <th style={{ width: `${widths[4]}%` }}>무결성{resizer(4)}</th>
-                <th className={sortClass(sort, 'createdAt')} style={{ width: `${widths[5]}%` }} onClick={() => toggleSort('createdAt')}>가입일<SortMark sort={sort} field="createdAt" />{resizer(5)}</th>
-                <th style={{ width: `${widths[6]}%` }}></th>
+                <th className={sortClass(sort, 'createdAt')} style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('createdAt')}>가입일<SortMark sort={sort} field="createdAt" />{resizer(3)}</th>
+                <th style={{ width: `${widths[4]}%` }}></th>
               </tr>
             </thead>
             <tbody>
@@ -148,20 +146,20 @@ export default function UserListPage() {
                 <tr><td colSpan={7} className="tbl-empty">{loading ? '불러오는 중…' : '검색 결과가 없습니다'}</td></tr>
               )}
               {rows.map((u) => (
-                <tr key={u.id}>
+                <tr key={u.id} className={u.integrityValid ? undefined : 'row-bad'} title={u.integrityValid ? undefined : '무결성 위반 — 행 해시 불일치'}>
                   <td>
-                    <span className="uavatar" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}>{u.name.charAt(0)}</span>
-                    <b>{u.name}</b>
+                    <span className="uav"><span className="uavatar" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}>{u.name.charAt(0)}</span><UserDot status={u.status} /></span>
+                    <b className="nm">{u.name}</b>
                   </td>
                   <td className={revealed[u.id] ? 'mono' : 'mask'}>{revealed[u.id]?.phone ?? u.phoneMasked}</td>
                   <td className={revealed[u.id] ? 'mono' : 'mask'}>{revealed[u.id]?.email ?? u.emailMasked}</td>
-                  <td>{u.status === 'ACTIVE'
-                    ? <span className="badge b-active">활성</span>
-                    : <span className="badge b-deact">정지</span>}</td>
-                  <td><IntegrityBadge valid={u.integrityValid} /></td>
                   <td className="mono" style={{ color: 'var(--text-2)' }}>{fmtDate(u.createdAt)}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                      {/* 감사 로그 — 이 사용자(USER#id) 대상 기록만 필터한 감사 로그 화면으로 이동 */}
+                      <Link className="icon-btn" data-tip="감사 로그" aria-label="감사 로그" to={`/audit?target=${encodeURIComponent(`USER#${u.id}`)}`}>
+                        <ShieldCheck size={15} />
+                      </Link>
                       {/* 마스킹 상태 = 눈 가림 아이콘(원문 보기), 원문 상태 = 눈 뜬 아이콘(원문 숨기기) */}
                       {isAdmin && (revealed[u.id] ? (
                         <button type="button" className="icon-btn" data-tip="원문 숨기기" aria-label="원문 숨기기" onClick={() => togglePlain(u)}>

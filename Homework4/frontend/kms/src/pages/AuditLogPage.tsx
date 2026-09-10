@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useSearchParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import {
-  AUDIT_ACTIONS, downloadAuditCsv, fetchChainStatus, fetchForensics, listAuditLogs, shadowHasIssue, verifyAuditChain,
+  AUDIT_ACTIONS, downloadAuditCsv, fetchAuditActors, fetchChainStatus, fetchForensics, listAuditLogs, shadowHasIssue, verifyAuditChain,
   type AuditForensics, type AuditLogItem, type AuditModifiedItem, type AuditVerifyResult,
 } from '@/api/audit'
 import type { PageResponse } from '@/api/keys'
@@ -34,6 +34,11 @@ export default function AuditLogPage() {
   const [actor, setActor] = useState('')
   const [action, setAction] = useState('')
   const [target, setTarget] = useState(() => searchParams.get('target') ?? '')
+  // 표시 범위 — 전체 / 정상(위반 행 제외) / 위반(서버 목록 대신 섀도 비교 forensics 의 수정·삽입·삭제 행만, 필터·정렬·페이징은 클라이언트)
+  const [view, setView] = useState<'all' | 'ok' | 'bad'>('all')
+  const onlyBad = view === 'bad'
+  // 행위자 콤보박스 — 기록에 존재하는 행위자 목록(실시간 이벤트마다 갱신)
+  const [actors, setActors] = useState<string[]>([])
   const [sort, setSort] = useState<{ field: string; dir: 'asc' | 'desc' } | null>(null)
   const [page, setPage] = useState(0)
   const [data, setData] = useState<PageResponse<AuditLogItem> | null>(null)
@@ -63,6 +68,7 @@ export default function AuditLogPage() {
   }, [])
 
   useEffect(() => { refreshChain() }, [refreshChain])
+  useEffect(() => { fetchAuditActors().then(setActors).catch(() => {}) }, [reloadTick])
 
   // 실시간 갱신 — 모든 행위는 감사 기록되므로 이벤트가 오면 목록·체인 상태를 refetch
   useEffect(() => {
@@ -73,7 +79,7 @@ export default function AuditLogPage() {
   }, [refreshChain])
 
   useEffect(() => {
-    if (!pageSize) return
+    if (!pageSize || onlyBad) return
     let cancelled = false
     setLoading(true)
     listAuditLogs({ actor, action, target, from, to, page, size: pageSize, sort: sort?.field, direction: sort?.dir })
@@ -81,12 +87,13 @@ export default function AuditLogPage() {
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [actor, action, target, from, to, page, pageSize, sort, reloadTick, toast])
+  }, [actor, action, target, from, to, page, pageSize, sort, reloadTick, toast, onlyBad])
 
   // 페이지 크기 변동(창 크기 변경)으로 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정
   useEffect(() => {
+    if (onlyBad) return
     if (data && data.totalPages > 0 && page >= data.totalPages) setPage(data.totalPages - 1)
-  }, [data, page])
+  }, [data, page, onlyBad])
 
   function toggleSort(field: string) {
     setPage(0)
@@ -113,9 +120,28 @@ export default function AuditLogPage() {
   const insertedIds = new Set(forensics?.inserted.map((r) => r.id) ?? [])
   // 유령 행(지워진 행)은 기본 정렬(id 내림차순)·필터 없음일 때만 끼워 넣는다 — 필터가 있으면 페이지 id 범위가 불연속이라 위치를 정할 수 없다
   const inlineGhosts = !sort && !actor && !action && !target && !from && !to
-  const merged = inlineGhosts && forensics && forensics.deleted.length > 0
-    ? mergeGhosts(rows, forensics.deleted, page === 0, !!data && page >= data.totalPages - 1)
-    : rows.map((item): Row => ({ kind: 'row', item }))
+  // '위반 행만' — forensics 의 수정(현재 값)·삽입·삭제(섀도 값) 행을 합쳐 클라이언트에서 필터·정렬·페이징
+  const badAll: Row[] = onlyBad && forensics
+    ? [
+      ...forensics.modified.map((m): Row => ({ kind: 'row', item: m.current })),
+      ...forensics.inserted.map((item): Row => ({ kind: 'row', item })),
+      ...forensics.deleted.map((item): Row => ({ kind: 'ghost', item })),
+    ].filter((r) => r.kind !== 'more' && matchesFilter(r.item, { actor, action, target, from, to }))
+      .sort((a, b) => compareRows(a, b, sort))
+    : []
+  const badPage = onlyBad && pageSize
+    ? { totalElements: badAll.length, totalPages: Math.ceil(badAll.length / pageSize) }
+    : null
+  const merged = onlyBad
+    ? badAll.slice(page * (pageSize || 1), (page + 1) * (pageSize || 1))
+    : inlineGhosts && forensics && forensics.deleted.length > 0
+      ? mergeGhosts(rows, forensics.deleted, page === 0, !!data && page >= data.totalPages - 1)
+      : rows.map((item): Row => ({ kind: 'row', item }))
+  const pageInfo = onlyBad ? badPage : data
+  // '정상' 은 현재 페이지에서 수정·삽입·삭제 행을 제외 (페이지 총계는 서버 기준이라 위반 행 수만큼 적게 보일 수 있음)
+  const shown = view === 'ok'
+    ? merged.filter((r) => r.kind === 'row' && !modifiedById.has(r.item.id) && !insertedIds.has(r.item.id))
+    : merged
   const summary = chain && chain !== 'unavailable' ? chain.shadow : undefined
   const unhealthy = chain && chain !== 'unavailable' && !chain.healthy
 
@@ -154,12 +180,19 @@ export default function AuditLogPage() {
         <input className="input" type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0) }} />
         <span style={{ color: 'var(--text-3)' }}>→</span>
         <input className="input" type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(0) }} />
-        <input className="input" style={{ width: 140 }} placeholder="행위자" value={actor}
-          onChange={(e) => { setActor(e.target.value); setPage(0) }} />
+        <select className="input" value={actor} onChange={(e) => { setActor(e.target.value); setPage(0) }}>
+          <option value="">행위자 전체</option>
+          {actors.map((a) => <option key={a} value={a}>{a}</option>)}
+        </select>
         <select className="input" value={action} onChange={(e) => { setAction(e.target.value); setPage(0) }}>
           <option value="">행위유형 전체</option>
           {AUDIT_ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
         </select>
+        <div className="seg">
+          {([['all', '전체'], ['ok', '정상'], ['bad', '위반']] as const).map(([v, l]) => (
+            <button key={v} type="button" className={view === v ? 'on' : ''} onClick={() => { setView(v); setPage(0) }}>{l}</button>
+          ))}
+        </div>
         <input className="input mono" style={{ width: 250 }} placeholder="대상 (KEY#uid / USER#id)" value={target}
           onChange={(e) => { setTarget(e.target.value); setPage(0) }} />
       </div>
@@ -178,10 +211,10 @@ export default function AuditLogPage() {
               </tr>
             </thead>
             <tbody>
-              {merged.length === 0 && (
-                <tr><td colSpan={6} className="tbl-empty">{loading ? '불러오는 중…' : '조건에 맞는 기록이 없습니다'}</td></tr>
+              {shown.length === 0 && (
+                <tr><td colSpan={6} className="tbl-empty">{onlyBad ? '위반 행이 없습니다' : loading ? '불러오는 중…' : '조건에 맞는 기록이 없습니다'}</td></tr>
               )}
-              {merged.map((r) => {
+              {shown.map((r) => {
                 if (r.kind === 'more') {
                   return (
                     <tr key="more" className="row-ghost">
@@ -207,7 +240,7 @@ export default function AuditLogPage() {
             </tbody>
           </table>
         </div>
-        <Pager page={page} data={data} onPage={setPage} />
+        <Pager page={page} data={pageInfo} onPage={setPage} />
       </div>
 
       {forensicsOpen && forensics && (
@@ -241,6 +274,23 @@ function badgeText(chain: AuditVerifyResult): string {
  * 페이지 [min,max] 안의 삭제 행은 제 위치에, 1페이지에는 max 보다 큰 id(꼬리 삭제)를 맨 위에, 마지막 페이지에는 min 보다 작은 id 를 맨 아래에.
  * 페이지당 GHOST_MAX 개까지만 인라인, 초과분은 "…외 N건" 한 줄.
  */
+/** '위반 행만' 보기의 클라이언트 필터 — 행위자·대상은 부분일치, 행위유형은 일치, 기간은 KST 날짜 문자열 비교 */
+function matchesFilter(a: AuditLogItem, f: { actor: string; action: string; target: string; from: string; to: string }): boolean {
+  const day = a.createdAt.slice(0, 10)
+  return (!f.actor || a.actor.toLowerCase().includes(f.actor.toLowerCase()))
+    && (!f.action || a.action === f.action)
+    && (!f.target || a.target.toLowerCase().includes(f.target.toLowerCase()))
+    && (!f.from || day >= f.from) && (!f.to || day <= f.to)
+}
+
+function compareRows(a: Row, b: Row, sort: { field: string; dir: 'asc' | 'desc' } | null): number {
+  if (a.kind === 'more' || b.kind === 'more') return 0
+  const f = (sort?.field ?? 'id') as keyof AuditLogItem
+  const x = a.item[f], y = b.item[f]
+  const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y))
+  return (sort?.dir ?? 'desc') === 'asc' ? c : -c
+}
+
 function mergeGhosts(rows: AuditLogItem[], deleted: AuditLogItem[], firstPage: boolean, lastPage: boolean): Row[] {
   const sortedDeleted = [...deleted].sort((a, b) => b.id - a.id)
   const max = rows.length > 0 ? rows[0].id : Number.NEGATIVE_INFINITY

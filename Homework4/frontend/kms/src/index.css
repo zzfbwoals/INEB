@@ -1022,6 +1022,32 @@ body.col-resizing .tbl-wrap thead th.sortable:not(.on) {
   border-color: transparent;
   background: var(--green-bg);
 }
+/* 상태 색상점 (2026-09-10 배지 대체) — 이름 뒤에 붙임. 운영 초록 · 준비 파랑 · 정지 회색 · 폐기 회색 테두리 · 사용자 활성 초록/정지 회색 */
+.sdot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 7px; vertical-align: middle; flex: none; box-sizing: border-box; }
+.sdot.s-ACTIVE, .sdot.u-ACTIVE { background: var(--green); }
+.sdot.s-PRE_ACTIVE { background: var(--blue); }
+.sdot.s-DEACTIVATED, .sdot.u-SUSPENDED { background: var(--text-3); }
+.sdot.s-DESTROYED { background: color-mix(in srgb, var(--text-3) 55%, transparent); }
+.stext { display: inline-flex; align-items: center; gap: 6px; }
+.stext .sdot { margin-left: 0; }
+h2 > .sdot { width: 9px; height: 9px; margin-left: 10px; vertical-align: 4px; }
+/* 이름 말줄임 — 상태 점 툴팁 때문에 셀 overflow 가 visible 이라 이름 span 에서 자른다 (열을 좁혀도 옆 열로 넘치지 않음) */
+.nm { display: inline-block; max-width: calc(100% - 22px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+/* 사용자 상태 점 — 아바타 우측 하단에 겹침 (디스코드 상태 표시) */
+.uav { position: relative; display: inline-flex; vertical-align: middle; margin-right: 10px; }
+.uav .uavatar { margin: 0; }
+.uav .sdot { position: absolute; right: -2px; bottom: -2px; margin: 0; width: 11px; height: 11px; border: 2px solid var(--surface); }
+.uav + .nm { max-width: calc(100% - 48px); }
+/* 버전 텍스트 (배경 없음) — 목록 "v3/3" */
+.vtxt { font-size: 12.5px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.vtxt.cur { color: var(--green); }
+/* 동작 테스트 버전 칩 — v3 + 상태 점 */
+/* 동작 테스트 버전 콤보박스 — 트리거는 입력창 모양, 목록 항목은 v3 + 상태 점 */
+.vsel { display: inline-flex; align-items: center; justify-content: space-between; gap: 6px; height: 36px; min-width: 76px; padding: 0 8px 0 10px; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--raised); color: var(--text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.vsel:hover { border-color: var(--text-3); }
+.vsel:disabled { opacity: 0.5; cursor: not-allowed; }
+.vsel > span { display: inline-flex; align-items: center; }
+.me-menu .mm-it .sdot { margin-left: 8px; }
 
 /* 안내 박스 · 결과 박스 */
 .result-box {
@@ -1894,6 +1920,8 @@ body.col-resizing * {
 .tbl-wrap tbody tr.row-bad.rowlink:hover td {
   filter: brightness(0.97);
 }
+/* 키 상세 버전 목록 — 무결성 위반 버전은 현재 버전 강조(vcur)보다 빨간 배경이 우선 */
+.tbl-wrap tbody tr.vcur.row-bad td { background: var(--red-bg); }
 .tbl-wrap tbody tr.row-ghost td {
   color: var(--text-3);
   text-decoration: line-through;
@@ -2101,6 +2129,8 @@ html.dash-full .dash .stat .num { font-size: 30px; }
 .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
 .seg button { border: 0; background: transparent; color: var(--text-3); font-size: 11px; font-weight: 700; padding: 4px 8px; cursor: pointer; white-space: nowrap; font-family: inherit; }
 .seg button.on { background: var(--raised); color: var(--text); }
+.filters .seg { height: 36px; align-items: stretch; }
+.filters .seg button { padding: 0 12px; font-size: 12.5px; }
 .chart-sum { display: flex; gap: 16px; padding: 8px 16px 0; font-size: 11.5px; color: var(--text-3); flex: none; }
 .chart-sum b { color: var(--text); font-variant-numeric: tabular-nums; }
 .chart-wrap { flex: 1; min-height: 0; position: relative; padding: 6px 8px 2px 4px; }
@@ -2164,7 +2194,8 @@ html.dash-full .dash .stat .num { font-size: 30px; }
 .sq-clear.show { visibility: visible; }
 .sq-clear:hover { color: var(--text); }
 .srch-tabs { padding: 6px 14px 0; }
-.srch-body { display: grid; grid-template-columns: 1fr 1fr; flex: 1; min-height: 340px; max-height: 58vh; overflow: hidden; }
+.srch-body { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr); flex: 1; min-height: 340px; max-height: 58vh; overflow: hidden; }
+.srch-list, .srch-side { min-height: 0; }
 .srch-list { overflow: auto; padding: 8px 8px 8px 12px; border-right: 1px solid var(--line); scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
 .srch-side { padding: 18px 20px; overflow: auto; font-size: 12.5px; color: var(--text-2); }
 .sq-sec { font-size: 11.5px; color: var(--text-3); font-weight: 600; padding: 10px 10px 6px; }

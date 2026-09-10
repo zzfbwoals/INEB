@@ -35,18 +35,7 @@
 .quick .qic svg{width:14px;height:14px}
 .quick .btn-sm{gap:4px}
 
-/* 드롭다운 (등록 · 패널 편집) — 프로필 메뉴(.me-menu/.mm-it)와 같은 디자인 */
-.dd{position:relative}
-.dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:190px;background:var(--surface);
-  border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--modal-shadow);padding:6px;z-index:120;animation:pop .16s}
-.dd.open .dd-menu{display:block}
-.dd.open [data-tip]::after{display:none}
-.dd-menu .mm-sec{font-size:10.5px;font-weight:800;letter-spacing:.09em;color:var(--text-3);padding:8px 11px 4px;text-transform:uppercase}
-.dd-menu .mm-it{background:none;border:0;cursor:pointer}
-.dd-menu .mm-it:hover{background:var(--hover);color:var(--text)}
-.dd-menu .mm-it .ck{display:inline-flex;width:14px;color:var(--blue);opacity:0;flex:none}
-.dd-menu .mm-it.on{color:var(--text)}
-.dd-menu .mm-it.on .ck{opacity:1}
+/* 드롭다운(.dd/.dd-menu)은 common.css 공용 — 등록 · 패널 편집 · 동작 테스트 버전 콤보박스가 함께 쓴다 */
 
 /* 헤더 검색창 — 토스증권 상단 검색창처럼 "/" 키 배지 안내 */
 .sbox{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 11px;min-width:224px;border:1px solid var(--line-strong);border-radius:10px;
@@ -63,7 +52,8 @@
 .sq-clear{display:inline-grid;place-items:center;color:var(--text-3);background:none;border:0;cursor:pointer;visibility:hidden}
 .sq-clear:hover{color:var(--text)}
 .srch-tabs{padding:6px 14px 0}
-.srch-body{display:grid;grid-template-columns:1fr 1fr;flex:1;min-height:340px;max-height:58vh;overflow:hidden}
+.srch-body{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr);flex:1;min-height:340px;max-height:58vh;overflow:hidden}
+.srch-list,.srch-side{min-height:0}
 .srch-list{overflow:auto;padding:8px 8px 8px 12px;border-right:1px solid var(--line);scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
 .srch-side{padding:18px 20px;overflow:auto;font-size:12.5px;color:var(--text-2)}
 .sq-sec{font-size:11.5px;color:var(--text-3);font-weight:600;padding:10px 10px 6px}
@@ -281,8 +271,6 @@ html.dash-full .stat .num{font-size:30px}
       <span>마지막 검증 <b class="mono" id="chainAt">09:41:03</b></span>
       <button class="icon-btn sm" data-tip="체인 재검증" aria-label="체인 재검증" onclick="verifyChain()"><i data-lucide="rotate-cw" width="14" height="14" stroke-width="2.2"></i></button>
       <span class="sep"></span>
-      <span>감사 로그 <b class="mono">1,291</b>행 · 위반 구간 <b class="mono">0</b></span>
-      <span class="sep"></span>
       <a class="more" href="audit.html">감사 로그 →</a>
     </div>
     <div class="quick">
@@ -335,11 +323,10 @@ html.dash-full .stat .num{font-size:30px}
     </div>
     <!-- 무결성 대상 4종(crypto_key · key_material · app_user · audit_log)별 집계. 0건이면 warn-ring 없음 -->
     <div class="card stat" id="ivCard" data-card="integrity" data-title="무결성 위반">
-      <div class="card-h"><h3><a class="tl" id="ivLink" href="keys.html">무결성 위반</a></h3></div>
+      <div class="card-h"><h3>무결성 위반</h3></div>
       <div class="stat-b">
       <div class="num" id="ivTotal">0</div>
       <div class="iv-grid" id="ivGrid"></div>
-      <div class="delta" id="ivHint"></div>
       </div>
     </div>
   </div>
@@ -522,11 +509,7 @@ const keyById=id=>KEYS.find(k=>k.id===id);
 
 /* ---------- 상단 ---------- */
 document.querySelectorAll('.quick .qic').forEach(el=>{el.innerHTML=IC[el.dataset.ic];});
-/* 드롭다운 — 하나만 열리고 바깥 클릭·ESC 로 닫힘. 패널 편집 메뉴는 항목을 눌러도 닫히지 않는다(연속 토글) */
-function ddToggle(e,id){e.stopPropagation();const el=document.getElementById(id),on=!el.classList.contains('open');ddClose();el.classList.toggle('open',on);}
-function ddClose(){document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open'));}
-document.addEventListener('click',e=>{if(!e.target.closest('.dd'))ddClose();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')ddClose();});
+/* 드롭다운 열기/닫기(ddToggle/ddClose)는 shell.js 공용. 패널 편집 메뉴는 항목을 눌러도 닫히지 않는다(연속 토글) */
 
 /* ---------- 통합 검색 (토스증권 검색 참고) ----------
    "/" 로 열기(입력 중이 아닐 때) · 탭(전체·키·사용자·공지사항·감사 로그)은 항상 표시, 검색어가 비면 목록·상세 모두 비움
@@ -542,7 +525,7 @@ const ICON=(n)=>`<span class="ic"><i data-lucide="${n}" width="14" height="14" s
 function sqSearch(q){
   return {
     keys:KEYS.filter(k=>hasQ(q,k.name,k.algo,k.uid,k.desc,STATE_KO[k.status])).map(k=>({cat:'keys',d:k,href:`key-detail.html?id=${k.id}`,
-      html:`${ICON('key-round')}<div class="tx"><b>${hl(k.name,q)}</b><span>${hl(k.algo,q)}${k.mode?' · '+k.mode:''} · v${k.currentVersion}</span></div><span class="rt"><span class="badge ${BADGE[k.status]}">${STATE_KO[k.status]}</span></span>`})),
+      html:`${ICON('key-round')}<div class="tx"><b>${hl(k.name,q)}</b><span>${hl(k.algo,q)}${k.mode?' · '+k.mode:''} · v${k.currentVersion}</span></div><span class="rt">${stateDot(k.status)}</span>`})),
     users:USERS.filter(u=>hasQ(q,u.name,u.plainEmail,u.plainPhone,u.plainPhone.replace(/\D/g,''))).map(u=>({cat:'users',d:u,href:`users.html?id=${u.id}`,
       html:`${ICON('user')}<div class="tx"><b>${hl(u.name,q)}</b><span class="mono">${u.phone} · ${u.email}</span></div><span class="rt">${u.status==='ACTIVE'?'활성':'정지'}</span>`})),
     notices:NOTICES.filter(n=>hasQ(q,n.title,n.by)).map(n=>({cat:'notices',d:n,href:`notice-detail.html?id=${n.id}`,
@@ -565,7 +548,7 @@ function sqRender(){
     h+=`<div class="sq-sec">${label}</div>`;
     arr.slice(0,LIM).forEach(r=>{const n=sqRows.push(r)-1;h+=`<a class="sq-row" data-i="${n}" href="${r.href}">${r.html}<span class="ent"><i data-lucide="corner-down-left" width="12" height="12" stroke-width="2.2"></i></span></a>`;});
     // 구분선과 같은 줄에 "더 보기" (------ 더 보기 →)
-    if(sqTab==='all')h+=`<div class="sq-more"><i></i><a data-tab="${c}">${label} 더 보기${arr.length>LIM?' ('+arr.length+')':''} →</a></div>`;});
+    if(sqTab==='all')h+=`<div class="sq-more"><i></i>${arr.length>LIM?`<a data-tab="${c}">${label} 더 보기 (${arr.length}) →</a>`:''}</div>`;});
   if(q&&!sqRows.length)h+=`<div class="sq-empty">'${esc(i.value.trim())}' 검색 결과가 없습니다</div>`;
   document.getElementById('sqList').innerHTML=h;sqSel=0;sqPaint();
 }
@@ -575,12 +558,12 @@ function sqPaint(){
     if(on){const rr=el.getBoundingClientRect();if(rr.top<lr.top+8)list.scrollTop+=rr.top-lr.top-8;else if(rr.bottom>lr.bottom-8)list.scrollTop+=rr.bottom-lr.bottom+8;}});
   const r=sqRows[sqSel],side=document.getElementById('sqSide');
   if(!r){side.innerHTML=sqRows.length||!document.getElementById('sqInput').value.trim()?'':'<div class="sq-empty">항목을 선택하면 상세가 표시됩니다</div>';return;}
-  const d=r.d,badge=st=>`<span class="badge ${BADGE[st]}">${STATE_KO[st]}</span>`;
+  const d=r.d,badge=st=>stateBadge(st);
   if(r.cat==='keys')side.innerHTML=`<div class="sq-side-h">${esc(d.name)}</div><div class="mono" style="font-size:11px;color:var(--text-3)">${d.uid}</div>
-    <dl><dt>알고리즘</dt><dd>${d.algo}${d.mode?' · '+d.mode:''}</dd><dt>용도</dt><dd>${PURPOSE[d.purpose]}</dd><dt>상태</dt><dd>${badge(d.status)}</dd><dt>현재 버전</dt><dd class="mono">v${d.currentVersion}</dd>
+    <dl><dt>알고리즘</dt><dd>${d.algo}${d.mode?' · '+d.mode:''}</dd><dt>용도</dt><dd>${PURPOSE[d.purpose]}</dd><dt>현재 버전</dt><dd class="mono">v${d.currentVersion}</dd>
     <dt>자동 갱신</dt><dd>${d.autoRotate?d.rotationPeriodDays+'일 · 다음 '+d.nextRotationAt.slice(0,10):'사용 안 함'}</dd><dt>등록</dt><dd class="mono">${d.created}</dd>${d.desc?`<dt>설명</dt><dd>${esc(d.desc)}</dd>`:''}</dl>`;
   else if(r.cat==='users')side.innerHTML=`<div class="sq-side-h">${esc(d.name)}</div>
-    <dl><dt>상태</dt><dd>${d.status==='ACTIVE'?'<span class="badge b-active">활성</span>':'<span class="badge b-inactive">정지</span>'}</dd><dt>연락처</dt><dd class="mono">${d.phone}</dd><dt>이메일</dt><dd class="mono">${d.email}</dd><dt>가입일</dt><dd class="mono">${d.joined}</dd></dl>
+    <dl><dt>연락처</dt><dd class="mono">${d.phone}</dd><dt>이메일</dt><dd class="mono">${d.email}</dd><dt>가입일</dt><dd class="mono">${d.joined}</dd></dl>
     <div style="margin-top:14px;font-size:11.5px;color:var(--text-3)">원문은 사용자 관리에서 사유 입력 후 조회</div>`;
   else if(r.cat==='notices')side.innerHTML=`<div class="sq-side-h">${esc(d.title)}</div>${d.pinned?'<span class="badge b-bad">고정</span>':''}
     <dl><dt>작성자</dt><dd>${esc(d.by)}</dd><dt>등록일</dt><dd class="mono">${d.at}</dd><dt>조회수</dt><dd class="mono">${d.views}</dd><dt>첨부</dt><dd>${d.files?d.files+'건 (암호화 저장)':'없음'}</dd></dl>`;
@@ -678,11 +661,6 @@ document.addEventListener('fullscreenchange',()=>{
   if(ivTotal){
     card.classList.add('warn-ring');
     document.getElementById('ivTotal').style.color='var(--red)';
-    const first=KEYS.find(k=>!k.integrity||k.versions.some(v=>!v.integrity));
-    document.getElementById('ivLink').href=`key-detail.html?id=${first.id}`;
-    document.getElementById('ivHint').innerHTML=`<span style="color:var(--red)">${first.name} 확인 필요 →</span>`;
-  }else{
-    document.getElementById('ivHint').textContent='위반 없음';
   }
 })();
 

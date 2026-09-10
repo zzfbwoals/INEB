@@ -14,6 +14,10 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSp
 
     Optional<AuditLog> findTopByOrderByIdDesc();
 
+    /** 필터 콤보박스용 — 기록에 존재하는 행위자(distinct, 정렬) */
+    @Query("select distinct a.actor from AuditLog a order by a.actor")
+    List<String> findDistinctActors();
+
     /** 체인 검증용 keyset 순회 — id 오름차순 500건씩 */
     List<AuditLog> findFirst500ByIdGreaterThanOrderByIdAsc(long id);
 

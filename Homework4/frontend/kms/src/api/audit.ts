@@ -105,6 +105,12 @@ export async function listAuditLogs(params: AuditListParams): Promise<PageRespon
 }
 
 /** 체인 상태 조회 — 감사 기록 없는 읽기 전용 검증 (감사 로그 화면 진입 시 자동 호출) */
+/** 행위자 콤보박스 — 기록에 존재하는 행위자 목록 */
+export async function fetchAuditActors(): Promise<string[]> {
+  const res = await api.get<ApiEnvelope<string[]>>('/api/audit-logs/actors')
+  return res.data.data
+}
+
 export async function fetchChainStatus(): Promise<AuditVerifyResult> {
   const res = await api.get<ApiEnvelope<AuditVerifyResult>>('/api/audit-logs/chain-status')
   return res.data.data

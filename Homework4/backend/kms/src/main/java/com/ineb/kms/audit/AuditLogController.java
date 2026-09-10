@@ -1,5 +1,6 @@
 package com.ineb.kms.audit;
 
+import java.util.List;
 import com.ineb.kms.audit.dto.AuditForensicsResponse;
 import com.ineb.kms.audit.dto.AuditLogItem;
 import com.ineb.kms.audit.dto.AuditVerifyResponse;
@@ -69,6 +70,12 @@ public class AuditLogController {
     }
 
     /** 체인 상태 조회 — 원본 체인·섀도 비교 요약·보호 트리거 상태. 검증만 수행하고 감사 기록은 남기지 않는다 (화면 진입·SSE 시 자동 호출) */
+    /** 행위자 콤보박스용 목록 (distinct) */
+    @GetMapping("/actors")
+    public ApiResponse<List<String>> actors() {
+        return ApiResponse.ok(auditLogService.actors());
+    }
+
     @GetMapping("/chain-status")
     public ApiResponse<AuditVerifyResponse> chainStatus() {
         return ApiResponse.ok(auditLogService.status());

@@ -9,7 +9,7 @@ import { subscribeUiEvents } from '@/lib/events'
 import { Dialog, DialogBody, DialogContent } from '@/components/ui/dialog'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { CopyButton } from '@/components/ui/copy'
-import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
+import { StateDot } from '@/components/keys/StateBadge'
 import { KeyActionDialogs, type ActionDialogState } from '@/components/keys/KeyActionDialogs'
 import { KeyEditDialog } from '@/components/keys/KeyEditDialog'
 import { KeyRevealDialog } from '@/components/keys/KeyRevealDialog'
@@ -17,7 +17,7 @@ import { useColumnResize } from '@/lib/useColumnResize'
 import { SortMark, sortClass, type SortState } from '@/components/ui/sort-mark'
 
 /* 버전 목록·사용 이력 표 — 열 기본 폭(%)과 클라이언트 정렬(데이터가 이미 화면에 있으므로 서버 재조회 없음) */
-const VER_COLS = [8, 15, 16, 16, 9, 15, 10, 11]
+const VER_COLS = [11, 21, 21, 13, 20, 14]   // 버전(뒤에 상태 점) · 활성일 · 마지막 사용 · 사용 횟수 · 암호화/복호화 · 액션. 무결성 위반 버전은 행 전체 빨간 배경(row-bad)
 const USE_COLS = [20, 14, 12, 10, 44]
 
 function sortRows<T>(rows: T[], sort: SortState, pick: (row: T, field: string) => string | number | boolean | null): T[] {
@@ -167,9 +167,7 @@ export default function KeyDetailPage() {
       <div className="page-h">
         <div>
           <div className="hdr-row">
-            <h2>{detail.keyName}</h2>
-            <StateBadge state={s} />
-            <span className="vtag cur">v{detail.currentVersion}</span>
+            <h2>{detail.keyName}<StateDot state={s} /></h2>
           </div>
           <div className="desc mono" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, minHeight: 26 }}>
             <span>{detail.keyUid}</span>
@@ -257,13 +255,11 @@ export default function KeyDetailPage() {
               <thead>
                 <tr>
                   <th className={sortClass(verSort, 'version')} style={{ width: `${verCols.widths[0]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'version'))}>버전<SortMark sort={verSort} field="version" />{verCols.resizer(0)}</th>
-                  <th className={sortClass(verSort, 'state')} style={{ width: `${verCols.widths[1]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'state'))}>상태<SortMark sort={verSort} field="state" />{verCols.resizer(1)}</th>
-                  <th className={sortClass(verSort, 'activationDate')} style={{ width: `${verCols.widths[2]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'activationDate'))}>활성일<SortMark sort={verSort} field="activationDate" />{verCols.resizer(2)}</th>
-                  <th className={sortClass(verSort, 'lastUsedAt')} style={{ width: `${verCols.widths[3]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'lastUsedAt'))}>마지막 사용<SortMark sort={verSort} field="lastUsedAt" />{verCols.resizer(3)}</th>
-                  <th className={sortClass(verSort, 'usageCount')} style={{ width: `${verCols.widths[4]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'usageCount'))}>사용 횟수<SortMark sort={verSort} field="usageCount" />{verCols.resizer(4)}</th>
-                  <th style={{ width: `${verCols.widths[5]}%` }}>{capLabel}{verCols.resizer(5)}</th>
-                  <th className={sortClass(verSort, 'integrityValid')} style={{ width: `${verCols.widths[6]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'integrityValid'))}>무결성<SortMark sort={verSort} field="integrityValid" />{verCols.resizer(6)}</th>
-                  <th style={{ width: `${verCols.widths[7]}%` }}></th>
+                  <th className={sortClass(verSort, 'activationDate')} style={{ width: `${verCols.widths[1]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'activationDate'))}>활성일<SortMark sort={verSort} field="activationDate" />{verCols.resizer(1)}</th>
+                  <th className={sortClass(verSort, 'lastUsedAt')} style={{ width: `${verCols.widths[2]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'lastUsedAt'))}>마지막 사용<SortMark sort={verSort} field="lastUsedAt" />{verCols.resizer(2)}</th>
+                  <th className={sortClass(verSort, 'usageCount')} style={{ width: `${verCols.widths[3]}%` }} onClick={() => setVerSort((p) => nextSort(p, 'usageCount'))}>사용 횟수<SortMark sort={verSort} field="usageCount" />{verCols.resizer(3)}</th>
+                  <th style={{ width: `${verCols.widths[4]}%` }}>{capLabel}{verCols.resizer(4)}</th>
+                  <th style={{ width: `${verCols.widths[5]}%` }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -289,7 +285,7 @@ export default function KeyDetailPage() {
                   <tr key={i}>
                     <td className="mono">{u.usedAt}</td>
                     <td className="mono">{u.operation}</td>
-                    <td><span className="vtag">v{u.version}</span>{u.oldVersion && <> <span className="help">구 버전</span></>}</td>
+                    <td><span className="vtxt">v{u.version}</span>{u.oldVersion && <> <span className="help">구 버전</span></>}</td>
                     <td>{u.result === 'SUCCESS' ? <span className="badge b-ok">성공</span> : <span className="badge b-bad">실패</span>}</td>
                     <td className="mono" style={{ color: u.failReason ? 'var(--red)' : 'var(--text-3)', fontSize: 11.5 }}>{u.failReason ?? '—'}</td>
                   </tr>
@@ -324,7 +320,7 @@ function TimelineItems({ history }: { history: HistoryItem[] }) {
         <div key={i} className="tl-it">
           <span className={`tl-dot ${h.trigger === 'INTEGRITY' ? 'bad' : i === 0 ? 'now' : ''}`} />
           <div className="tl-body">
-            <b><span className="vtag">v{h.version}</span> {h.fromState ? `${h.fromState} → ` : '생성 → '}{h.toState}</b>
+            <b><span className="vtxt">v{h.version}</span> {h.fromState ? `${h.fromState} → ` : '생성 → '}{h.toState}</b>
             <span className={`trg ${h.trigger === 'INTEGRITY' ? 'bad' : h.trigger === 'DATE_REACHED' || h.trigger === 'SCHEDULE' ? 'sys' : h.trigger === 'REACTIVATE' ? 'ok' : ''}`}>{TRIGGER_KO[h.trigger]}</span>
             <div className="rs">사유: {h.reason}</div>
             <div className="at">{h.changedAt} · {h.changedBy}</div>
@@ -366,11 +362,10 @@ function VersionRow({ v, detail, onAction, onReveal }: { v: VersionInfo; detail:
   </>
   const revealable = v.state !== 'DESTROYED'
   return (
-    <tr className={`${isCur ? 'vcur' : ''} ${revealable ? 'rowlink' : ''}`.trim()}
-        title={revealable ? '클릭하여 키값 조회 — 사유 필수 · 감사로그 기록' : undefined}
+    <tr className={`${isCur ? 'vcur' : ''} ${revealable ? 'rowlink' : ''} ${revealable && !v.integrityValid ? 'row-bad' : ''}`.trim()}
+        title={revealable ? (v.integrityValid ? '클릭하여 키값 조회 — 사유 필수 · 감사로그 기록' : '무결성 위반 — 재활성화로 복구 · 클릭하여 키값 조회') : undefined}
         onClick={revealable ? () => onReveal(v.version) : undefined}>
-      <td><span className={`vtag ${isCur ? 'cur' : ''}`}>v{v.version}</span></td>
-      <td><StateBadge state={v.state} /></td>
+      <td><span className={`vtxt ${isCur ? 'cur' : ''}`}>v{v.version}</span><StateDot state={v.state} /></td>
       <td className="mono">
         {fmt(v.activationDate)}
         {v.state === 'PRE_ACTIVE' && <span style={{ color: 'var(--blue)' }}> 예정</span>}
@@ -379,7 +374,6 @@ function VersionRow({ v, detail, onAction, onReveal }: { v: VersionInfo; detail:
       <td className="mono">{fmt(v.lastUsedAt)}</td>
       <td className="mono">{v.usageCount.toLocaleString()}</td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{cap}</td>
-      <td>{v.state === 'DESTROYED' ? <span style={{ color: 'var(--text-3)' }}>—</span> : <IntegrityBadge valid={v.integrityValid} />}</td>
       <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }} title="" onClick={(e) => e.stopPropagation()}>{act}</td>
     </tr>
   )

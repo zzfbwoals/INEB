@@ -12,11 +12,11 @@ import { SortMark, sortClass } from '@/components/ui/sort-mark'
 import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
-import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
+import { StateDot } from '@/components/keys/StateBadge'
 import { KeyCreateDialog } from '@/components/keys/KeyCreateDialog'
 
-/* 열 기본 폭(%) — 키명·알고리즘·모드·용도·상태·버전·갱신 주기·다음 갱신·무결성 */
-const COLS = [17, 12, 6, 13, 14, 11, 8, 12, 8]
+/* 열 기본 폭(%) — 키명·알고리즘·모드·용도·버전·갱신 주기·다음 갱신. 상태는 키명 뒤 색상점, 무결성 위반은 행 전체 빨간 배경(row-bad) */
+const COLS = [22, 14, 8, 17, 13, 11, 15]
 
 /* 목업 keys.html — 키 목록. 페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
 export default function KeyListPage() {
@@ -109,11 +109,9 @@ export default function KeyListPage() {
                 <th className={sortClass(sort, 'algorithm')} style={{ width: `${widths[1]}%` }} onClick={() => toggleSort('algorithm')}>알고리즘<SortMark sort={sort} field="algorithm" />{resizer(1)}</th>
                 <th className={sortClass(sort, 'mode')} style={{ width: `${widths[2]}%` }} onClick={() => toggleSort('mode')}>모드<SortMark sort={sort} field="mode" />{resizer(2)}</th>
                 <th className={sortClass(sort, 'purpose')} style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('purpose')}>용도<SortMark sort={sort} field="purpose" />{resizer(3)}</th>
-                <th className={sortClass(sort, 'status')} style={{ width: `${widths[4]}%` }} onClick={() => toggleSort('status')}>상태<SortMark sort={sort} field="status" />{resizer(4)}</th>
-                <th style={{ width: `${widths[5]}%` }}>버전{resizer(5)}</th>
-                <th style={{ width: `${widths[6]}%` }}>갱신 주기{resizer(6)}</th>
-                <th className={sortClass(sort, 'nextRotationAt')} style={{ width: `${widths[7]}%` }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신<SortMark sort={sort} field="nextRotationAt" />{resizer(7)}</th>
-                <th style={{ width: `${widths[8]}%` }}>무결성</th>
+                <th style={{ width: `${widths[4]}%` }}>버전{resizer(4)}</th>
+                <th style={{ width: `${widths[5]}%` }}>갱신 주기{resizer(5)}</th>
+                <th className={sortClass(sort, 'nextRotationAt')} style={{ width: `${widths[6]}%` }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신<SortMark sort={sort} field="nextRotationAt" /></th>
               </tr>
             </thead>
             <tbody>
@@ -146,20 +144,17 @@ function KeyRow({ k, onClick }: { k: KeySummary; onClick: () => void }) {
     </span>
   )
   return (
-    <tr className="rowlink" onClick={onClick}>
-      <td><b>{k.keyName}</b></td>
+    <tr className={`rowlink ${k.integrityValid ? '' : 'row-bad'}`} onClick={onClick} title={k.integrityValid ? undefined : '무결성 위반 — 상세에서 확인'}>
+      <td><b className="nm">{k.keyName}</b><StateDot state={k.status} /></td>
       <td className="mono">{algoLabel(k.algorithm, k.keySize)}</td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{k.mode ?? '—'}</td>
       <td>{PURPOSE_KO[k.purpose]}</td>
-      <td><StateBadge state={k.status} /></td>
       <td>
-        <span className="vtag">v{k.currentVersion}</span>{' '}
-        <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>/ {k.versionCount}</span>
+        <span className="vtxt">v{k.currentVersion}/{k.versionCount}</span>
         {k.scheduledVersion && <> <span className="vtag sched" title={`활성일 ${k.scheduledAt}`}>↻ v{k.scheduledVersion} 예약</span></>}
       </td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{k.autoRotate ? `${k.rotationPeriodDays}일` : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
       <td className="mono">{rotCell}</td>
-      <td><IntegrityBadge valid={k.integrityValid} /></td>
     </tr>
   )
 }

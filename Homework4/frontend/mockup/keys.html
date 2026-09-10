@@ -47,8 +47,8 @@
   <div class="card">
     <div class="tbl-wrap"><table class="tbl-fixed">
       <thead><tr>
-        <th class="sortable" style="width:17%" onclick="sortKeys('name')">키명</th><th class="sortable" style="width:12%" onclick="sortKeys('algo')">알고리즘</th>
-        <th class="sortable" style="width:6%" onclick="sortKeys('mode')">모드</th><th class="sortable" style="width:13%" onclick="sortKeys('purpose')">용도</th><th class="sortable" style="width:14%" onclick="sortKeys('status')">상태</th><th style="width:11%">버전</th><th style="width:8%">갱신 주기</th><th class="sortable" style="width:12%" onclick="sortKeys('expire')">다음 갱신</th><th style="width:8%">무결성</th>
+        <th class="sortable" style="width:22%" onclick="sortKeys('name')">키명</th><th class="sortable" style="width:14%" onclick="sortKeys('algo')">알고리즘</th>
+        <th class="sortable" style="width:8%" onclick="sortKeys('mode')">모드</th><th class="sortable" style="width:17%" onclick="sortKeys('purpose')">용도</th><th style="width:13%">버전</th><th style="width:11%">갱신 주기</th><th class="sortable" style="width:15%" onclick="sortKeys('expire')">다음 갱신</th>
       </tr></thead>
       <tbody id="keyTbody"></tbody>
     </table></div>
@@ -125,17 +125,15 @@ function renderKeys(){
     else if(!k.autoRotate)rotCell=`<span style="color:var(--text-3)">수동</span>`;
     else rotCell=`<span style="color:${k.dday<=30?'var(--red)':'var(--text-2)'}">${k.nextRotationAt.slice(0,10)}${k.dday>0&&k.dday<=30?` <b>(D-${k.dday})</b>`:k.dday<=0?' <b>(갱신 실패)</b>':''}</span>`;
     return `
-    <tr class="rowlink" onclick="location.href='key-detail.html?id=${k.id}'">
-      <td><b>${k.name}</b></td>
+    <tr class="rowlink ${k.integrity?'':'row-bad'}" ${k.integrity?'':'title="무결성 위반 — 상세에서 확인"'} onclick="location.href='key-detail.html?id=${k.id}'">
+      <td><b class="nm">${k.name}</b>${stateDot(k.status)}</td>
       <td class="mono">${k.algo}</td>
       <td class="mono" style="color:var(--text-2)">${k.mode||'—'}</td>
       <td>${PURPOSE[k.purpose]}</td>
-      <td>${stateBadge(k.status)}</td>
-      <td><span class="vtag">v${k.currentVersion}</span> <span style="font-size:11.5px;color:var(--text-3)">/ ${k.versions.length}</span>${sched?` <span class="vtag sched" title="활성일 ${sched.activationDate}">↻ v${sched.v} 예약</span>`:''}</td>
+      <td><span class="vtxt">v${k.currentVersion}/${k.versions.length}</span>${sched?` <span class="vtag sched" title="활성일 ${sched.activationDate}">↻ v${sched.v} 예약</span>`:''}</td>
       <td class="mono" style="color:var(--text-2)">${k.autoRotate?k.rotationPeriodDays+'일':'<span style="color:var(--text-3)">—</span>'}</td>
       <td class="mono">${rotCell}</td>
-      <td>${k.integrity?'<span class="badge b-ok">정상</span>':'<span class="badge b-bad">위반</span>'}</td>
-    </tr>`;}).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text-3);padding:34px">조건에 맞는 키가 없습니다 — 필터를 조정해 보세요</td></tr>';
+    </tr>`;}).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:34px">조건에 맞는 키가 없습니다 — 필터를 조정해 보세요</td></tr>';
   renderPager(document.getElementById('keyPager'),total,keyPage,totalPages,'goKeyPage');
 }
 /* ---- 등록 모달 ---- */

@@ -132,6 +132,12 @@ public class AuditLogService {
         return check.response();
     }
 
+    /** 감사 로그 화면 행위자 콤보박스 — 기록에 존재하는 행위자 목록 */
+    @Transactional(readOnly = true)
+    public List<String> actors() {
+        return repository.findDistinctActors();
+    }
+
     /** 조회 전용 검증 — 감사 기록은 남기지 않는다 (감사 로그 화면 진입·SSE 갱신 시 자동 호출) */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public AuditVerifyResponse status() {

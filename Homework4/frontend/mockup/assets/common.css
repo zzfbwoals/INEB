@@ -84,6 +84,47 @@ textarea.input{resize:vertical;min-height:96px;font-size:13px;line-height:1.6;fo
 textarea.input.txt{font-size:13.5px;font-variant-numeric:normal}
 
 /* 배지 — 상태 배지는 전부 뉴트럴, 강조는 위반/중요 등 꼭 필요한 곳만 */
+/* 상태 색상점 (배지 대체) — 운영 초록 · 준비 파랑 · 정지 회색 · 폐기 회색 테두리 · 사용자 활성 초록/정지 회색 */
+.sdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:7px;vertical-align:middle;flex:none;box-sizing:border-box}
+.sdot.s-ACTIVE,.sdot.u-ACTIVE{background:var(--green)}
+.sdot.s-PRE_ACTIVE{background:var(--blue)}
+.sdot.s-DEACTIVATED,.sdot.u-SUSPENDED{background:var(--text-3)}
+.sdot.s-DESTROYED{background:color-mix(in srgb,var(--text-3) 55%,transparent)}
+.stext{display:inline-flex;align-items:center;gap:6px}
+.stext .sdot{margin-left:0}
+h2>.sdot{width:9px;height:9px;margin-left:10px;vertical-align:4px}
+.nm{display:inline-block;max-width:calc(100% - 22px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.uav{position:relative;display:inline-flex;vertical-align:middle;margin-right:10px}
+.uav .uavatar{margin:0}
+.uav .sdot{position:absolute;right:-2px;bottom:-2px;margin:0;width:11px;height:11px;border:2px solid var(--surface)}
+.uav+.nm{max-width:calc(100% - 48px)}
+.vtxt{font-size:12.5px;font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums}
+.vtxt.cur{color:var(--green)}
+/* 드롭다운(등록 · 패널 편집 · 버전 콤보박스) — 프로필 메뉴(.me-menu/.mm-it)와 같은 디자인. 열기/닫기는 shell.js ddToggle/ddClose */
+.dd{position:relative}
+.dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:190px;background:var(--surface);
+  border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--modal-shadow);padding:6px;z-index:120;animation:pop .16s}
+.dd.left .dd-menu{right:auto;left:0}
+.dd.narrow .dd-menu{min-width:88px}
+/* 세그먼트 칩(전체/정상/위반 · 추이 차트 구간 등) — 공용 */
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--text-3);font-size:11px;font-weight:700;padding:4px 8px;cursor:pointer;white-space:nowrap;font-family:inherit}
+.seg button.on{background:var(--raised);color:var(--text)}
+.filters .seg{height:36px;align-items:stretch}
+.filters .seg button{padding:0 12px;font-size:12.5px}
+.dd.open .dd-menu{display:block}
+.dd.open [data-tip]::after{display:none}
+.dd-menu .mm-sec{font-size:10.5px;font-weight:800;letter-spacing:.09em;color:var(--text-3);padding:8px 11px 4px;text-transform:uppercase}
+.dd-menu .mm-it{background:none;border:0;cursor:pointer}
+.dd-menu .mm-it:hover{background:var(--hover);color:var(--text)}
+.dd-menu .mm-it .ck{display:inline-flex;width:14px;color:var(--blue);opacity:0;flex:none}
+.dd-menu .mm-it.on{color:var(--text)}
+.dd-menu .mm-it.on .ck{opacity:1}
+.dd-menu .mm-it .sdot{margin-left:8px}
+/* 동작 테스트 버전 콤보박스 — 트리거는 입력창 모양, 목록 항목은 v3 + 상태 점 */
+.vsel{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;height:36px;min-width:76px;padding:0 8px 0 10px;border:1px solid var(--line-strong);border-radius:9px;background:var(--raised);color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.vsel:hover{border-color:var(--text-3)}
+.vsel>span{display:inline-flex;align-items:center}
 .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;
   font-size:11.5px;font-weight:700;letter-spacing:.02em;
   background:var(--raised);border:1px solid var(--line-strong);color:var(--text-2)}
@@ -312,6 +353,7 @@ thead th.sortable.on{color:var(--blue)}
 
 /* 감사 로그 섀도 비교 — 수정·삽입 행 강조, 지워진 행 유령 행, 원본|현재 diff */
 tbody tr.row-bad td{background:var(--red-bg)}
+tbody tr.vcur.row-bad td{background:var(--red-bg)}
 tbody tr.row-ghost td{color:var(--text-3);text-decoration:line-through;background:var(--raised);cursor:pointer}
 .modal.scroll-body .modal-b{overflow:hidden}
 .scroll-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px}

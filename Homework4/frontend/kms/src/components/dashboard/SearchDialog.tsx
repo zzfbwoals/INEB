@@ -7,7 +7,9 @@ import type { KeySummary } from '@/api/keys'
 import type { UserSummary } from '@/api/users'
 import type { NoticeSummary } from '@/api/notices'
 import type { AuditLogItem } from '@/api/audit'
-import { BADGE, PURPOSE_KO, STATE_KO } from '@/lib/keyRules'
+import { PURPOSE_KO } from '@/lib/keyRules'
+import { StateDot, UserDot } from '@/components/keys/StateBadge'
+import type { KeyState } from '@/api/keys'
 import { relTime } from '@/lib/format'
 
 /* 통합 검색 모달 (토스증권 검색 참고) — "/" 또는 헤더 검색창으로 연다.
@@ -28,7 +30,6 @@ function hl(s: string | null | undefined, q: string): ReactNode {
   return <>{t.slice(0, i)}<mark>{t.slice(i, i + q.length)}</mark>{t.slice(i + q.length)}</>
 }
 
-const badge = (st: string) => <span className={`badge ${BADGE[st as keyof typeof BADGE] ?? ''}`}>{STATE_KO[st as keyof typeof STATE_KO] ?? st}</span>
 
 export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const nav = useNavigate()
@@ -62,16 +63,16 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     if (!res) return []
     if (cat === 'keys') return res.keys.map((k: KeySummary) => ({
       cat, key: `k${k.keyUid}`, go: () => go(`/keys/${k.keyUid}`),
-      node: <><span className="ic"><KeyRound size={14} /></span><div className="tx"><b>{hl(k.keyName, kw)}</b><span>{hl(k.algorithm, kw)}-{k.keySize}{k.mode ? ` · ${k.mode}` : ''} · v{k.currentVersion}</span></div><span className="rt">{badge(k.status)}</span></>,
+      node: <><span className="ic"><KeyRound size={14} /></span><div className="tx"><b>{hl(k.keyName, kw)}</b><span>{hl(k.algorithm, kw)}-{k.keySize}{k.mode ? ` · ${k.mode}` : ''} · v{k.currentVersion}</span></div><span className="rt"><StateDot state={k.status as KeyState} /></span></>,
       side: <><div className="sq-side-h">{k.keyName}</div><div className="mono" style={{ fontSize: 11, color: 'var(--text-3)' }}>{k.keyUid}</div>
-        <dl><dt>알고리즘</dt><dd>{k.algorithm}-{k.keySize}{k.mode ? ` · ${k.mode}` : ''}</dd><dt>용도</dt><dd>{PURPOSE_KO[k.purpose as keyof typeof PURPOSE_KO] ?? k.purpose}</dd><dt>상태</dt><dd>{badge(k.status)}</dd><dt>현재 버전</dt><dd className="mono">v{k.currentVersion} (총 {k.versionCount})</dd>
+        <dl><dt>알고리즘</dt><dd>{k.algorithm}-{k.keySize}{k.mode ? ` · ${k.mode}` : ''}</dd><dt>용도</dt><dd>{PURPOSE_KO[k.purpose as keyof typeof PURPOSE_KO] ?? k.purpose}</dd><dt>현재 버전</dt><dd className="mono">v{k.currentVersion} (총 {k.versionCount})</dd>
           <dt>자동 갱신</dt><dd>{k.autoRotate ? `${k.rotationPeriodDays}일 · 다음 ${k.nextRotationAt?.slice(0, 10) ?? '—'}` : '사용 안 함'}</dd><dt>무결성</dt><dd>{k.integrityValid ? '정상' : <span style={{ color: 'var(--red)' }}>위반</span>}</dd></dl></>,
     }))
     if (cat === 'users') return res.users.map((u: UserSummary) => ({
       cat, key: `u${u.id}`, go: () => go('/users', { editUser: u }),
-      node: <><span className="ic"><User size={14} /></span><div className="tx"><b>{hl(u.name, kw)}</b><span className="mono">{u.phoneMasked} · {u.emailMasked}</span></div><span className="rt">{u.status === 'ACTIVE' ? '활성' : '정지'}</span></>,
+      node: <><span className="ic"><User size={14} /></span><div className="tx"><b>{hl(u.name, kw)}</b><span className="mono">{u.phoneMasked} · {u.emailMasked}</span></div><span className="rt"><UserDot status={u.status} /></span></>,
       side: <><div className="sq-side-h">{u.name}</div>
-        <dl><dt>상태</dt><dd>{u.status === 'ACTIVE' ? <span className="badge b-active">활성</span> : <span className="badge b-deact">정지</span>}</dd><dt>연락처</dt><dd className="mono">{u.phoneMasked}</dd><dt>이메일</dt><dd className="mono">{u.emailMasked}</dd><dt>가입일</dt><dd className="mono">{u.createdAt}</dd><dt>무결성</dt><dd>{u.integrityValid ? '정상' : <span style={{ color: 'var(--red)' }}>위반</span>}</dd></dl>
+        <dl><dt>연락처</dt><dd className="mono">{u.phoneMasked}</dd><dt>이메일</dt><dd className="mono">{u.emailMasked}</dd><dt>가입일</dt><dd className="mono">{u.createdAt}</dd><dt>무결성</dt><dd>{u.integrityValid ? '정상' : <span style={{ color: 'var(--red)' }}>위반</span>}</dd></dl>
         <div style={{ marginTop: 14, fontSize: 11.5, color: 'var(--text-3)' }}>원문은 사용자 관리에서 사유 입력 후 조회</div></>,
     }))
     if (cat === 'notices') return res.notices.map((n: NoticeSummary) => ({
@@ -135,7 +136,7 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                       {r.node}<span className="ent"><CornerDownLeft size={12} strokeWidth={2.2} /></span>
                     </a>
                   ) })}
-                  {tab === 'ALL' && <div className="sq-more"><i /><button type="button" onClick={() => { setTab(s.type); inputRef.current?.focus() }}>{s.label} 더 보기{s.count > 5 ? ` (${s.count})` : ''} →</button></div>}
+                  {tab === 'ALL' && <div className="sq-more"><i />{s.count > 5 && <button type="button" onClick={() => { setTab(s.type); inputRef.current?.focus() }}>{s.label} 더 보기 ({s.count}) →</button>}</div>}
                 </div>
               ))}
               {kw && res && !rows.length && <div className="sq-empty">'{kw}' 검색 결과가 없습니다</div>}

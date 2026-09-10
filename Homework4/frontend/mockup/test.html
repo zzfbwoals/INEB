@@ -38,8 +38,10 @@
     <div class="field"><label>작업</label>
       <div class="seg"><button id="segEnc" onclick="setMode('enc')">암/복호화</button><button id="segSig" onclick="setMode('sig')">서명/검증</button></div></div>
     <div class="field"><label>버전</label>
-      <select class="input" id="testVerSel" onchange="refreshHints()"></select></div>
-    <div class="keyinfo" id="keyInfo"></div>
+      <div class="dd left narrow" id="testVerSel" data-v="">
+        <button type="button" class="vsel" onclick="ddToggle(event,'testVerSel')"><span id="testVerLabel">—</span><i data-lucide="chevron-down" width="14" height="14" stroke-width="2"></i></button>
+        <div class="dd-menu" id="testVerMenu" role="menu"></div>
+      </div></div>
   </div>
   <div class="test-grid">
     <div class="card test-card">
@@ -99,9 +101,8 @@ function setMode(m){mode=m;
 function refreshHints(){
   const k=curKey(),cv=k.versions.find(v=>v.v===k.currentVersion),curOk=cv&&cv.state==='ACTIVE';
   const opL=mode==='sig'?'서명':'암호화';
-  const selV=Number(document.getElementById('testVerSel').value)||k.currentVersion;
+  const selV=Number(document.getElementById('testVerSel').dataset.v)||k.currentVersion;
   const latestSel=selV===k.currentVersion;
-  document.getElementById('keyInfo').innerHTML=`${stateBadge(k.status)}`;
   /* 암호화(서명)는 최신 버전만 — 비최신 선택 시 실행 대신 버튼 비활성화 + 사유 표시 */
   document.getElementById('encBtn').disabled=!curOk||!latestSel;
   document.getElementById('encHint').textContent=!curOk?'최신 버전이 ACTIVE가 아닙니다':!latestSel?`${opL}${mode==='sig'?'은':'는'} 최신 버전(v${k.currentVersion})만 가능`:'';
@@ -118,9 +119,15 @@ function updCount(){
 }
 function fillVersions(){
   const k=curKey(),vs=document.getElementById('testVerSel');
-  vs.innerHTML=k.versions.slice().sort((a,b)=>b.v-a.v).map(v=>`<option value="${v.v}">v${v.v} · ${STATE_KO[v.state]}${v.v===k.currentVersion?' (최신)':''}</option>`).join('');
-  vs.value=k.currentVersion;
+  // 버전 콤보박스 — 항목은 v3 + 상태 점(배지·"(최신)" 문구 없음)
+  vs.dataset.v=k.currentVersion;
+  document.getElementById('testVerMenu').innerHTML=k.versions.slice().sort((a,b)=>b.v-a.v).map(v=>`<button type="button" class="mm-it ${v.v===k.currentVersion?'on':''}" onclick="selVer(${v.v})">v${v.v}${stateDot(v.state)}</button>`).join('');
+  selVer(k.currentVersion,true);
 }
+function selVer(v,silent){const vs=document.getElementById('testVerSel'),k=curKey(),ver=k.versions.find(x=>x.v===v);vs.dataset.v=v;
+  document.getElementById('testVerLabel').innerHTML=`v${v}${stateDot(ver.state)}`;
+  [...document.getElementById('testVerMenu').children].forEach(b=>b.classList.toggle('on',b.textContent.trim().startsWith('v'+v)));
+  ddClose();if(!silent)refreshHints();}
 function testKeyChange(){
   const k=curKey(),e=canEnc(k.purpose),s=canSign(k.purpose);
   document.getElementById('segEnc').disabled=!e;document.getElementById('segSig').disabled=!s;
@@ -132,7 +139,7 @@ function b64rand(n){const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy
 function runEncrypt(){
   const k=curKey(),cv=k.versions.find(v=>v.v===k.currentVersion);
   if(!cv||cv.state!=='ACTIVE'){toast('최신 버전이 ACTIVE가 아닙니다');return;}
-  if(Number(document.getElementById('testVerSel').value)!==k.currentVersion){toast('최신 버전이 아닙니다');return;}
+  if(Number(document.getElementById('testVerSel').dataset.v)!==k.currentVersion){toast('최신 버전이 아닙니다');return;}
   const max=maxPt(k);
   if(mode==='enc'&&max!==null&&new TextEncoder().encode(document.getElementById('encIn').value).length>max){toast(`평문이 ${max}바이트를 초과했습니다`);return;}
   const out=document.getElementById('encOut'),sig=mode==='sig';

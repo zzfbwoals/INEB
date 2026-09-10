@@ -28,9 +28,12 @@
     <input class="input" type="date" value="2026-08-12">
     <span style="color:var(--text-3)">→</span>
     <input class="input" type="date" value="2026-08-19">
-    <select class="input"><option value="">행위자 전체</option><option>admin (류재민)</option><option>secops (김보안)</option></select>
+    <select class="input" id="auditActor" onchange="auditPage=0;renderAudit()"><option value="">행위자 전체</option></select>
     <select class="input"><option value="">행위유형 전체</option><option>LOGIN</option><option>KEY_CREATED</option><option>KEY_STATUS_CHANGED</option><option>KEY_UPDATED</option><option>KEY_ROTATED</option><option>KEY_DESTROYED</option><option>KEY_INTEGRITY_VIOLATION</option><option>KEY_REACTIVATED</option><option>KEY_TEST_ENCRYPT</option><option>KEY_TEST_DECRYPT</option><option>KEY_TEST_SIGN</option><option>KEY_TEST_VERIFY</option><option>USER_CREATED</option><option>USER_UPDATED</option><option>USER_PLAIN_VIEWED</option><option>USER_INTEGRITY_VIOLATION</option><option>USER_INTEGRITY_RESTORED</option><option>AUDIT_CHAIN_VERIFIED</option><option>AUDIT_CHAIN_VIOLATION</option><option>AUDIT_EXPORTED</option><option>NOTICE_CREATED</option></select>
-    <button class="btn btn-ghost" onclick="toast('검색 조건이 적용되었습니다 (8건)')">검색</button>
+    <div class="seg" id="auditView" data-v="all">
+      <button class="on" onclick="setAuditView('all',this)">전체</button><button onclick="setAuditView('ok',this)">정상</button><button onclick="setAuditView('bad',this)">위반</button>
+    </div>
+    <input class="input mono" id="auditTarget" placeholder="대상 (KEY#uid / USER#id)" style="width:230px" oninput="auditPage=0;renderAudit()">
   </div>
   <div class="card">
     <div class="tbl-wrap"><table class="tbl-fixed">
@@ -90,16 +93,25 @@ function sortAudit(f){auditSort.dir=auditSort.f===f?-auditSort.dir:1;auditSort.f
 window.addEventListener('resize',()=>renderAudit());
 function renderAudit(){
   let list=AUDITS;
+  /* 대상 필터 — 사용자 관리·키 상세의 감사 로그 아이콘이 ?target= 으로 진입 (USER#id / KEY#uid) */
+  const tq=(document.getElementById('auditTarget').value||'').trim().toLowerCase();
+  if(tq)list=list.filter(a=>a.target.toLowerCase().includes(tq));
+  const aq=document.getElementById('auditActor').value;
+  if(aq)list=list.filter(a=>a.actor===aq);
   if(auditSort.f){const f=auditSort.f;
     list=[...AUDITS].sort((a,b)=>(f==='id'?a.id-b.id:(''+(a[f]??''))>(''+(b[f]??''))?1:-1)*auditSort.dir);}
+  /* 섀도 비교 표시(목업): 수정·삽입 행은 row-bad + 배지, 지워진 행은 섀도 값으로 유령 행(취소선 "삭제됨")을 id 위치에 끼워 넣는다.
+     실제 앱은 GET /api/audit-logs/forensics 결과를 목록에 병합 — 기본 정렬(id 내림차순)·필터 없음일 때만 유령 행 인라인, 페이지당 3개 상한.
+     '위반 행만' 은 forensics 의 수정·삽입·삭제 행만(클라이언트 필터·정렬·페이징) */
+  const MOD=new Set([AUDITS[1]?.id]), INS=new Set([AUDITS[0]?.id]);   // 시연용 위반 행은 필터와 무관하게 고정
+  const GHOST={id:(AUDITS[2]?.id??0)+0.5, at:AUDITS[2]?.at??'', actor:'admin', action:'LOGIN_SUCCESS', target:'AUTH#admin', detail:'role=ADMIN'};
+  const view=document.getElementById('auditView').dataset.v,onlyBad=view==='bad';
+  if(onlyBad)list=list.filter(a=>MOD.has(a.id)||INS.has(a.id));
+  else if(view==='ok')list=list.filter(a=>!MOD.has(a.id)&&!INS.has(a.id));   // 정상 = 수정·삽입·삭제 행 제외
   const size=autoPageSize(document.getElementById('auditTbody').closest('.tbl-wrap'),46);
-  const totalPages=Math.max(Math.ceil(list.length/size),1);
+  const totalPages=Math.max(Math.ceil((list.length+(onlyBad?1:0))/size),1);
   if(auditPage>=totalPages)auditPage=totalPages-1;
   const rows=list.slice(auditPage*size,(auditPage+1)*size);
-  /* 섀도 비교 표시(목업): 수정·삽입 행은 row-bad + 배지, 지워진 행은 섀도 값으로 유령 행(취소선 "삭제됨")을 id 위치에 끼워 넣는다.
-     실제 앱은 GET /api/audit-logs/forensics 결과를 목록에 병합 — 기본 정렬(id 내림차순)·필터 없음일 때만 유령 행 인라인, 페이지당 3개 상한 */
-  const MOD=new Set([rows[1]?.id]), INS=new Set([rows[0]?.id]);
-  const GHOST={id:(rows[2]?.id??0)+0.5, at:rows[2]?.at??'', actor:'admin', action:'LOGIN_SUCCESS', target:'AUTH#admin', detail:'role=ADMIN'};
   const rowHtml=a=>`
   <tr class="${MOD.has(a.id)||INS.has(a.id)?'row-bad rowlink':'rowlink'}" onclick="${MOD.has(a.id)||INS.has(a.id)?`openModal('mdForensics')`:`openAuditDetail(${a.id})`}">
     <td class="mono" style="color:var(--text-3)">#${a.id}</td>
@@ -115,8 +127,11 @@ function renderAudit(){
     <td><span class="actchip">${g.action}</span></td><td class="mono">${g.target}</td>
     <td class="mono"><span class="row-tag">삭제됨</span>${g.detail}</td>
   </tr>`;
-  document.getElementById('auditTbody').innerHTML=rows.map((a,i)=>(auditPage===0&&i===2?ghostHtml(GHOST):'')+rowHtml(a)).join('');
-  renderPager(document.getElementById('auditPager'),AUDITS.length,auditPage,totalPages,'goAuditPage');
+  document.getElementById('auditTbody').innerHTML=(onlyBad
+    ?(rows.map(rowHtml).join('')+(auditPage===0?ghostHtml(GHOST):''))
+    :rows.map((a,i)=>(auditPage===0&&i===2&&!tq&&!aq&&view==='all'?ghostHtml(GHOST):'')+rowHtml(a)).join(''))
+    ||'<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:34px">조건에 맞는 기록이 없습니다</td></tr>';
+  renderPager(document.getElementById('auditPager'),onlyBad?list.length+1:list.length,auditPage,totalPages,'goAuditPage');
 }
 function openAuditDetail(id){
   const a=AUDITS.find(x=>x.id===id); if(!a)return;
@@ -125,6 +140,10 @@ function openAuditDetail(id){
   document.getElementById('adAction').textContent=a.action; document.getElementById('adTarget').textContent=a.target;
   document.getElementById('adDetail').textContent=a.detail; openModal('mdAuditDetail');
 }
+document.getElementById('auditTarget').value=qs('target')||'';
+/* 행위자 콤보박스 — 기록에 존재하는 행위자(distinct). 실제 앱은 GET /api/audit-logs/actors */
+document.getElementById('auditActor').innerHTML='<option value="">행위자 전체</option>'+[...new Set(AUDITS.map(a=>a.actor))].sort().map(a=>`<option>${a}</option>`).join('');
+function setAuditView(v,btn){const s=document.getElementById('auditView');s.dataset.v=v;[...s.children].forEach(b=>b.classList.toggle('on',b===btn));auditPage=0;renderAudit();}
 renderAudit();
 if(qs('id'))openAuditDetail(+qs('id'));   // 통합 검색에서 진입 — 해당 행 상세 모달
 </script>

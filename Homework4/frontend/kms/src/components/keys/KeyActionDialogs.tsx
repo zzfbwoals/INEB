@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { runKeyAction, type KeyAction, type KeyDetail, type VersionInfo } from '@/api/keys'
-import { BADGE, STATE_KO } from '@/lib/keyRules'
+import { StateText } from './StateBadge'
 import { fmt, fromDateTimeLocal, relTime, within7Days } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -180,7 +180,7 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
                 <label key={v.version} className={`opt ${target === v.version ? 'sel' : ''}`}>
                   <input type="radio" name="des" checked={target === v.version} onChange={() => setTarget(v.version)} />
                   <span>
-                    <b>v{v.version}만 삭제 <span className={`badge ${BADGE[v.state]}`} style={{ marginLeft: 4 }}>{STATE_KO[v.state]}</span></b>
+                    <b>v{v.version}만 삭제 <StateText state={v.state} /></b>
                     <span>마지막 사용 {fmt(v.lastUsedAt)} · 누적 {v.usageCount.toLocaleString()}회</span>
                   </span>
                 </label>

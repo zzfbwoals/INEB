@@ -102,14 +102,11 @@ export function StatIntegrity({ s }: { s: DashboardSummary['integrity'] | null }
   const cell = (label: string, v: number) => <span key={label}>{label} <b className={v ? 'bad' : ''}>{v}</b></span>
   return (
     <>
-      <CardHead id="integrity" title={<Link className="tl" to={s?.firstKeyUid ? `/keys/${s.firstKeyUid}` : '/keys'}>무결성 위반</Link>} />
+      <CardHead id="integrity" title="무결성 위반" />
       <div className="stat-b">
         <div className="num" style={total ? { color: 'var(--red)' } : undefined}>{total}</div>
         <div className="iv-grid">
           {cell('키 메타', s?.keyMeta ?? 0)}{cell('키 버전', s?.keyVersion ?? 0)}{cell('사용자', s?.user ?? 0)}{cell('감사 체인', s?.auditChain ?? 0)}
-        </div>
-        <div className="delta">
-          {total && s?.firstKeyUid ? <Link to={`/keys/${s.firstKeyUid}`}>{s.firstKeyName} 확인 필요 →</Link> : total ? '확인 필요' : '위반 없음'}
         </div>
       </div>
     </>
@@ -167,7 +164,7 @@ export function TrendCard({ trend, op, days, onOp, onDays }: {
             <CartesianGrid vertical={false} stroke="var(--line-strong)" />
             <XAxis dataKey="date" tickFormatter={(v: string) => v.slice(5).replace('-', '/')} tick={{ fill: 'var(--text-3)', fontSize: 10 }} axisLine={false} tickLine={false} interval={days === 7 ? 0 : 4} />
             <YAxis width={30} tick={{ fill: 'var(--text-3)', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-            <Tooltip content={<TrendTip />} cursor={{ stroke: 'var(--line-strong)' }} />
+            <Tooltip content={<TrendTip />} cursor={{ stroke: 'var(--line-strong)' }} isAnimationActive={false} />
             <Area type="linear" dataKey="ok" stroke="var(--blue)" fill="var(--blue)" fillOpacity={0.1} strokeWidth={2} dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />
             <Line type="linear" dataKey="fail" stroke="var(--red)" strokeWidth={1.8} dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />
           </ComposedChart>

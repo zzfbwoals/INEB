@@ -108,6 +108,11 @@ function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 function bkClose(e,el){if(e.target===el)el.classList.remove('open')}
 function qs(name){return new URLSearchParams(location.search).get(name)}
+/* 드롭다운(.dd) — 하나만 열리고 바깥 클릭·ESC 로 닫힘 */
+function ddToggle(e,id){e.stopPropagation();const el=document.getElementById(id),on=!el.classList.contains('open');ddClose();el.classList.toggle('open',on);}
+function ddClose(){document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open'));}
+document.addEventListener('click',e=>{if(!e.target.closest('.dd'))ddClose();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')ddClose();});
 
 /* ---- 복사·다운로드 — uid·공개키·암호문 등 원클릭 (상용 KMS 콘솔 공통 관례) ---- */
 function copyText(text){

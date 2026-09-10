@@ -17,7 +17,6 @@ export function ChainBand({ chain, verifying, onVerify }: {
   const bad = chain !== null && chain !== 'unavailable' && !chain.healthy
   const tip = chain === 'unavailable' ? '체인 확인 불가' : chain === null ? '확인 중' : ok ? '체인 정상' : `체인 위반 ${chain.violations.length}건`
   const r = chain !== null && chain !== 'unavailable' ? chain : null
-  const shadowDiff = r?.shadow ? (r.shadow.deleted ?? 0) + (r.shadow.inserted ?? 0) + (r.shadow.modified ?? 0) : 0
   return (
     <div className={`chain-band ${bad ? 'bad' : ''}`}>
       <span className={`chain-ic ${ok ? 'ok' : bad ? 'bad' : 'off'}`} data-tip={tip} aria-label={tip}><ShieldCheck size={16} strokeWidth={2.2} /></span>
@@ -25,8 +24,6 @@ export function ChainBand({ chain, verifying, onVerify }: {
       <button type="button" className="icon-btn sm" data-tip="체인 재검증" aria-label="체인 재검증" disabled={verifying} onClick={onVerify}>
         <RotateCw size={14} strokeWidth={2.2} />
       </button>
-      <span className="sep" />
-      <span>감사 로그 <b className="mono">{(r?.totalRows ?? 0).toLocaleString()}</b>행 · 위반 구간 <b className="mono">{r?.violations.length ?? 0}</b>{shadowDiff ? <> · 섀도 차이 <b className="mono">{shadowDiff}</b></> : null}</span>
       <span className="sep" />
       <Link className="more" to="/audit">감사 로그 →</Link>
     </div>

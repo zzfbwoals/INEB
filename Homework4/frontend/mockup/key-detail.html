@@ -76,7 +76,6 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <h2 id="kdName">-</h2>
         <span id="kdBadge"></span>
-        <span class="vtag cur" id="kdCur"></span>
       </div>
       <div class="desc mono" style="margin-top:8px;display:flex;align-items:center;gap:8px">
         <span id="kdUid"></span>
@@ -105,14 +104,12 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
     <!-- 정렬 가능한 열은 sortable + onclick, 열 폭은 tbl-fixed + th % (shell.js enableColResize 가 드래그 핸들을 붙인다) -->
     <div id="paneVer" class="tbl-wrap tbl-scroll"><table class="tbl-fixed">
       <thead><tr>
-        <th class="sortable" style="width:8%" onclick="sortVer('v')">버전</th>
-        <th class="sortable" style="width:15%" onclick="sortVer('state')">상태</th>
-        <th class="sortable" style="width:16%" onclick="sortVer('activationDate')">활성일</th>
-        <th class="sortable" style="width:16%" onclick="sortVer('lastUsedAt')">마지막 사용</th>
-        <th class="sortable" style="width:9%" onclick="sortVer('usageCount')">사용 횟수</th>
-        <th id="thCap" style="width:15%">암호화 / 복호화</th>
-        <th class="sortable" style="width:10%" onclick="sortVer('integrity')">무결성</th>
-        <th style="width:11%"></th>
+        <th class="sortable" style="width:11%" onclick="sortVer('v')">버전</th>
+        <th class="sortable" style="width:21%" onclick="sortVer('activationDate')">활성일</th>
+        <th class="sortable" style="width:21%" onclick="sortVer('lastUsedAt')">마지막 사용</th>
+        <th class="sortable" style="width:13%" onclick="sortVer('usageCount')">사용 횟수</th>
+        <th id="thCap" style="width:20%">암호화 / 복호화</th>
+        <th style="width:14%"></th>
       </tr></thead>
       <tbody id="kdVersions"></tbody>
     </table></div>
@@ -265,8 +262,7 @@ function render(){
   key.status=deriveStatus();
   document.getElementById('kdName').textContent=key.name;
   document.getElementById('kdUid').textContent=key.uid;
-  document.getElementById('kdBadge').innerHTML=stateBadge(key.status);
-  document.getElementById('kdCur').textContent='v'+key.currentVersion;
+  document.getElementById('kdBadge').innerHTML=stateDot(key.status);
   const s=key.status,pv=preV(),acts=[],cv=cur();
   // 헤더 액션 — 아이콘 전용 버튼 + 툴팁 (목록의 등록 + 와 동일 스타일)
   // 배경 없는 아이콘 버튼(.icon-btn) — 링크는 a, 액션은 button
@@ -310,21 +306,19 @@ function render(){
     if(v.state==='PRE_ACTIVE')act=`<button class="icon-btn tip-left" data-tip="활성화" aria-label="활성화" onclick="openActivate()"><i data-lucide="play" width="15" height="15"></i></button>${destroy}`;
     else if(v.state==='ACTIVE')act=isLatest?`<span class="help" title="최신 버전은 단독 정지 불가 — 키 정지 또는 갱신 후 정지">최신 버전</span>`:`<button class="icon-btn tip-left" data-tip="정지" aria-label="정지" onclick="openDeactivate(${v.v})"><i data-lucide="ban" width="15" height="15"></i></button>`;
     else if(v.state==='DEACTIVATED')act=(v.deactivationTrigger==='INTEGRITY'?`<button class="icon-btn primary tip-left" data-tip="재활성화" aria-label="재활성화" onclick="openReactivate(${v.v})"><i data-lucide="power" width="15" height="15"></i></button>`:'')+destroy;
-    return `<tr class="${isCur?'vcur':''}${v.state!=='DESTROYED'?' rowlink':''}"${v.state!=='DESTROYED'?` onclick="openReveal(${v.v})" title="클릭하여 키값 조회 — 사유 필수 · 감사로그 기록"`:''}>
-      <td><span class="vtag ${isCur?'cur':''}">v${v.v}</span></td>
-      <td>${stateBadge(v.state)}</td>
+    return `<tr class="${isCur?'vcur':''}${v.state!=='DESTROYED'?' rowlink':''}${v.state!=='DESTROYED'&&v.integrity===false?' row-bad':''}"${v.state!=='DESTROYED'?` onclick="openReveal(${v.v})" title="${v.integrity===false?'무결성 위반 — 재활성화로 복구 · ':''}클릭하여 키값 조회 — 사유 필수 · 감사로그 기록"`:''}>
+      <td><span class="vtxt ${isCur?'cur':''}">v${v.v}</span>${stateDot(v.state)}</td>
       <td class="mono">${fmt(v.activationDate)}${v.state==='PRE_ACTIVE'?' <span style="color:var(--blue)">예정</span>':v.state==='DESTROYED'?` <span style="color:var(--text-3)">· 폐기 ${fmt(v.destroyedAt)}</span>`:''}</td>
       <td class="mono">${fmt(v.lastUsedAt)}</td>
       <td class="mono">${v.usageCount.toLocaleString()}</td>
       <td class="mono" style="color:var(--text-2)">${capOf(v)}</td>
-      <td>${v.state==='DESTROYED'?'<span style="color:var(--text-3)">—</span>':v.integrity?'<span class="badge b-ok">정상</span>':'<span class="badge b-bad">위반</span>'}</td>
       <td style="text-align:right;white-space:nowrap" title="" onclick="event.stopPropagation()">${act}</td></tr>`;}).join('');
   document.getElementById('kdAudit').innerHTML=sortRows(USAGE.filter(u=>u.keyId===key.id),audSort).map(u=>
-    `<tr><td class="mono">${u.at}</td><td class="mono">${u.operation}</td><td><span class="vtag">v${u.version}</span>${u.note?` <span class="help">${u.note}</span>`:''}</td><td>${u.result==='SUCCESS'?'<span class="badge b-ok">성공</span>':'<span class="badge b-bad">실패</span>'}</td><td class="mono" style="color:${u.failReason?'var(--red)':'var(--text-3)'};font-size:11.5px">${u.failReason||'—'}</td></tr>`
+    `<tr><td class="mono">${u.at}</td><td class="mono">${u.operation}</td><td><span class="vtxt">v${u.version}</span>${u.note?` <span class="help">${u.note}</span>`:''}</td><td>${u.result==='SUCCESS'?'<span class="badge b-ok">성공</span>':'<span class="badge b-bad">실패</span>'}</td><td class="mono" style="color:${u.failReason?'var(--red)':'var(--text-3)'};font-size:11.5px">${u.failReason||'—'}</td></tr>`
   ).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:28px">이 키에 대한 사용 기록이 없습니다</td></tr>';
   document.getElementById('kdTimeline').innerHTML=key.history.map((h,i)=>`
     <div class="tl-it"><span class="tl-dot" style="background:${h.trigger==='INTEGRITY'?'var(--red)':i===0?'var(--blue)':'var(--text-3)'}"></span>
-      <div class="tl-body"><b><span class="vtag">v${h.v}</span> ${h.from?h.from+' → ':'생성 → '}${h.to}</b><span class="trg ${h.trigger==='INTEGRITY'?'bad':h.trigger.startsWith('DATE')||h.trigger==='SCHEDULE'?'sys':h.trigger==='REACTIVATE'?'ok':''}">${TRIGGER_KO[h.trigger]}</span>
+      <div class="tl-body"><b><span class="vtxt">v${h.v}</span> ${h.from?h.from+' → ':'생성 → '}${h.to}</b><span class="trg ${h.trigger==='INTEGRITY'?'bad':h.trigger.startsWith('DATE')||h.trigger==='SCHEDULE'?'sys':h.trigger==='REACTIVATE'?'ok':''}">${TRIGGER_KO[h.trigger]}</span>
       <div class="rs">사유: ${h.reason}</div><div class="at">${h.at} · ${h.by}</div></div></div>`).join('');
 }
 /* 표 정렬 — 화면에 있는 행을 클라이언트에서 정렬, 빈 값은 뒤로 */
