@@ -21,10 +21,7 @@
       <span class="badge b-bad">체인 위반 2건</span>
       <button class="icon-btn" data-tip="위반 상세" aria-label="위반 상세" onclick="openModal('mdForensics')"><i data-lucide="list" width="15" height="15" stroke-width="2"></i></button>
       <button class="icon-btn" data-tip="체인 재검증" aria-label="체인 재검증" onclick="toast('해시 체인 검증을 통과했습니다.')"><i data-lucide="rotate-cw" width="15" height="15" stroke-width="2"></i></button>
-    </div>
-    <div class="acts">
-      <button class="btn btn-primary" onclick="toast('CSV 다운로드를 시작합니다.')">
-        <i data-lucide="download" width="14" height="14" stroke-width="2"></i>CSV 내려받기</button>
+      <button class="icon-btn" data-tip="CSV 내려받기" aria-label="CSV 내려받기" onclick="toast('CSV 다운로드를 시작합니다.')"><i data-lucide="download" width="15" height="15" stroke-width="2"></i></button>
     </div>
   </div>
   <div class="filters">
@@ -129,6 +126,7 @@ function openAuditDetail(id){
   document.getElementById('adDetail').textContent=a.detail; openModal('mdAuditDetail');
 }
 renderAudit();
+if(qs('id'))openAuditDetail(+qs('id'));   // 통합 검색에서 진입 — 해당 행 상세 모달
 </script>
 </body>
 </html>

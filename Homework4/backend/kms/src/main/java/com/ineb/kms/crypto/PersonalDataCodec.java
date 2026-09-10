@@ -14,12 +14,13 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.stereotype.Component;
 
 /**
- * 개인정보(연락처·이메일) 컬럼 암호화·검색 해시 코덱.
+ * 개인정보(연락처·이메일) 컬럼 암호화·이메일 유일성 해시 코덱.
  * <p>
  * - 암호화: 마스터키 AES-256-GCM, 필드마다 새 랜덤 IV → base64(iv|ct+tag) 로 IV 를 암호문에 동봉
  *   (WrappedSecretStore 와 같은 봉투 패턴 — 별도 iv 컬럼 없음, 2026-09-01 설계 개정).
- * - 검색 해시: 무결성 HMAC 키(integrityKey)로 HMAC-SHA-256, 정규화(연락처 숫자만·이메일 소문자) 후 계산.
- *   정규화가 흔들리면 정확검색이 깨지므로 이 클래스 밖에서 해시를 만들지 않는다.
+ * - 이메일 해시: 무결성 HMAC 키(integrityKey)로 HMAC-SHA-256, 소문자 정규화 후 계산. 용도는 중복 검사·변경 감지뿐이다.
+ *   연락처·이메일 검색은 2026-09-10 부터 서버 측 복호화 후 부분일치(UserService.list)로 바뀌어 phone_hash 는 폐기됐다.
+ * - 정규화 규칙(연락처 숫자만·이메일 소문자)은 검색 판정과 해시가 공유하므로 이 클래스 밖에서 다시 정의하지 않는다.
  */
 @Component
 public class PersonalDataCodec {
@@ -58,20 +59,16 @@ public class PersonalDataCodec {
         }
     }
 
-    public String phoneHash(String phone) {
-        return hmac(normalizePhone(phone));
-    }
-
     public String emailHash(String email) {
         return hmac(normalizeEmail(email));
     }
 
-    /** 하이픈·공백 유무와 무관하게 같은 해시가 나오도록 숫자만 남긴다 */
-    static String normalizePhone(String phone) {
+    /** 하이픈·공백 유무와 무관하게 비교되도록 숫자만 남긴다 — 저장값·검색어 양쪽에 같이 적용 */
+    public static String normalizePhone(String phone) {
         return phone.replaceAll("\\D", "");
     }
 
-    static String normalizeEmail(String email) {
+    public static String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
@@ -81,7 +78,7 @@ public class PersonalDataCodec {
             mac.init(new SecretKeySpec(secretStore.integrityKey(), HMAC_ALGO));
             return HexFormat.of().formatHex(mac.doFinal(normalized.getBytes(StandardCharsets.UTF_8)));
         } catch (GeneralSecurityException e) {
-            throw new IllegalStateException("검색 해시 계산에 실패했습니다", e);
+            throw new IllegalStateException("이메일 해시 계산에 실패했습니다", e);
         }
     }
 }

@@ -63,11 +63,11 @@ class PersonalDataCodecTest {
     }
 
     @Test
-    @DisplayName("연락처 해시는 하이픈·공백 유무와 무관하게 같다 (숫자만 정규화)")
-    void phoneHashNormalized() {
-        assertEquals(codec.phoneHash("010-1234-5678"), codec.phoneHash("01012345678"));
-        assertEquals(codec.phoneHash("010-1234-5678"), codec.phoneHash("010 1234 5678"));
-        assertNotEquals(codec.phoneHash("010-1234-5678"), codec.phoneHash("010-1234-5679"));
+    @DisplayName("연락처 정규화는 하이픈·공백을 제거해 숫자만 남긴다 (검색 판정·변경 감지 공용)")
+    void phoneNormalized() {
+        assertEquals("01012345678", PersonalDataCodec.normalizePhone("010-1234-5678"));
+        assertEquals("01012345678", PersonalDataCodec.normalizePhone("010 1234 5678"));
+        assertNotEquals(PersonalDataCodec.normalizePhone("010-1234-5678"), PersonalDataCodec.normalizePhone("010-1234-5679"));
     }
 
     @Test

@@ -40,9 +40,8 @@ export interface UserPlain {
 }
 
 export interface UserListParams {
+  /** 이름·연락처·이메일 통합 부분검색 — 암호화 컬럼은 서버가 복호화해 판정 */
   keyword?: string
-  phone?: string
-  email?: string
   status?: UserStatus | ''
   page?: number
   size?: number

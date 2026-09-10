@@ -32,7 +32,7 @@ class UserIntegritySchedulerTest {
     }
 
     private AppUser user(long id, String name) {
-        AppUser u = new AppUser(name, "$2a$10$hash", UserStatus.ACTIVE, "p", "ph", "e", "eh");
+        AppUser u = new AppUser(name, "$2a$10$hash", UserStatus.ACTIVE, "p", "e", "eh");
         try {
             Field f = AppUser.class.getDeclaredField("id");
             f.setAccessible(true);

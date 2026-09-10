@@ -1,4 +1,4 @@
-import { Download, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
+import { Download, Pencil, Pin, ShieldCheck, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
@@ -71,7 +71,7 @@ export default function NoticeDetailPage() {
     <AppLayout>
       {/* 목록 복귀는 브라우저 뒤로가기 — 헤더 없음. 감사 로그·수정·삭제는 메타 줄 우측 아이콘 */}
       <div className="card notice-view">
-        <h2>{detail.pinned && <span className="tag-imp">고정</span>}{detail.title}</h2>
+        <h2>{detail.pinned && <span className="pin-mark" data-tip="상단 고정"><Pin size={16} /></span>}{detail.title}</h2>
         <div className="nmeta">
           <span>번호 <b className="mono">{detail.id}</b></span>
           <span>작성자 <b>{detail.authorName}</b></span>

@@ -68,7 +68,8 @@
 renderShell('notices');
 const n=NOTICES.find(x=>x.id===Number(qs('id')))||NOTICES[0];
 n.views++;
-document.getElementById('nvTitle').textContent=n.title;
+/* 상단 고정 공지는 제목 앞에 고정 핀 아이콘(목록과 동일한 pin-mark + 툴팁) */
+document.getElementById('nvTitle').innerHTML=(n.pinned?'<span class="pin-mark" data-tip="상단 고정"><i data-lucide="pin" width="16" height="16"></i></span>':'')+n.title;
 document.getElementById('nvNo').textContent=n.id;
 document.getElementById('nvBy').textContent=n.by;
 document.getElementById('nvAt').textContent=n.at+' 10:12';

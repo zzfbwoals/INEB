@@ -17,7 +17,8 @@ import java.time.Instant;
  * <p>
  * 연락처·이메일은 마스터키 AES-256-GCM 으로 암호화해 base64(iv|ct+tag)로 저장한다 (iv 동봉,
  * 별도 iv 컬럼 없음 — 필드마다 새 랜덤 iv 를 쓰므로 같은 키에서 iv 재사용이 생기지 않는다.
- * 2026-09-01 설계 개정). 정확검색은 HMAC 해시 컬럼(phone_hash/email_hash)으로만 지원한다.
+ * 2026-09-01 설계 개정). email_hash(HMAC)는 이메일 유일성 검사 전용이며, 연락처·이메일 검색은
+ * 서버가 복호화한 값으로 부분일치 판정한다(phone_hash 는 2026-09-10 폐기).
  * 행 무결성 정규화(설계서 10.3): name|password_hash|status|enc_ver — 암호문 컬럼 변조는
  * 복호화 시 GCM 태그 불일치로 잡힌다.
  */
@@ -48,9 +49,6 @@ public class AppUser {
     @Column(name = "email_enc", nullable = false, length = 400)
     private String emailEnc;
 
-    @Column(name = "phone_hash", nullable = false, length = 64)
-    private String phoneHash;
-
     @Column(name = "email_hash", nullable = false, unique = true, length = 64)
     private String emailHash;
 
@@ -70,12 +68,11 @@ public class AppUser {
     }
 
     public AppUser(String name, String passwordHash, UserStatus status,
-                   String phoneEnc, String phoneHash, String emailEnc, String emailHash) {
+                   String phoneEnc, String emailEnc, String emailHash) {
         this.name = name;
         this.passwordHash = passwordHash;
         this.status = status;
         this.phoneEnc = phoneEnc;
-        this.phoneHash = phoneHash;
         this.emailEnc = emailEnc;
         this.emailHash = emailHash;
         this.encVer = ENC_VER_CURRENT;
@@ -104,9 +101,8 @@ public class AppUser {
         this.passwordHash = passwordHash;
     }
 
-    public void applyPhone(String phoneEnc, String phoneHash) {
+    public void applyPhone(String phoneEnc) {
         this.phoneEnc = phoneEnc;
-        this.phoneHash = phoneHash;
     }
 
     public void applyEmail(String emailEnc, String emailHash) {
@@ -140,10 +136,6 @@ public class AppUser {
 
     public String getEmailEnc() {
         return emailEnc;
-    }
-
-    public String getPhoneHash() {
-        return phoneHash;
     }
 
     public String getEmailHash() {

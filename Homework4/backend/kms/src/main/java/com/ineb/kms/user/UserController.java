@@ -31,18 +31,16 @@ public class UserController {
         this.userService = userService;
     }
 
-    /** keyword 는 이름 부분검색, phone/email 은 HMAC 해시 정확검색 (전체 값을 입력해야 한다) */
+    /** keyword 는 이름·연락처·이메일 통합 부분검색 (암호화 컬럼은 서버가 복호화해 판정) */
     @GetMapping
     public ApiResponse<PageResponse<UserSummary>> list(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String phone,
-            @RequestParam(required = false) String email,
             @RequestParam(required = false) UserStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) String direction) {
-        return ApiResponse.ok(userService.list(keyword, phone, email, status, page, size, sort, direction));
+        return ApiResponse.ok(userService.list(keyword, status, page, size, sort, direction));
     }
 
     @PostMapping
