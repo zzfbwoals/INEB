@@ -112,6 +112,28 @@ public class KeyService {
         return PageResponse.of(result, this::toSummary);
     }
 
+    /** 통합 검색 — 키명·알고리즘명·key_uid·설명 부분일치(대소문자 무시), 폐기 포함, 최신 등록순 limit 건 */
+    @Transactional(readOnly = true)
+    public PageResponse<KeySummary> search(String q, int limit) {
+        String needle = q.trim().toLowerCase();
+        String like = "%" + needle + "%";
+        List<KeyAlgorithm> algorithms = java.util.Arrays.stream(KeyAlgorithm.values())
+                .filter(a -> a.name().toLowerCase().contains(needle)).toList();
+        Specification<CryptoKey> spec = (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> ors = new ArrayList<>();
+            ors.add(cb.like(cb.lower(root.get("keyName")), like));
+            ors.add(cb.like(cb.lower(root.get("keyUid")), like));
+            ors.add(cb.like(cb.lower(root.get("description")), like));
+            if (!algorithms.isEmpty()) {
+                ors.add(root.get("algorithm").in(algorithms));
+            }
+            return cb.or(ors.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+        Page<CryptoKey> result = keyRepository.findAll(spec,
+                PageRequest.of(0, Math.min(Math.max(limit, 1), 100), Sort.by(Sort.Direction.DESC, "createdAt")));
+        return PageResponse.of(result, this::toSummary);
+    }
+
     private static KeyState parseState(String value) {
         try {
             return KeyState.valueOf(value);

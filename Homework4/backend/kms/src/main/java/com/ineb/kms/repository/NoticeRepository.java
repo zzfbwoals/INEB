@@ -1,6 +1,7 @@
 package com.ineb.kms.repository;
 
 import com.ineb.kms.domain.Notice;
+import java.time.Instant;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -13,4 +14,9 @@ public interface NoticeRepository extends JpaRepository<Notice, Long>, JpaSpecif
     @Modifying(clearAutomatically = true)
     @Query("update Notice n set n.viewCount = n.viewCount + 1 where n.id = :id")
     int increaseViewCount(@Param("id") Long id);
+
+    /** 대시보드 */
+    long countByPinnedTrue();
+
+    long countByCreatedAtGreaterThanEqual(Instant since);
 }

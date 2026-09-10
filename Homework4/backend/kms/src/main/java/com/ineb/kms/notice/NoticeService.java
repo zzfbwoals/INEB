@@ -96,6 +96,22 @@ public class NoticeService {
                 KstTime.format(n.getCreatedAt())));
     }
 
+    /** 통합 검색 — 제목·작성자명 부분일치(대소문자 무시), 최신순 limit 건 (고정 우선 없음) */
+    @Transactional(readOnly = true)
+    public PageResponse<NoticeSummary> search(String q, int limit) {
+        String like = "%" + q.trim().toLowerCase() + "%";
+        Specification<Notice> spec = (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("title")), like),
+                cb.like(cb.lower(root.get("authorName")), like));
+        Page<Notice> result = noticeRepository.findAll(spec,
+                PageRequest.of(0, Math.min(Math.max(limit, 1), 100), Sort.by(Sort.Direction.DESC, "createdAt")
+                        .and(Sort.by(Sort.Direction.DESC, "id"))));
+        Map<Long, Long> fileCounts = fileCounts(result.getContent().stream().map(Notice::getId).toList());
+        return PageResponse.of(result, n -> new NoticeSummary(n.getId(), n.getTitle(), n.isPinned(),
+                n.getAuthorName(), n.getViewCount(), fileCounts.getOrDefault(n.getId(), 0L),
+                KstTime.format(n.getCreatedAt())));
+    }
+
     /**
      * 상세. countView 가 true 면 조회수 +1 (설계: 상세 조회 시 증가). 실시간 재조회·수정 후 재조회는 false 로 호출해
      * 조회수가 부풀지 않게 한다. 조회 자체는 감사 대상이 아니다.

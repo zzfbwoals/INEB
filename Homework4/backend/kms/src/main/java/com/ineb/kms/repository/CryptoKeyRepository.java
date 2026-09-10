@@ -20,4 +20,10 @@ public interface CryptoKeyRepository extends JpaRepository<CryptoKey, Long>, Jpa
     List<CryptoKey> findByAutoRotateTrueAndNextRotationAtLessThanEqualAndStatus(Instant now, KeyState status);
 
     long countByStatus(KeyState status);
+
+    /** 대시보드 — 알고리즘 분포(폐기 제외) */
+    List<CryptoKey> findByStatusNot(KeyState status);
+
+    /** 대시보드 — 자동 갱신 키 중 다음 갱신일이 기한 이내인 키 (갱신 임박) */
+    List<CryptoKey> findByAutoRotateTrueAndStatusAndNextRotationAtLessThanEqual(KeyState status, Instant until);
 }

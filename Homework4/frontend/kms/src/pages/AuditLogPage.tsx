@@ -1,13 +1,12 @@
 import { Download, List, RotateCw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { useSearchParams } from 'react-router'
+import { useLocation, useSearchParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import {
   AUDIT_ACTIONS, downloadAuditCsv, fetchChainStatus, fetchForensics, listAuditLogs, shadowHasIssue, verifyAuditChain,
   type AuditForensics, type AuditLogItem, type AuditModifiedItem, type AuditVerifyResult,
 } from '@/api/audit'
 import type { PageResponse } from '@/api/keys'
-import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
@@ -43,7 +42,9 @@ export default function AuditLogPage() {
   const [chain, setChain] = useState<AuditVerifyResult | null | 'unavailable'>(null)
   const [forensics, setForensics] = useState<AuditForensics | null>(null)
   const [forensicsOpen, setForensicsOpen] = useState<ForensicsView | null>(null)
-  const [detailItem, setDetailItem] = useState<AuditLogItem | null>(null)
+  const location = useLocation()
+  // 통합 검색·대시보드 최근 활동에서 진입 — state.detail 이 있으면 그 행의 상세 모달을 바로 연다
+  const [detailItem, setDetailItem] = useState<AuditLogItem | null>(() => (location.state as { detail?: AuditLogItem } | null)?.detail ?? null)
   const [reloadTick, setReloadTick] = useState(0)
   const tblRef = useRef<HTMLDivElement>(null)
   const pageSize = useAutoPageSize(tblRef, 46)
@@ -136,9 +137,7 @@ export default function AuditLogPage() {
           <button type="button" className="icon-btn" data-tip="체인 재검증" aria-label="체인 재검증" disabled={verifying} onClick={runVerify}>
             <RotateCw size={15} />
           </button>
-        </div>
-        <div className="acts">
-          <Button onClick={async () => {
+          <button type="button" className="icon-btn" data-tip="CSV 내려받기" aria-label="CSV 내려받기" onClick={async () => {
             try {
               await downloadAuditCsv({ actor, action, target, from, to })
               toast('CSV 다운로드를 시작합니다.')
@@ -146,9 +145,8 @@ export default function AuditLogPage() {
               toast(errorMessage(err), 'error')
             }
           }}>
-            <Download size={14} />
-            CSV 내려받기
-          </Button>
+            <Download size={15} />
+          </button>
         </div>
       </div>
 

@@ -77,6 +77,31 @@ public class AuditLogService {
         return PageResponse.of(result, this::toItem);
     }
 
+    /**
+     * 통합 검색 — 최신 500건을 읽어 복호화한 뒤 action·actor·target·detail 부분일치(대소문자 무시). detail 은 마스터키 암호문이라
+     * DB LIKE 가 불가하므로 상한을 두고 앱에서 비교한다. totalElements 는 그 500건 안의 일치 수.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AuditLogItem> search(String q, int limit) {
+        String needle = q.trim().toLowerCase();
+        List<AuditLogItem> hits = new ArrayList<>();
+        for (AuditLog row : repository.findFirst500ByOrderByIdDesc()) {
+            AuditLogItem item = toItem(row);
+            if (containsIgnoreCase(item.action(), needle) || containsIgnoreCase(item.actor(), needle)
+                    || containsIgnoreCase(item.target(), needle) || containsIgnoreCase(item.detail(), needle)) {
+                hits.add(item);
+            }
+        }
+        int size = Math.min(Math.max(limit, 1), 100);
+        List<AuditLogItem> page = hits.size() > size ? hits.subList(0, size) : hits;
+        return new PageResponse<>(List.copyOf(page), 0, size, hits.size(),
+                hits.isEmpty() ? 0 : (int) Math.ceil(hits.size() / (double) size));
+    }
+
+    private static boolean containsIgnoreCase(String value, String needle) {
+        return value != null && value.toLowerCase().contains(needle);
+    }
+
     /** CSV 내려받기 — 목록과 같은 필터. 내려받기 자체도 관리자 행위이므로 AUDIT_EXPORTED 로 기록한다. */
     @Transactional
     public String exportCsv(String actor, String action, String target, String from, String to,

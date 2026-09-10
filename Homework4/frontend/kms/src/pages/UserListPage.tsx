@@ -1,5 +1,6 @@
 import { Eye, EyeOff, Pencil, Plus, Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import { fetchMe } from '@/api/auth'
 import { listUsers, type UserListParams, type UserPlain, type UserStatus, type UserSummary } from '@/api/users'
@@ -16,7 +17,7 @@ import { IntegrityBadge } from '@/components/keys/StateBadge'
 import { UserFormDialog } from '@/components/users/UserFormDialog'
 import { UserPlainDialog } from '@/components/users/UserPlainDialog'
 
-/* 목업 users.html — 사용자 관리. 연락처·이메일은 마스킹 표시, 정확검색은 HMAC 해시(전체 값 입력).
+/* 목업 users.html — 사용자 관리. 연락처·이메일은 마스킹 표시, 검색은 이름·연락처·이메일 통합 부분검색(서버가 복호화해 판정).
    페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
 /* 열 기본 폭(%) — 사용자·연락처·이메일·상태·무결성·가입일·액션 */
 const COLS = [20, 17, 24, 10, 9, 12, 8]
@@ -24,9 +25,8 @@ const COLS = [20, 17, 24, 10, 9, 12, 8]
 export default function UserListPage() {
   const toast = useToast()
   const [keyword, setKeyword] = useState('')
-  const [exactInput, setExactInput] = useState('')
-  // 정확검색 — 한 필드로 연락처·이메일을 받아 '@' 포함 여부로 판별해 phone/email 파라미터 중 하나로 보낸다
-  const [exact, setExact] = useState<{ phone?: string; email?: string }>({})
+  // 검색어가 있으면 서버가 사용자 전량을 복호화해 판정하므로 입력을 300ms 디바운스해 요청 횟수를 줄인다
+  const [query, setQuery] = useState('')
   const [status, setStatus] = useState<UserStatus | ''>('')
   const [sort, setSort] = useState<{ field: string; dir: 'asc' | 'desc' } | null>(null)
   const [page, setPage] = useState(0)
@@ -34,8 +34,11 @@ export default function UserListPage() {
   const [loading, setLoading] = useState(true)
   const [reloadTick, setReloadTick] = useState(0)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [formOpen, setFormOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<UserSummary | null>(null)
+  const location = useLocation()
+  // 통합 검색(대시보드)에서 진입 — state.editUser 가 있으면 그 사용자 수정 모달을 바로 연다
+  const fromSearch = (location.state as { editUser?: UserSummary } | null)?.editUser ?? null
+  const [formOpen, setFormOpen] = useState(!!fromSearch)
+  const [editTarget, setEditTarget] = useState<UserSummary | null>(fromSearch)
   const [plainTarget, setPlainTarget] = useState<UserSummary | null>(null)
   // 원문이 풀린 사용자 — 사유 입력·감사 기록 후 목록 행의 마스킹을 해제한다. 아이콘을 다시 누르면 제거(다시 마스킹)
   const [revealed, setRevealed] = useState<Record<number, UserPlain>>({})
@@ -48,16 +51,21 @@ export default function UserListPage() {
   }, [])
 
   useEffect(() => {
+    const t = setTimeout(() => setQuery(keyword.trim()), 300)
+    return () => clearTimeout(t)
+  }, [keyword])
+
+  useEffect(() => {
     if (!pageSize) return
     let cancelled = false
     setLoading(true)
-    const params: UserListParams = { keyword, ...exact, status, page, size: pageSize, sort: sort?.field, direction: sort?.dir }
+    const params: UserListParams = { keyword: query, status, page, size: pageSize, sort: sort?.field, direction: sort?.dir }
     listUsers(params)
       .then((res) => { if (!cancelled) setData(res) })
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [keyword, exact, status, page, pageSize, sort, reloadTick, toast])
+  }, [query, status, page, pageSize, sort, reloadTick, toast])
 
   // 페이지 크기 변동(창 크기 변경)으로 현재 페이지가 범위를 벗어나면 마지막 페이지로 보정
   useEffect(() => {
@@ -98,17 +106,6 @@ export default function UserListPage() {
     setSort((prev) => (prev?.field === field ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { field, dir: 'asc' }))
   }
 
-  function exactSearch() {
-    const v = exactInput.trim()
-    if (!v) {
-      setExact({})
-      toast('연락처 또는 이메일 전체를 입력해주세요')
-      return
-    }
-    setPage(0)
-    setExact(v.includes('@') ? { email: v } : { phone: v })
-  }
-
   const rows = data?.content ?? []
 
   return (
@@ -120,12 +117,8 @@ export default function UserListPage() {
       <div className="filters">
         <div className="search">
           <Search size={14} />
-          <input className="input" placeholder="이름 검색" value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0) }} />
+          <input className="input" placeholder="이름·연락처·이메일 검색" value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0) }} />
         </div>
-        <input className="input mono" style={{ width: 250 }} placeholder="연락처·이메일 정확검색"
-          value={exactInput} onChange={(e) => { setExactInput(e.target.value); if (!e.target.value.trim()) setExact({}) }}
-          onKeyDown={(e) => { if (e.key === 'Enter') exactSearch() }} />
-        <Button variant="ghost" onClick={exactSearch}>검색</Button>
         <select className="input" value={status} onChange={(e) => { setStatus(e.target.value as UserStatus | ''); setPage(0) }}>
           <option value="">상태 전체</option>
           <option value="ACTIVE">활성</option>
