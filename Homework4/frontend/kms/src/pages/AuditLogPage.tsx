@@ -264,9 +264,13 @@ function LogRow({ item, className, badge, onClick }: { item: AuditLogItem; class
   )
 }
 
-/** 헤더 배지 문구 — 체인 위반 구간 수만 (삭제·삽입·수정 내역은 위반 상세 아이콘으로) */
+/** 헤더 배지 문구 — 체인 위반 구간 수 (삭제·삽입·수정 내역은 위반 상세 아이콘으로).
+    감사 로그 위반은 영구(재해시 없음): 지금 검사가 통과해도 위반 기록이 있으면 "위반 이력"으로 표시한다 */
 function badgeText(chain: AuditVerifyResult): string {
-  return `체인 위반 ${chain.violations.length}건`
+  const s = chain.shadow
+  const checksOk = chain.valid && (!s || (s.deleted + s.inserted + s.modified === 0 && s.guard === 'ACTIVE'))
+  if (chain.flagged && checksOk) return '위반 이력 — 원복됨 · 복구 불가'
+  return `체인 위반 ${chain.violations.length}건${chain.flagged ? ' · 복구 불가' : ''}`
 }
 
 /**

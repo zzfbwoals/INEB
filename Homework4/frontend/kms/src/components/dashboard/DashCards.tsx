@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { AlgoCount, DashboardSummary, ExpiringItem, Failure, Signal, TrendDays, TrendOp, UsageTrend } from '@/api/dashboard'
@@ -38,12 +39,20 @@ export function StatKeys({ s }: { s: DashboardSummary['keys'] | null }) {
     return a
   }).filter((a) => a.f > 0)
   const tip = hv ? `${STATE_KO[hv]} ${cnt(hv)}건 · ${total ? Math.round((cnt(hv) / total) * 100) : 0}%` : `전체 ${total}건`
+  // 툴팁은 카드(.stat overflow:hidden) 안에 갇혀 잘리므로 body 에 포털로 띄우고 도넛 위 고정 좌표에 둔다
+  const wrapRef = useRef<HTMLSpanElement>(null)
+  const [tipPos, setTipPos] = useState<{ x: number; y: number } | null>(null)
+  const showTip = () => {
+    const r = wrapRef.current?.getBoundingClientRect()
+    if (r) setTipPos({ x: r.left + r.width / 2, y: r.top - 8 })
+  }
   return (
     <>
       <CardHead id="keys" title={<Link className="tl" to="/keys">전체 KMS 키</Link>} />
       <div className="stat-b">
         <div className="row" ref={rowRef}>
-          <span className="donut-wrap tip-up" data-tip={tip}>
+          <span className="donut-wrap" ref={wrapRef} onMouseEnter={showTip} onMouseLeave={() => { setTipPos(null); setHv(null) }}>
+            {tipPos && createPortal(<div className="donut-tip" style={{ left: tipPos.x, top: tipPos.y }}>{tip}</div>, document.body)}
             <svg className={`donut ${hv ? 'hv' : ''}`} width={size} height={size} viewBox="0 0 64 64" onMouseLeave={() => setHv(null)}>
               {arcs.map((a) => (
                 <circle

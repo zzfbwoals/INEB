@@ -306,15 +306,17 @@ function render(){
     if(v.state==='PRE_ACTIVE')act=`<button class="icon-btn tip-left" data-tip="활성화" aria-label="활성화" onclick="openActivate()"><i data-lucide="play" width="15" height="15"></i></button>${destroy}`;
     else if(v.state==='ACTIVE')act=isLatest?`<span class="help" title="최신 버전은 단독 정지 불가 — 키 정지 또는 갱신 후 정지">최신 버전</span>`:`<button class="icon-btn tip-left" data-tip="정지" aria-label="정지" onclick="openDeactivate(${v.v})"><i data-lucide="ban" width="15" height="15"></i></button>`;
     else if(v.state==='DEACTIVATED')act=(v.deactivationTrigger==='INTEGRITY'?`<button class="icon-btn primary tip-left" data-tip="재활성화" aria-label="재활성화" onclick="openReactivate(${v.v})"><i data-lucide="power" width="15" height="15"></i></button>`:'')+destroy;
-    return `<tr class="${isCur?'vcur':''}${v.state!=='DESTROYED'?' rowlink':''}${v.state!=='DESTROYED'&&v.integrity===false?' row-bad':''}"${v.state!=='DESTROYED'?` onclick="openReveal(${v.v})" title="${v.integrity===false?'무결성 위반 — 재활성화로 복구 · ':''}클릭하여 키값 조회 — 사유 필수 · 감사로그 기록"`:''}>
-      <td><span class="vtxt ${isCur?'cur':''}">v${v.v}</span>${stateDot(v.state)}</td>
+    // 키값 조회 — 행 클릭·호버 대신 버전 열의 색상점 오른쪽 돋보기 아이콘(사유 필수 · 감사로그 기록). 폐기 버전은 재료가 없어 버튼 없음. 첫 열이라 툴팁은 오른쪽(tip-right)
+    const reveal=v.state!=='DESTROYED'?`<button class="icon-btn sm tip-right" style="margin-left:6px;vertical-align:middle" data-tip="키값 조회" aria-label="키값 조회" onclick="openReveal(${v.v})"><i data-lucide="search" width="14" height="14"></i></button>`:'';
+    return `<tr class="${isCur?'vcur':''}${v.integrity===false?' row-bad':''}">
+      <td style="white-space:nowrap"><span class="vtxt ${isCur?'cur':''}">v${v.v}</span>${stateDot(v.state)}${reveal}</td>
       <td class="mono">${fmt(v.activationDate)}${v.state==='PRE_ACTIVE'?' <span style="color:var(--blue)">예정</span>':v.state==='DESTROYED'?` <span style="color:var(--text-3)">· 폐기 ${fmt(v.destroyedAt)}</span>`:''}</td>
       <td class="mono">${fmt(v.lastUsedAt)}</td>
       <td class="mono">${v.usageCount.toLocaleString()}</td>
       <td class="mono" style="color:var(--text-2)">${capOf(v)}</td>
-      <td style="text-align:right;white-space:nowrap" title="" onclick="event.stopPropagation()">${act}</td></tr>`;}).join('');
+      <td style="text-align:right;white-space:nowrap">${act}</td></tr>`;}).join('');
   document.getElementById('kdAudit').innerHTML=sortRows(USAGE.filter(u=>u.keyId===key.id),audSort).map(u=>
-    `<tr><td class="mono">${u.at}</td><td class="mono">${u.operation}</td><td><span class="vtxt">v${u.version}</span>${u.note?` <span class="help">${u.note}</span>`:''}</td><td>${u.result==='SUCCESS'?'<span class="badge b-ok">성공</span>':'<span class="badge b-bad">실패</span>'}</td><td class="mono" style="color:${u.failReason?'var(--red)':'var(--text-3)'};font-size:11.5px">${u.failReason||'—'}</td></tr>`
+    `<tr><td class="mono">${u.at}</td><td class="mono">${u.operation}</td><td><span class="vtxt">v${u.version}</span>${u.note?` <span class="help">${u.note}</span>`:''}</td><td>${u.result==='SUCCESS'?'<span style="color:var(--blue);font-weight:600">성공</span>':'<span style="color:var(--red);font-weight:600">실패</span>'}</td><td class="mono" style="color:${u.failReason?'var(--red)':'var(--text-3)'};font-size:11.5px">${u.failReason||'—'}</td></tr>`
   ).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:28px">이 키에 대한 사용 기록이 없습니다</td></tr>';
   document.getElementById('kdTimeline').innerHTML=key.history.map((h,i)=>`
     <div class="tl-it"><span class="tl-dot" style="background:${h.trigger==='INTEGRITY'?'var(--red)':i===0?'var(--blue)':'var(--text-3)'}"></span>

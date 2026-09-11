@@ -141,7 +141,7 @@ function renderKeys(){
     else rotCell=`<span style="color:${k.dday<=30?'var(--red)':'var(--text-2)'}">${k.nextRotationAt.slice(0,10)}${k.dday>0&&k.dday<=30?` <b>(D-${k.dday})</b>`:k.dday<=0?' <b>(갱신 실패)</b>':''}</span>`;
     return `
     <tr class="rowlink ${k.integrity?'':'row-bad'}" ${k.integrity?'':'title="무결성 위반 — 상세에서 확인"'} onclick="location.href='key-detail.html?id=${k.id}'">
-      <td><b class="nm">${k.name}</b>${stateDot(k.status)}</td>
+      <td><span class="nmrow"><b class="nm">${k.name}</b>${stateDot(k.status)}</span></td>
       <td class="mono">${k.algo}</td>
       <td class="mono" style="color:var(--text-2)">${k.mode||'—'}</td>
       <td>${PURPOSE[k.purpose]}</td>

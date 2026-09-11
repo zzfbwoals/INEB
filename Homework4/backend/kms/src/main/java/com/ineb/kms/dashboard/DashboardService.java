@@ -156,7 +156,9 @@ public class DashboardService {
                 user++;
             }
         }
-        long auditChain = auditLogService.status().violations().size();
+        // 체인 위반은 영구(재해시 없음) — 값이 원복돼 구간이 0이어도 위반 표시가 남아 있으면 1건으로 센다
+        var chain = auditLogService.status();
+        long auditChain = chain.healthy() ? 0 : Math.max(1, chain.violations().size());
         return new Integrity(keyMeta, keyVersion, user, auditChain, keyMeta + keyVersion + user + auditChain,
                 first == null ? null : first.getKeyUid(), first == null ? null : first.getKeyName());
     }

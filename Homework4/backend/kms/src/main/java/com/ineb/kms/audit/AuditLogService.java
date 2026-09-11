@@ -42,6 +42,11 @@ public class AuditLogService {
     /** 검증 결과 + 감사 detail 문자열 (스케줄러·verify 공용) */
     public record Check(AuditVerifyResponse response, String detail) { }
 
+    /** 감사 체인 위반 기록 — 한 번 남으면 영구 위반(재해시 없음) */
+    public static final String CHAIN_VIOLATION = "AUDIT_CHAIN_VIOLATION";
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuditLogService.class);
+
     private final AuditLogRepository repository;
     private final AuditLogShadowRepository shadowRepository;
     private final AuditChainService chainService;
@@ -144,12 +149,31 @@ public class AuditLogService {
         return check().response();
     }
 
-    /** 스케줄러용 — 상태 전이 판정(healthy)과 기록할 detail 을 함께 돌려준다 */
+    /**
+     * 검증 + 위반 표시 (2026-09-11 영구 위반): 검사(체인 + 섀도 비교 + 보호 트리거)가 실패했는데 아직 AUDIT_CHAIN_VIOLATION 이
+     * 없으면 그 자리에서 1건 기록한다(조회는 읽기 전용이라 별도 트랜잭션). 한 번 기록되면 값을 원복해 검사가 통과해도
+     * healthy=false 로 남는다 — 감사 로그에는 재해시가 없고, 위반 행을 지우면 체인이 끊겨 다시 위반이다.
+     * 배치·트리거 알림·감사 로그 화면·대시보드가 모두 이 판정을 쓴다.
+     */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Check check() {
         AuditShadowComparer.Result result = compareAll();
         AuditShadowGuard.Status guardStatus = guard.status();
-        return new Check(toResponse(result, guardStatus), summaryDetail(result, guardStatus));
+        String detail = summaryDetail(result, guardStatus);
+        boolean checksOk = result.chain().valid() && result.shadowClean() && guardStatus == AuditShadowGuard.Status.ACTIVE;
+        boolean flagged = settleViolation(checksOk, detail);
+        return new Check(toResponse(result, guardStatus, checksOk, flagged), detail);
+    }
+
+    /** 위반 표시 판정 — 검사 실패인데 기록이 없으면 기록. 표시 여부(true=영구 위반)를 돌려준다 */
+    boolean settleViolation(boolean checksOk, String detail) {
+        boolean flagged = repository.existsByAction(CHAIN_VIOLATION);
+        if (!checksOk && !flagged) {
+            log.warn("감사로그 위반 감지 — 영구 위반 표시 기록: {}", detail);
+            chainService.appendDetached(null, CHAIN_VIOLATION, "AUDIT", detail);
+            flagged = true;
+        }
+        return flagged;
     }
 
     /** 섀도 비교 상세 — 지워진·끼어든·바뀐 행의 내용(복호화). 화면의 "위반 상세" 모달용 */
@@ -173,11 +197,13 @@ public class AuditLogService {
                 AuditShadowComparer.keyset(shadowRepository::findFirst500ByIdGreaterThanOrderByIdAsc));
     }
 
-    private static AuditVerifyResponse toResponse(AuditShadowComparer.Result r, AuditShadowGuard.Status guardStatus) {
+    private static AuditVerifyResponse toResponse(AuditShadowComparer.Result r, AuditShadowGuard.Status guardStatus,
+                                                  boolean checksOk, boolean flagged) {
         // 섀도 체인은 판정에 넣지 않는다 — 원본이 변조된 뒤 정상 기록이 이어지면 그 행이 변조된 상태를 prev 로 물고 섀도에 복사되어
         // 섀도 체인도 필연적으로 끊기므로 독립 신호가 아니다. "원본·섀도 동일 변조"는 체인 위반 + 섀도 차이 0 으로 드러난다.
-        boolean healthy = r.chain().valid() && r.shadowClean() && guardStatus == AuditShadowGuard.Status.ACTIVE;
-        return new AuditVerifyResponse(r.chain().valid(), healthy, r.currentRows(), KstTime.format(Instant.now()),
+        // healthy = 지금 검사 통과 && 위반 표시 없음 — 위반 표시는 영구(재해시 없음)
+        boolean healthy = checksOk && !flagged;
+        return new AuditVerifyResponse(r.chain().valid(), healthy, flagged, r.currentRows(), KstTime.format(Instant.now()),
                 r.chain().violations().stream()
                         .map(v -> new AuditVerifyResponse.ViolationRange(v.fromId(), v.toId(), v.type().name()))
                         .toList(),
