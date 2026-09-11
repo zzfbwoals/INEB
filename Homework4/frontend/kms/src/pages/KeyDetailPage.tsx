@@ -1,4 +1,4 @@
-import { Ban, ChevronDown, Download, FlaskConical, Pencil, Play, Power, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react'
+import { Ban, ChevronDown, Download, FlaskConical, Pencil, Play, Power, RefreshCw, Search, ShieldCheck, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
@@ -287,7 +287,7 @@ export default function KeyDetailPage() {
                     <td className="mono">{u.usedAt}</td>
                     <td className="mono">{u.operation}</td>
                     <td><span className="vtxt">v{u.version}</span>{u.oldVersion && <> <span className="help">구 버전</span></>}</td>
-                    <td>{u.result === 'SUCCESS' ? <span className="badge b-ok">성공</span> : <span className="badge b-bad">실패</span>}</td>
+                    <td>{u.result === 'SUCCESS' ? <span style={{ color: 'var(--blue)', fontWeight: 600 }}>성공</span> : <span style={{ color: 'var(--red)', fontWeight: 600 }}>실패</span>}</td>
                     <td className="mono" style={{ color: u.failReason ? 'var(--red)' : 'var(--text-3)', fontSize: 11.5 }}>{u.failReason ?? '—'}</td>
                   </tr>
                 ))}
@@ -361,12 +361,14 @@ function VersionRow({ v, detail, onAction, onReveal }: { v: VersionInfo; detail:
     {v.deactivationTrigger === 'INTEGRITY' && <button type="button" className="icon-btn primary tip-left" data-tip="재활성화" aria-label="재활성화" onClick={() => onAction({ kind: 'REACTIVATE', version: v.version })}><Power size={15} /></button>}
     {destroy}
   </>
-  const revealable = v.state !== 'DESTROYED'
+  // 키값 조회 — 행 클릭·호버 대신 버전 열의 색상점 오른쪽 돋보기 아이콘(사유 필수 · 감사로그 기록). 폐기 버전은 재료가 없어 버튼 없음.
+  // 첫 열이라 왼쪽 툴팁은 표 밖으로 나가므로 오른쪽(tip-right)으로 띄운다
+  const reveal = v.state !== 'DESTROYED' && (
+    <button type="button" className="icon-btn sm tip-right" style={{ marginLeft: 6, verticalAlign: 'middle' }} data-tip="키값 조회" aria-label="키값 조회" onClick={() => onReveal(v.version)}><Search size={14} /></button>
+  )
   return (
-    <tr className={`${isCur ? 'vcur' : ''} ${revealable ? 'rowlink' : ''} ${revealable && !v.integrityValid ? 'row-bad' : ''}`.trim()}
-        title={revealable ? (v.integrityValid ? '클릭하여 키값 조회 — 사유 필수 · 감사로그 기록' : '무결성 위반 — 재활성화로 복구 · 클릭하여 키값 조회') : undefined}
-        onClick={revealable ? () => onReveal(v.version) : undefined}>
-      <td><span className={`vtxt ${isCur ? 'cur' : ''}`}>v{v.version}</span><StateDot state={v.state} /></td>
+    <tr className={`${isCur ? 'vcur' : ''} ${!v.integrityValid ? 'row-bad' : ''}`.trim()}>
+      <td style={{ whiteSpace: 'nowrap' }}><span className={`vtxt ${isCur ? 'cur' : ''}`}>v{v.version}</span><StateDot state={v.state} />{reveal}</td>
       <td className="mono">
         {fmt(v.activationDate)}
         {v.state === 'PRE_ACTIVE' && <span style={{ color: 'var(--blue)' }}> 예정</span>}
@@ -375,7 +377,7 @@ function VersionRow({ v, detail, onAction, onReveal }: { v: VersionInfo; detail:
       <td className="mono">{fmt(v.lastUsedAt)}</td>
       <td className="mono">{v.usageCount.toLocaleString()}</td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{cap}</td>
-      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }} title="" onClick={(e) => e.stopPropagation()}>{act}</td>
+      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{act}</td>
     </tr>
   )
 }

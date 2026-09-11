@@ -134,7 +134,7 @@
 .stat .row{display:flex;align-items:center;gap:12px;flex:1;min-height:0}
 /* 도넛 크기는 JS(ResizeObserver)가 카드 본문 크기에 맞춰 px 로 지정 — 카드를 키우면 같이 커진다 */
 .donut{flex:none;width:72px;height:72px}
-/* 도넛 호버 — 가리킨 구간만 굵게, 나머지 흐리게, 같은 상태 칩 강조. 툴팁은 공용 data-tip(tip-up)을 도넛 래퍼에 걸어 도넛 위에 띄운다(숫자·칩을 가리지 않음) */
+/* 도넛 호버 — 가리킨 구간만 굵게, 나머지 흐리게, 같은 상태 칩 강조. 툴팁은 카드(overflow:hidden) 안에서 잘리지 않도록 body 에 붙는 .donut-tip(fixed, common.css)을 도넛 위 좌표에 띄운다 */
 .donut-wrap{display:inline-flex;flex:none}
 .donut circle{transition:opacity .15s,stroke-width .15s}
 .donut.hv circle{opacity:.3}
@@ -298,7 +298,7 @@ html.dash-full .stat .num{font-size:30px}
       <div class="card-h"><h3><a class="tl" href="keys.html">전체 KMS 키</a></h3></div>
       <div class="stat-b">
       <div class="row">
-        <span class="donut-wrap tip-up" id="donutWrap" data-tip=""><svg class="donut" id="keyDonut" width="72" height="72" viewBox="0 0 64 64"></svg></span>
+        <span class="donut-wrap" id="donutWrap"><svg class="donut" id="keyDonut" width="72" height="72" viewBox="0 0 64 64"></svg></span>
         <div style="min-width:0">
           <div class="num" id="keyTotal">0</div>
           <div class="chips" id="keyChips" style="margin-top:4px"></div>
@@ -618,14 +618,20 @@ document.addEventListener('fullscreenchange',()=>{
   ORDER.forEach(s=>{const f=cnt[s]/KEYS.length;if(!f)return;
     d+=`<circle data-s="${s}" cx="32" cy="32" r="${R}" fill="none" stroke="${COLOR[s]}" stroke-width="9" stroke-dasharray="${f*C-1.5} ${C-f*C+1.5}" stroke-dashoffset="${-off*C}" transform="rotate(-90 32 32)"></circle>`;off+=f;});
   const svg=document.getElementById('keyDonut');svg.innerHTML=d;
-  // 도넛 호버 — 구간 강조 + 같은 상태 칩 강조 + 도넛 위 툴팁(상태 · 건수 · 비율). 구간 밖(가운데·틈)에서는 전체 건수
+  // 도넛 호버 — 구간 강조 + 같은 상태 칩 강조 + 도넛 위 툴팁(상태 · 건수 · 비율). 구간 밖(가운데·틈)에서는 전체 건수.
+  // 툴팁은 카드 안에 갇혀 잘리지 않도록 body 에 붙는 fixed 요소(.donut-tip)를 도넛 래퍼 위 좌표에 띄운다
   const chips=document.getElementById('keyChips'),wrap=document.getElementById('donutWrap');
-  const total=`전체 ${KEYS.length}건`;wrap.dataset.tip=total;
+  const total=`전체 ${KEYS.length}건`;let tipEl=null;
+  const showTip=t=>{if(!tipEl){tipEl=document.createElement('div');tipEl.className='donut-tip';document.body.appendChild(tipEl);}
+    const r=wrap.getBoundingClientRect();tipEl.style.left=(r.left+r.width/2)+'px';tipEl.style.top=(r.top-8)+'px';tipEl.textContent=t;};
+  const hideTip=()=>{if(tipEl){tipEl.remove();tipEl=null;}};
   const clear=()=>{svg.classList.remove('hv');svg.querySelectorAll('circle').forEach(x=>x.classList.remove('on'));
-    chips.querySelectorAll('span').forEach(x=>x.classList.remove('on'));wrap.dataset.tip=total;};
+    chips.querySelectorAll('span').forEach(x=>x.classList.remove('on'));if(tipEl)showTip(total);};
   svg.addEventListener('mouseover',e=>{const c=e.target.closest('circle');if(!c){clear();return;}const s=c.dataset.s;
     clear();svg.classList.add('hv');c.classList.add('on');chips.querySelector(`span[data-s="${s}"]`).classList.add('on');
-    wrap.dataset.tip=`${STATE_KO[s]} ${cnt[s]}건 · ${Math.round(cnt[s]/KEYS.length*100)}%`;});
+    showTip(`${STATE_KO[s]} ${cnt[s]}건 · ${Math.round(cnt[s]/KEYS.length*100)}%`);});
+  wrap.addEventListener('mouseenter',()=>showTip(total));
+  wrap.addEventListener('mouseleave',()=>{clear();hideTip();});
   svg.addEventListener('mouseleave',clear);
   // 도넛 유동 크기 — 본문 행 높이와 너비의 40% 중 작은 값(44~200px). 카드 크기 조절·전체화면에 즉시 반응
   const row=svg.closest('.row');

@@ -163,7 +163,8 @@ function KeyRow({ k, onClick, onReseal }: { k: KeySummary; onClick: () => void; 
   )
   return (
     <tr className={`rowlink ${k.integrityValid ? '' : 'row-bad'}`} onClick={onClick} title={k.integrityValid ? undefined : '무결성 위반 — 상세에서 확인'}>
-      <td><b className="nm">{k.keyName}</b><StateDot state={k.status} /></td>
+      {/* 키명과 상태 색상점을 한 줄 래퍼에 묶어 열이 좁아지면 이름이 말줄임되고 색상점도 함께 가려진다(밀려나지 않음) */}
+      <td><span className="nmrow"><b className="nm">{k.keyName}</b><StateDot state={k.status} /></span></td>
       <td className="mono">{algoLabel(k.algorithm, k.keySize)}</td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{k.mode ?? '—'}</td>
       <td>{PURPOSE_KO[k.purpose]}</td>

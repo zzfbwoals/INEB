@@ -32,8 +32,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSp
     /** 무결성 위반 표시 파생용(전체) — 대시보드 집계 */
     List<AuditLog> findByActionInOrderByIdAsc(Collection<String> actions);
 
-    /** 감사 체인 배치의 직전 판정 복원용 — AUDIT_CHAIN_VIOLATION / RESTORED 중 마지막 기록 (재기동 후 중복 기록 방지) */
-    Optional<AuditLog> findTopByActionInOrderByIdDesc(Collection<String> actions);
+    /** 감사 체인 위반 표시 — AUDIT_CHAIN_VIOLATION 이 한 번이라도 기록됐으면 영구 위반 (재해시 없음, 2026-09-11) */
+    boolean existsByAction(String action);
 
     /** 통합 검색 — 최신 500건(복호화 후 detail 까지 비교) */
     List<AuditLog> findFirst500ByOrderByIdDesc();
