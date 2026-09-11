@@ -12,6 +12,8 @@ public record AuditVerifyResponse(
         boolean valid,
         boolean healthy,
         boolean flagged,
+        /** 변조 증거(audit_violation)에 남은 행 수(중복 id 제외) — 원복해도 유지, 화면 배지 "체인 위반 N건" */
+        long flaggedRows,
         long totalRows,
         String verifiedAt,
         List<ViolationRange> violations,

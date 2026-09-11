@@ -18,7 +18,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -93,7 +92,11 @@ public class IntegrityChangeHandler {
         this.ownNameApplied = applied;
     }
 
-    @Transactional
+    /**
+     * 트랜잭션을 걸지 않는다 — 감사 기록(append)이 advisory xact lock 을 잡은 채로 체인 재검증(check → 별도 트랜잭션 appendDetached)을
+     * 부르면 같은 스레드의 두 연결이 서로를 기다리는 교착이 생기고, 같은 트랜잭션 안에서는 방금 넣은 자기 기록을 원본·섀도 정밀도 차이로
+     * "수정됨"으로 오인한다(2026-09-11 확인). 각 단계(기록·가드·재검증)는 저마다 트랜잭션을 가진다.
+     */
     public void handleBatch(List<String> payloads) {
         List<Change> direct = new ArrayList<>();
         for (String payload : payloads) {

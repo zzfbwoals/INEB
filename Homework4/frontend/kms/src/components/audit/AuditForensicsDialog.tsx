@@ -2,14 +2,15 @@ import { useState } from 'react'
 import type { AuditForensics, AuditLogItem } from '@/api/audit'
 import { Dialog, DialogBody, DialogContent } from '@/components/ui/dialog'
 
-/* 위반 상세 — 섀도(복사본)와 비교해 지워진·끼어든·바뀐 행을 원본|현재 diff 로 보여준다.
+/* 위반 상세 — 변조 증거(audit_violation 스냅샷)와 섀도(복사본)를 비교해 지워진·끼어든·바뀐 행을 원본|변조 값 diff 로 보여준다.
+   증거는 처음 감지된 순간의 값이라 DB 를 원복한 뒤에도 그대로 남는다(감사 로그 위반은 영구).
    all: 헤더 아이콘에서 열림, 탭으로 전체 목록 / single: 목록의 위반 행 클릭 — 그 행의 diff 만.
-   섀도는 무결성 보장이 아니라 원본 증거(포렌식)이며, 탐지는 해시 체인이 담당한다. */
+   섀도·증거는 무결성 보장이 아니라 원본 증거(포렌식)이며, 탐지는 해시 체인이 담당한다. */
 
 export type DiffKind = 'deleted' | 'inserted' | 'modified'
 export type ForensicsView = { mode: 'all'; tab: DiffKind } | { mode: 'single'; kind: DiffKind; id: number }
 
-const FIELD_KO: Record<string, string> = {
+export const FIELD_KO: Record<string, string> = {
   actor: '행위자', action: '행위', target: '대상', detail: '상세', prevHash: 'prev_hash', rowHash: 'row_hash', createdAt: '일시',
 }
 const BASE_FIELDS = ['actor', 'action', 'target', 'detail', 'createdAt']
@@ -85,7 +86,7 @@ function DiffCard({ entry, showHeader }: { entry: DiffEntry; showHeader: boolean
         </div>
       )}
       <div className="diff-grid">
-        <div className="h">필드</div><div className="h">원본</div><div className="h">현재</div>
+        <div className="h">필드</div><div className="h">원본</div><div className="h">변조 값</div>
         {shown.map((f) => (
           <ContentsRow key={f} label={FIELD_KO[f] ?? f} original={value(entry.original, f)} current={value(entry.current, f)}
             changed={changed.has(f)} hasOriginal={!!entry.original} hasCurrent={!!entry.current} />

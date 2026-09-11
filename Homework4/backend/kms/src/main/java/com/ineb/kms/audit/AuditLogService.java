@@ -1,6 +1,7 @@
 package com.ineb.kms.audit;
 
 import com.ineb.kms.audit.dto.AuditForensicsResponse;
+import com.ineb.kms.domain.AuditViolation;
 import com.ineb.kms.audit.dto.AuditLogItem;
 import com.ineb.kms.audit.dto.AuditVerifyResponse;
 import com.ineb.kms.common.BusinessException;
@@ -53,16 +54,18 @@ public class AuditLogService {
     private final AuditShadowComparer comparer;
     private final AuditShadowGuard guard;
     private final PersonalDataCodec codec;
+    private final AuditViolationStore violationStore;
 
     public AuditLogService(AuditLogRepository repository, AuditLogShadowRepository shadowRepository,
                            AuditChainService chainService, AuditShadowComparer comparer,
-                           AuditShadowGuard guard, PersonalDataCodec codec) {
+                           AuditShadowGuard guard, PersonalDataCodec codec, AuditViolationStore violationStore) {
         this.repository = repository;
         this.shadowRepository = shadowRepository;
         this.chainService = chainService;
         this.comparer = comparer;
         this.guard = guard;
         this.codec = codec;
+        this.violationStore = violationStore;
     }
 
     /**
@@ -159,16 +162,36 @@ public class AuditLogService {
     public Check check() {
         AuditShadowComparer.Result result = compareAll();
         AuditShadowGuard.Status guardStatus = guard.status();
-        String detail = summaryDetail(result, guardStatus);
+        // 변조 증거 스냅샷 — 삭제·삽입·수정 행을 처음 본 순간 값째 남긴다(원복해도 유지, 별도 트랜잭션)
+        List<AuditViolation> added = violationStore.recordNew(result);
+        String detail = summaryDetail(result, guardStatus) + evidenceDetail(added);
         boolean checksOk = result.chain().valid() && result.shadowClean() && guardStatus == AuditShadowGuard.Status.ACTIVE;
-        boolean flagged = settleViolation(checksOk, detail);
-        return new Check(toResponse(result, guardStatus, checksOk, flagged), detail);
+        boolean flagged = settleViolation(checksOk, !added.isEmpty(), detail);
+        return new Check(toResponse(result, guardStatus, checksOk, flagged, evidenceSummary(evidence(added))), detail);
     }
 
-    /** 위반 표시 판정 — 검사 실패인데 기록이 없으면 기록. 표시 여부(true=영구 위반)를 돌려준다 */
-    boolean settleViolation(boolean checksOk, String detail) {
+    /**
+     * 증거 전체 — 이 검증 트랜잭션은 REPEATABLE READ 스냅샷이라 방금 별도 트랜잭션으로 넣은 증거가 보이지 않으므로
+     * 방금 추가분을 합쳐 준다(같은 호출의 응답에 바로 반영).
+     */
+    private List<AuditViolation> evidence(List<AuditViolation> added) {
+        java.util.LinkedHashMap<Long, AuditViolation> byId = new java.util.LinkedHashMap<>();
+        for (AuditViolation v : violationStore.all()) {
+            byId.put(v.getId(), v);
+        }
+        for (AuditViolation v : added) {
+            byId.putIfAbsent(v.getId(), v);
+        }
+        return List.copyOf(byId.values());
+    }
+
+    /**
+     * 위반 표시 판정 — 검사 실패인데 기록이 없거나, 새 변조 증거가 발견되면 AUDIT_CHAIN_VIOLATION 을 기록한다.
+     * 표시 여부(true=영구 위반)를 돌려준다. 증거·기록 어느 쪽이 남아 있어도 위반이다.
+     */
+    boolean settleViolation(boolean checksOk, boolean newEvidence, String detail) {
         boolean flagged = repository.existsByAction(CHAIN_VIOLATION);
-        if (!checksOk && !flagged) {
+        if (newEvidence || (!checksOk && !flagged)) {
             log.warn("감사로그 위반 감지 — 영구 위반 표시 기록: {}", detail);
             chainService.appendDetached(null, CHAIN_VIOLATION, "AUDIT", detail);
             flagged = true;
@@ -176,20 +199,70 @@ public class AuditLogService {
         return flagged;
     }
 
+    /** 새로 남긴 증거 요약 — detail 뒤에 붙는다. 예: ", newModified=77(actor,detail)/78(target), newDeleted=90" */
+    static String evidenceDetail(List<AuditViolation> added) {
+        if (added.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String kind : List.of(AuditViolation.MODIFIED, AuditViolation.INSERTED, AuditViolation.DELETED)) {
+            List<String> ids = added.stream().filter(v -> kind.equals(v.getKind())).limit(20)
+                    .map(v -> v.getAuditId() + (v.getFields().isEmpty() ? "" : "(" + v.getFields() + ")")).toList();
+            if (!ids.isEmpty()) {
+                sb.append(", new").append(kind.charAt(0)).append(kind.substring(1).toLowerCase()).append("=").append(String.join("/", ids));
+            }
+        }
+        return sb.toString();
+    }
+
+    /** 증거 집계 — 종류별 행 수(중복 id 제외)와 전체 행 수 */
+    private record EvidenceSummary(long deleted, long inserted, long modified, long rows) { }
+
+    private static EvidenceSummary evidenceSummary(List<AuditViolation> all) {
+        java.util.function.ToLongFunction<String> count = kind ->
+                all.stream().filter(v -> kind.equals(v.getKind())).map(AuditViolation::getAuditId).distinct().count();
+        return new EvidenceSummary(count.applyAsLong(AuditViolation.DELETED), count.applyAsLong(AuditViolation.INSERTED),
+                count.applyAsLong(AuditViolation.MODIFIED), all.stream().map(AuditViolation::getAuditId).distinct().count());
+    }
+
     /** 섀도 비교 상세 — 지워진·끼어든·바뀐 행의 내용(복호화). 화면의 "위반 상세" 모달용 */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public AuditForensicsResponse forensics() {
         AuditShadowComparer.Result r = compareAll();
+        // 지금 차이도 증거로 남긴 뒤 증거 표 기준으로 응답 — 원복된 행도 계속 보인다 (방금 추가분은 스냅샷 밖이라 합쳐 준다)
+        List<AuditViolation> ev = evidence(violationStore.recordNew(r));
+        List<AuditLogItem> deleted = ev.stream().filter(v -> AuditViolation.DELETED.equals(v.getKind()))
+                .map(v -> toItem(v.snapshot())).limit(FORENSICS_MAX).toList();
+        List<AuditLogItem> inserted = ev.stream().filter(v -> AuditViolation.INSERTED.equals(v.getKind()))
+                .map(v -> toItem(v.snapshot())).limit(FORENSICS_MAX).toList();
+        // 수정 — 같은 행이 여러 번 변조됐으면 바뀐 컬럼을 합치고 마지막 스냅샷을 "변조 값"으로, 섀도 행을 "원본"으로
+        java.util.LinkedHashMap<Long, java.util.LinkedHashSet<String>> fieldsById = new java.util.LinkedHashMap<>();
+        java.util.Map<Long, AuditViolation> lastById = new java.util.HashMap<>();
+        for (AuditViolation v : ev) {
+            if (!AuditViolation.MODIFIED.equals(v.getKind())) {
+                continue;
+            }
+            fieldsById.computeIfAbsent(v.getAuditId(), k -> new java.util.LinkedHashSet<>())
+                    .addAll(java.util.Arrays.asList(v.getFields().split(",")));
+            lastById.put(v.getAuditId(), v);
+        }
+        List<AuditForensicsResponse.ModifiedItem> modified = fieldsById.entrySet().stream().limit(FORENSICS_MAX)
+                .map(e -> {
+                    AuditViolation last = lastById.get(e.getKey());
+                    AuditLogItem original = shadowRepository.findById(e.getKey()).map(this::toItem).orElse(toItem(last.snapshot()));
+                    return new AuditForensicsResponse.ModifiedItem(e.getKey(), toItem(last.snapshot()), original,
+                            List.copyOf(e.getValue()));
+                })
+                .toList();
+        long deletedCount = ev.stream().filter(v -> AuditViolation.DELETED.equals(v.getKind())).map(AuditViolation::getAuditId).distinct().count();
+        long insertedCount = ev.stream().filter(v -> AuditViolation.INSERTED.equals(v.getKind())).map(AuditViolation::getAuditId).distinct().count();
         return new AuditForensicsResponse(KstTime.format(Instant.now()),
                 r.chain().valid(), r.shadowChain().valid(), guard.status().name(),
-                r.currentRows(), r.shadowRows(), r.deletedCount(), r.insertedCount(), r.modifiedCount(),
-                r.deleted().stream().map(this::toItem).toList(),
-                r.inserted().stream().map(this::toItem).toList(),
-                r.modified().stream()
-                        .map(m -> new AuditForensicsResponse.ModifiedItem(m.current().getId(),
-                                toItem(m.current()), toItem(m.original()), m.fields()))
-                        .toList());
+                r.currentRows(), r.shadowRows(), deletedCount, insertedCount, fieldsById.size(),
+                deleted, inserted, modified);
     }
+
+    private static final int FORENSICS_MAX = 200;
 
     private AuditShadowComparer.Result compareAll() {
         return comparer.compare(
@@ -198,16 +271,19 @@ public class AuditLogService {
     }
 
     private static AuditVerifyResponse toResponse(AuditShadowComparer.Result r, AuditShadowGuard.Status guardStatus,
-                                                  boolean checksOk, boolean flagged) {
+                                                  boolean checksOk, boolean flagged, EvidenceSummary ev) {
         // 섀도 체인은 판정에 넣지 않는다 — 원본이 변조된 뒤 정상 기록이 이어지면 그 행이 변조된 상태를 prev 로 물고 섀도에 복사되어
         // 섀도 체인도 필연적으로 끊기므로 독립 신호가 아니다. "원본·섀도 동일 변조"는 체인 위반 + 섀도 차이 0 으로 드러난다.
-        // healthy = 지금 검사 통과 && 위반 표시 없음 — 위반 표시는 영구(재해시 없음)
-        boolean healthy = checksOk && !flagged;
-        return new AuditVerifyResponse(r.chain().valid(), healthy, flagged, r.currentRows(), KstTime.format(Instant.now()),
+        // healthy = 지금 검사 통과 && 위반 표시 없음 — 위반 표시(기록·증거)는 영구(재해시 없음).
+        // 섀도 요약의 삭제·삽입·수정 건수는 지금 차이와 남아 있는 증거 중 큰 값 — 원복해도 화면이 위반 행을 계속 보여준다
+        boolean permanent = flagged || ev.rows() > 0;
+        boolean healthy = checksOk && !permanent;
+        return new AuditVerifyResponse(r.chain().valid(), healthy, permanent, ev.rows(), r.currentRows(), KstTime.format(Instant.now()),
                 r.chain().violations().stream()
                         .map(v -> new AuditVerifyResponse.ViolationRange(v.fromId(), v.toId(), v.type().name()))
                         .toList(),
-                new AuditVerifyResponse.ShadowSummary(r.deletedCount(), r.insertedCount(), r.modifiedCount(),
+                new AuditVerifyResponse.ShadowSummary(Math.max(r.deletedCount(), ev.deleted()),
+                        Math.max(r.insertedCount(), ev.inserted()), Math.max(r.modifiedCount(), ev.modified()),
                         r.currentRows(), r.shadowRows(), r.shadowChain().valid(), guardStatus.name()));
     }
 

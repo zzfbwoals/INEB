@@ -99,7 +99,8 @@ class AuditDetailEncryptionTest {
         when(repository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(encrypted, legacy, legacyBase64Like)));
         AuditLogService service = new AuditLogService(repository, shadowRepository, mock(AuditChainService.class),
-                new AuditShadowComparer(new AuditChainVerifier(hasher)), mock(AuditShadowGuard.class), codec);
+                new AuditShadowComparer(new AuditChainVerifier(hasher)), mock(AuditShadowGuard.class), codec,
+                mock(AuditViolationStore.class));
 
         PageResponse<AuditLogItem> page = service.list(null, null, null, null, null, 0, 20, null, null);
 
