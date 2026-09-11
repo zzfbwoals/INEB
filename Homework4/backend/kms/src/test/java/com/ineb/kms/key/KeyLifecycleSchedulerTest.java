@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.ineb.kms.audit.AuditHook;
+import com.ineb.kms.integrity.IntegrityFlagTestSupport;
 import com.ineb.kms.crypto.MasterKeyHolder;
 import com.ineb.kms.domain.CryptoKey;
 import com.ineb.kms.domain.HistoryTrigger;
@@ -54,11 +55,12 @@ class KeyLifecycleSchedulerTest {
 
         hasher = new KeyIntegrityHasher(new byte[32]);
         KeyStateMachine machine = new KeyStateMachine(materialRepository, mock(KeyStatusHistoryRepository.class), hasher);
-        AuditHook audit = (actor, action, target, detail) -> audits.add(action + ":" + detail);
-        KeyIntegrityGuard guard = new KeyIntegrityGuard(hasher, machine, materialRepository, audit);
+        IntegrityFlagTestSupport.Fixture fx = IntegrityFlagTestSupport.create((actor, action, target, detail) -> audits.add(action + ":" + detail));
+        AuditHook audit = fx.hook();
+        KeyIntegrityGuard guard = new KeyIntegrityGuard(hasher, machine, materialRepository, audit, fx.flags());
         KeyMaterialFactory factory = new KeyMaterialFactory(holder);
         keyService = new KeyService(keyRepository, materialRepository, usageLogRepository,
-                mock(KeyStatusHistoryRepository.class), factory, machine, hasher, guard, audit);
+                mock(KeyStatusHistoryRepository.class), factory, machine, hasher, guard, audit, fx.flags());
         ops = new KeyOperationService(keyService, materialRepository, factory, machine, hasher, audit);
         KeyLifecycleWorker worker = new KeyLifecycleWorker(materialRepository, keyRepository, machine, ops, hasher, guard);
         scheduler = new KeyLifecycleScheduler(materialRepository, keyRepository, worker, true, true);

@@ -16,4 +16,9 @@ public class DbAuditHook implements AuditHook {
     public void record(String actor, String action, String target, String detail) {
         chainService.append(actor, action, target, detail);
     }
+
+    @Override
+    public void recordDetached(String actor, String action, String target, String detail) {
+        chainService.appendDetached(actor, action, target, detail);
+    }
 }

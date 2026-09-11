@@ -1,6 +1,7 @@
 package com.ineb.kms.audit;
 
 import com.ineb.kms.audit.dto.AuditVerifyResponse;
+import com.ineb.kms.repository.AuditLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,18 +22,41 @@ public class AuditChainScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(AuditChainScheduler.class);
 
+    static final String VIOLATION = "AUDIT_CHAIN_VIOLATION";
+    static final String RESTORED = "AUDIT_CHAIN_RESTORED";
+
     private final AuditLogService auditLogService;
     private final AuditChainService chainService;
+    private final AuditLogRepository repository;
     private final boolean enabled;
 
-    /** 직전 검증 결과(healthy) — null 은 아직 미검증(기동 직후) */
+    /** 직전 검증 결과(healthy) — null 은 아직 복원 전. 첫 검사 때 감사 로그의 마지막 VIOLATION/RESTORED 에서 이어받는다 */
     private Boolean lastHealthy;
+    private boolean restored;
 
     public AuditChainScheduler(AuditLogService auditLogService, AuditChainService chainService,
+                               AuditLogRepository repository,
                                @Value("${kms.scheduler.audit-chain-check:true}") boolean enabled) {
         this.auditLogService = auditLogService;
         this.chainService = chainService;
+        this.repository = repository;
         this.enabled = enabled;
+    }
+
+    /**
+     * 재기동 후 직전 판정 이어받기 (2026-09-11): 직전 상태를 메모리에만 두면 재기동마다 첫 검사에서 이미 위반인 체인을
+     * 새 사실처럼 다시 기록했다(위반 지속 중 기동마다 AUDIT_CHAIN_VIOLATION 1건). 마지막 VIOLATION/RESTORED 기록으로
+     * 초기값을 잡아, 상태가 실제로 바뀔 때만 기록한다. 기록이 없으면 미검증(null)으로 두어 첫 위반은 기록한다.
+     */
+    private void restoreLastHealthy() {
+        if (restored) {
+            return;
+        }
+        lastHealthy = repository.findTopByActionInOrderByIdDesc(java.util.List.of(VIOLATION, RESTORED))
+                .map(row -> RESTORED.equals(row.getAction()))
+                .orElse(null);
+        restored = true;
+        log.info("감사로그 배치 직전 판정 복원: {}", lastHealthy == null ? "기록 없음" : lastHealthy ? "정상" : "위반");
     }
 
     @Scheduled(fixedDelayString = "${kms.scheduler.interval-ms:60000}", initialDelayString = "${kms.scheduler.initial-delay-ms:30000}")
@@ -41,18 +65,27 @@ public class AuditChainScheduler {
             return;
         }
         try {
-            AuditLogService.Check check = auditLogService.check();
-            AuditVerifyResponse result = check.response();
-            if (!result.healthy() && !Boolean.FALSE.equals(lastHealthy)) {
-                log.warn("감사로그 위반 감지: {}", check.detail());
-                chainService.append(null, "AUDIT_CHAIN_VIOLATION", "AUDIT", check.detail());
-            } else if (result.healthy() && Boolean.FALSE.equals(lastHealthy)) {
-                log.info("감사로그 정상 복구: 전체 {}행", result.totalRows());
-                chainService.append(null, "AUDIT_CHAIN_RESTORED", "AUDIT", check.detail());
-            }
-            lastHealthy = result.healthy();
+            checkNow();
         } catch (RuntimeException e) {
             log.error("감사로그 배치 검증 실패", e);
         }
+    }
+
+    /**
+     * 즉시 재검증 — 배치와 audit_log 변경 알림(트리거, 2026-09-11)이 공유한다. 상태 전이 시에만 기록하므로
+     * 알림과 배치가 잇달아 호출돼도 중복 기록은 없다.
+     */
+    public synchronized void checkNow() {
+        restoreLastHealthy();
+        AuditLogService.Check check = auditLogService.check();
+        AuditVerifyResponse result = check.response();
+        if (!result.healthy() && !Boolean.FALSE.equals(lastHealthy)) {
+            log.warn("감사로그 위반 감지: {}", check.detail());
+            chainService.append(null, VIOLATION, "AUDIT", check.detail());
+        } else if (result.healthy() && Boolean.FALSE.equals(lastHealthy)) {
+            log.info("감사로그 정상 복구: 전체 {}행", result.totalRows());
+            chainService.append(null, RESTORED, "AUDIT", check.detail());
+        }
+        lastHealthy = result.healthy();
     }
 }

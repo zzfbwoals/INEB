@@ -2222,3 +2222,7 @@ html.dash-full .dash .stat .num { font-size: 30px; }
 .srch-foot span { display: inline-flex; align-items: center; gap: 6px; }
 
 @media (max-width: 1100px) { .content:has(> .dash) { height: auto; overflow: visible; } .board { height: 900px; } }
+
+/* 무결성 재해시 확인 모달 — 대상 표시명 + 한 문장 안내 (키·사용자 공용, 2026-09-11) */
+.reseal-note { margin: 0 0 12px; font-size: 13px; line-height: 1.6; color: var(--text-2); }
+.reseal-note b { color: var(--text); }

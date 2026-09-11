@@ -31,5 +31,11 @@ kms:
     interval-ms: 60000
     initial-delay-ms: 30000
     integrity-check: true
-    # 사용자(app_user) 무결성 배치 — 위반↔정상 전이 시에만 USER_INTEGRITY_VIOLATION/RESTORED 기록(자동 조치 없음, SSE 로 목록 배지 갱신)
+    # 사용자(app_user) 무결성 배치 — 해시 불일치인데 위반 표시가 없는 사용자만 USER_INTEGRITY_VIOLATION 기록(자동 조치 없음, SSE 로 목록 배지 갱신).
+    # 2026-09-11: 실시간 감지는 아래 integrity.listen(트리거 알림)이 맡고 배치는 안전망. 원복해도 자동 복구 기록 없음 — 재해시로만 정상
     user-integrity-check: true
+  # DB 직접 수정 실시간 감지 — 11개 테이블(설계 [표 6-1] 10개 + audit_log_shadow)의 INSERT/UPDATE/DELETE/TRUNCATE 트리거가 pg_notify 로 알리고
+  # 앱이 LISTEN 으로 받아 처리: 앱 연결(application_name=kms-backend)의 변경은 무시, 그 밖의 세션 변경은 DB_DIRECT_CHANGE 기록 → SSE 로 화면 갱신,
+  # 해시·체인 대상은 즉시 재검증(위반 기록). 트리거 해제는 60초 감시가 잡아 재설치. 연결 1개 상시 점유. false 면 배치(60초)만 동작
+  integrity:
+    listen: true

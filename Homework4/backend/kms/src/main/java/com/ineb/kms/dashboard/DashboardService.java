@@ -1,6 +1,8 @@
 package com.ineb.kms.dashboard;
 
+import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.audit.AuditLogService;
+import com.ineb.kms.integrity.IntegrityFlagService;
 import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.common.KstTime;
@@ -67,12 +69,14 @@ public class DashboardService {
     private final KeyIntegrityHasher keyHasher;
     private final UserIntegrityHasher userHasher;
     private final AuditLogService auditLogService;
+    private final IntegrityFlagService flagService;
 
     public DashboardService(CryptoKeyRepository keyRepository, KeyMaterialRepository materialRepository,
                             KeyUsageLogRepository usageLogRepository, AppUserRepository userRepository,
                             NoticeRepository noticeRepository, NoticeFileRepository fileRepository,
                             AuditLogRepository auditLogRepository, KeyIntegrityHasher keyHasher,
-                            UserIntegrityHasher userHasher, AuditLogService auditLogService) {
+                            UserIntegrityHasher userHasher, AuditLogService auditLogService,
+                            IntegrityFlagService flagService) {
         this.keyRepository = keyRepository;
         this.materialRepository = materialRepository;
         this.usageLogRepository = usageLogRepository;
@@ -83,6 +87,7 @@ public class DashboardService {
         this.keyHasher = keyHasher;
         this.userHasher = userHasher;
         this.auditLogService = auditLogService;
+        this.flagService = flagService;
     }
 
     // ---------------------------------------------------------------- 요약
@@ -116,12 +121,17 @@ public class DashboardService {
                 noticeRepository.countByCreatedAtGreaterThanEqual(monthStart), fileRepository.count());
     }
 
-    /** 키 메타·버전·사용자·감사 체인 위반 수 — 해시 재검증만 수행, 상태 변경 없음 */
+    /**
+     * 키 메타·버전·사용자·감사 체인 위반 수 — 해시 재검증 + 감사 체인 파생 위반 표시(재해시 전까지 유지)의 합집합.
+     * 상태 변경·기록 없음(감지·기록은 트리거 알림과 배치가 담당).
+     */
     private Integrity integrity() {
+        // 대시보드가 불일치를 처음 관찰해도 그 자리에서 위반을 기록한다(원복 후 정상 복귀 방지)
+        IntegrityFlagService.Snapshot snapshot = flagService.snapshotAll();
         long keyMeta = 0;
         CryptoKey first = null;
         for (CryptoKey key : keyRepository.findAll()) {
-            if (!keyHasher.verify(key)) {
+            if (!snapshot.check(AuditHook.keyTarget(key.getKeyUid()), keyHasher.verify(key), "detected=DASHBOARD, scope=KEY")) {
                 keyMeta++;
                 if (first == null) {
                     first = key;
@@ -131,6 +141,8 @@ public class DashboardService {
         long keyVersion = 0;
         for (KeyMaterial material : materialRepository.findByStateNot(KeyState.DESTROYED)) {
             if (!keyHasher.verify(material)) {
+                snapshot.check(AuditHook.keyTarget(material.getKey().getKeyUid()), false,
+                        "detected=DASHBOARD, scope=VERSION, versions=" + material.getVersion());
                 keyVersion++;
                 if (first == null) {
                     first = material.getKey();
@@ -139,7 +151,8 @@ public class DashboardService {
         }
         long user = 0;
         for (AppUser appUser : userRepository.findAll()) {
-            if (!userHasher.verify(appUser)) {
+            if (!snapshot.check(AuditHook.userTarget(appUser.getId()), userHasher.verify(appUser),
+                    "integrity_hash 불일치 — 대시보드 조회 중 감지(자동 조치 없음, 재해시 전까지 유지)")) {
                 user++;
             }
         }

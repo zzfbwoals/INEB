@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.ineb.kms.audit.AuditLogService;
+import com.ineb.kms.integrity.IntegrityFlagTestSupport;
 import com.ineb.kms.audit.dto.AuditVerifyResponse;
 import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.ErrorCode;
@@ -76,7 +77,8 @@ class DashboardServiceTest {
         keyHasher = new KeyIntegrityHasher(store);
         userHasher = new UserIntegrityHasher(store);
         service = new DashboardService(keyRepository, materialRepository, usageLogRepository, userRepository,
-                noticeRepository, fileRepository, auditLogRepository, keyHasher, userHasher, auditLogService);
+                noticeRepository, fileRepository, auditLogRepository, keyHasher, userHasher, auditLogService,
+                IntegrityFlagTestSupport.create((actor, action, target, detail) -> { }).flags());
         when(auditLogService.status()).thenReturn(new AuditVerifyResponse(true, true, 0, "", List.of(), null));
     }
 

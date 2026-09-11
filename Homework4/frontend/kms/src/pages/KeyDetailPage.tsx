@@ -108,10 +108,11 @@ export default function KeyDetailPage() {
 
   useEffect(() => { load() }, [load])
 
-  // 실시간 갱신 — 이 키를 대상으로 한 행위(테스트·상태 변경·스케줄러 등)가 커밋되면 즉시 refetch
+  // 실시간 갱신 — 이 키를 대상으로 한 행위(테스트·상태 변경·스케줄러 등)가 커밋되면 즉시 refetch.
+  // DB 직접 수정(DB_DIRECT_CHANGE)은 키·버전·이력·사용 로그 어느 테이블이든 KEY#uid 로 오고, 대량 변경은 KEY#* 로 온다
   useEffect(() => {
     return subscribeUiEvents((e) => {
-      if (e.target === `KEY#${keyUid}`) load()
+      if (e.target === `KEY#${keyUid}` || (e.action === 'DB_DIRECT_CHANGE' && e.target === 'KEY#*')) load()
     })
   }, [keyUid, load])
 

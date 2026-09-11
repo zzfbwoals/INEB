@@ -1,9 +1,9 @@
-import { Eye, EyeOff, Pencil, Plus, Search, ShieldCheck } from 'lucide-react'
+import { Eye, EyeOff, Pencil, Plus, Search, ShieldCheck, Stamp } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import { fetchMe } from '@/api/auth'
-import { listUsers, type UserListParams, type UserPlain, type UserStatus, type UserSummary } from '@/api/users'
+import { listUsers, resealUserIntegrity, type UserListParams, type UserPlain, type UserStatus, type UserSummary } from '@/api/users'
 import type { PageResponse } from '@/api/keys'
 import { fmtDate } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
@@ -16,6 +16,7 @@ import { errorMessage, useToast } from '@/components/ui/toast'
 import { UserDot } from '@/components/keys/StateBadge'
 import { UserFormDialog } from '@/components/users/UserFormDialog'
 import { UserPlainDialog } from '@/components/users/UserPlainDialog'
+import { IntegrityResealDialog } from '@/components/integrity/IntegrityResealDialog'
 
 /* 목업 users.html — 사용자 관리. 연락처·이메일은 마스킹 표시, 검색은 이름·연락처·이메일 통합 부분검색(서버가 복호화해 판정).
    페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
@@ -40,6 +41,8 @@ export default function UserListPage() {
   const [formOpen, setFormOpen] = useState(!!fromSearch)
   const [editTarget, setEditTarget] = useState<UserSummary | null>(fromSearch)
   const [plainTarget, setPlainTarget] = useState<UserSummary | null>(null)
+  // 무결성 재해시 대상 — 위반 행에만 버튼이 뜨고, 확인 모달(사유 필수)을 거쳐야 정상으로 돌아간다
+  const [resealTarget, setResealTarget] = useState<UserSummary | null>(null)
   // 원문이 풀린 사용자 — 사유 입력·감사 기록 후 목록 행의 마스킹을 해제한다. 아이콘을 다시 누르면 제거(다시 마스킹)
   const [revealed, setRevealed] = useState<Record<number, UserPlain>>({})
   const tblRef = useRef<HTMLDivElement>(null)
@@ -72,12 +75,14 @@ export default function UserListPage() {
     if (data && data.totalPages > 0 && page >= data.totalPages) setPage(data.totalPages - 1)
   }, [data, page])
 
-  // 실시간 갱신 — 사용자 관련 행위가 커밋되면 목록 refetch. 수정된 사용자는 풀어 둔 원문이 낡을 수 있어 다시 마스킹한다
+  // 실시간 갱신 — 사용자 관련 행위와 app_user 의 DB 직접 수정(DB_DIRECT_CHANGE, target USER#…)이 커밋되면 목록 refetch.
+  // 수정된 사용자는 풀어 둔 원문이 낡을 수 있어 다시 마스킹한다
   useEffect(() => {
     return subscribeUiEvents((e) => {
-      if (!e.action.startsWith('USER')) return
+      const direct = e.action === 'DB_DIRECT_CHANGE' && e.target.startsWith('USER#')
+      if (!e.action.startsWith('USER') && !direct) return
       setReloadTick((t) => t + 1)
-      if (e.action === 'USER_UPDATED') {
+      if (e.action === 'USER_UPDATED' || direct) {
         const id = Number(e.target.replace('USER#', ''))
         setRevealed((prev) => {
           if (!(id in prev)) return prev
@@ -156,6 +161,12 @@ export default function UserListPage() {
                   <td className="mono" style={{ color: 'var(--text-2)' }}>{fmtDate(u.createdAt)}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                      {/* 무결성 위반 행에만 — 현재 값으로 재해시(ADMIN, 사유 필수). 위반에서 정상으로 가는 유일한 경로 */}
+                      {isAdmin && !u.integrityValid && (
+                        <button type="button" className="icon-btn danger" data-tip="현재 값으로 재해시" aria-label="현재 값으로 재해시" onClick={() => setResealTarget(u)}>
+                          <Stamp size={15} />
+                        </button>
+                      )}
                       {/* 감사 로그 — 이 사용자(USER#id) 대상 기록만 필터한 감사 로그 화면으로 이동 */}
                       <Link className="icon-btn" data-tip="감사 로그" aria-label="감사 로그" to={`/audit?target=${encodeURIComponent(`USER#${u.id}`)}`}>
                         <ShieldCheck size={15} />
@@ -187,6 +198,10 @@ export default function UserListPage() {
       {plainTarget && (
         <UserPlainDialog user={plainTarget} onClose={() => setPlainTarget(null)}
           onRevealed={(plain) => setRevealed((prev) => ({ ...prev, [plain.id]: plain }))} />
+      )}
+      {resealTarget && (
+        <IntegrityResealDialog subject={`사용자 ${resealTarget.name}`} onClose={() => setResealTarget(null)}
+          run={(reason) => resealUserIntegrity(resealTarget.id, reason)} />
       )}
     </AppLayout>
   )

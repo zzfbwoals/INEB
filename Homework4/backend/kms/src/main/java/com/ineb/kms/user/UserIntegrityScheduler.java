@@ -2,9 +2,10 @@ package com.ineb.kms.user;
 
 import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.domain.AppUser;
-import com.ineb.kms.domain.KeyStatusHistory;
+import com.ineb.kms.integrity.IntegrityFlagService;
 import com.ineb.kms.repository.AppUserRepository;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,14 +16,11 @@ import org.springframework.stereotype.Component;
 /**
  * 사용자(app_user) 무결성 배치 검증 (키 무결성·감사 체인 배치와 같은 패턴, 2026-09-07).
  * <p>
- * 사용자 무결성은 조회 시점에 재계산해 {@code integrityValid} 플래그로만 응답하므로, DB 직접 변조는
- * 누군가 목록을 다시 불러오기 전까지 열린 화면에 반영되지 않았다. 그래서 주기적으로 전체 사용자를 검증하고
- * 위반 ↔ 정상 <b>상태가 바뀌는 사용자에 대해서만</b> 감사 기록(USER_INTEGRITY_VIOLATION / USER_INTEGRITY_RESTORED,
- * actor SYSTEM, target USER#id)을 남긴다. 기록은 체인 append 를 거쳐 SSE 로 브로드캐스트되고, 사용자 목록은
- * USER 접두 이벤트에 refetch 하므로 배지가 최대 한 주기 안에 자동 갱신된다. 지속 위반은 매 주기 기록하지 않는다.
- * <p>
- * 키와 달리 자동 조치(정지 등)는 없다 — 설계상 사용자 무결성 위반은 플래그 표시까지만.
- * 위반 집합은 메모리에만 두므로 재기동 직후 첫 주기에 기존 위반이 한 번 더 기록된다.
+ * 2026-09-11 개정: 실시간 감지는 DB 트리거 알림({@code integrity.IntegrityChangeListener})이 맡고, 이 배치는 알림을 놓친
+ * 변경(앱 정지 중의 수정 등)을 잡는 안전망이다. 해시가 불일치하는데 아직 위반 표시가 없는 사용자에 대해서만
+ * USER_INTEGRITY_VIOLATION(actor SYSTEM, target USER#id)을 남긴다. 위반 상태는 {@link IntegrityFlagService}(감사 체인 파생)가
+ * 들고 있으므로 재기동해도 잊지 않고, 값이 원복되어 해시가 다시 일치해도 <b>자동 복구 기록은 남기지 않는다</b> —
+ * 정상 복귀는 관리자의 재해시(USER_INTEGRITY_RESEALED)로만 가능하다. 키와 달리 자동 조치(정지 등)는 없다.
  */
 @Component
 public class UserIntegrityScheduler {
@@ -31,17 +29,14 @@ public class UserIntegrityScheduler {
 
     private final AppUserRepository repository;
     private final UserIntegrityHasher hasher;
-    private final AuditHook auditHook;
+    private final IntegrityFlagService flags;
     private final boolean enabled;
 
-    /** 직전 주기에 위반으로 판정된 사용자 id — 상태 전이 판별용 */
-    private final Set<Long> violated = new HashSet<>();
-
-    public UserIntegrityScheduler(AppUserRepository repository, UserIntegrityHasher hasher, AuditHook auditHook,
+    public UserIntegrityScheduler(AppUserRepository repository, UserIntegrityHasher hasher, IntegrityFlagService flags,
                                   @Value("${kms.scheduler.user-integrity-check:true}") boolean enabled) {
         this.repository = repository;
         this.hasher = hasher;
-        this.auditHook = auditHook;
+        this.flags = flags;
         this.enabled = enabled;
     }
 
@@ -51,41 +46,37 @@ public class UserIntegrityScheduler {
             return;
         }
         try {
-            int[] changed = sweep();
-            if (changed[0] + changed[1] > 0) {
-                log.info("사용자 무결성 배치: 신규 위반 {}건, 복구 {}건", changed[0], changed[1]);
+            int recorded = sweep();
+            if (recorded > 0) {
+                log.info("사용자 무결성 배치: 신규 위반 {}건", recorded);
             }
         } catch (RuntimeException e) {
             log.error("사용자 무결성 배치 검증 실패", e);
         }
     }
 
-    /** @return {신규 위반 수, 복구 수}. 트랜잭션 없이 실행 — 감사 append 가 각자 REQUIRED 트랜잭션으로 커밋·브로드캐스트된다 */
-    int[] sweep() {
-        Set<Long> now = new HashSet<>();
-        int newlyViolated = 0;
+    /** @return 새로 위반 표시한 사용자 수. 트랜잭션 없이 실행 — 감사 append 가 각자 REQUIRED 트랜잭션으로 커밋·브로드캐스트된다 */
+    int sweep() {
+        List<AppUser> mismatched = new ArrayList<>();
         for (AppUser user : repository.findAll()) {
-            if (hasher.verify(user)) {
+            if (!hasher.verify(user)) {
+                mismatched.add(user);
+            }
+        }
+        if (mismatched.isEmpty()) {
+            return 0;
+        }
+        Set<String> already = flags.flagged(mismatched.stream().map(u -> AuditHook.userTarget(u.getId())).toList());
+        int recorded = 0;
+        for (AppUser user : mismatched) {
+            String target = AuditHook.userTarget(user.getId());
+            if (already.contains(target)) {
                 continue;
             }
-            now.add(user.getId());
-            if (violated.add(user.getId())) {
-                newlyViolated++;
-                log.warn("app_user 무결성 위반: id={}, name={}", user.getId(), user.getName());
-                auditHook.record(KeyStatusHistory.SYSTEM_ACTOR, "USER_INTEGRITY_VIOLATION",
-                        AuditHook.userTarget(user.getId()), "integrity_hash 불일치 — 플래그 표시(자동 조치 없음)");
-            }
+            log.warn("app_user 무결성 위반(배치): id={}, name={}", user.getId(), user.getName());
+            flags.flag(target, "integrity_hash 불일치 — 배치 검증으로 감지(자동 조치 없음, 재해시 전까지 유지)");
+            recorded++;
         }
-        int restored = 0;
-        for (Long id : new HashSet<>(violated)) {
-            if (!now.contains(id)) {
-                violated.remove(id);
-                restored++;
-                log.info("app_user 무결성 정상 복구: id={}", id);
-                auditHook.record(KeyStatusHistory.SYSTEM_ACTOR, "USER_INTEGRITY_RESTORED",
-                        AuditHook.userTarget(id), "integrity_hash 일치 확인");
-            }
-        }
-        return new int[] {newlyViolated, restored};
+        return recorded;
     }
 }

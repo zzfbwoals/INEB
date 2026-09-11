@@ -32,6 +32,7 @@ public enum ErrorCode {
     KEY_CIPHERTEXT_FORMAT(HttpStatus.BAD_REQUEST, "암호문(서명값) 형식이 올바르지 않습니다. 기대 형식: {version}:{iv}:{ciphertext}"),
     KEY_CRYPTO_FAILED(HttpStatus.BAD_REQUEST, "암호 연산에 실패했습니다. 암호문 손상 또는 키 불일치입니다."),
     KEY_INTEGRITY_VIOLATION(HttpStatus.CONFLICT, "무결성 위반이 감지되어 해당 버전이 자동 정지되었습니다."),
+    INTEGRITY_NOT_FLAGGED(HttpStatus.CONFLICT, "무결성 위반 상태가 아닙니다."),
 
     // ---- 사용자 관리 (3주차) ----
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),

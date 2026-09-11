@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.ineb.kms.audit.AuditHook;
+import com.ineb.kms.integrity.IntegrityFlagTestSupport;
 import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.common.PageResponse;
@@ -49,6 +50,7 @@ class UserServiceTest {
     private PersonalDataCodec codec;
     private UserIntegrityHasher hasher;
     private UserService service;
+    private IntegrityFlagTestSupport.Fixture fx;
 
     @BeforeEach
     void setUp() {
@@ -67,8 +69,9 @@ class UserServiceTest {
             setId(u, 1L);
             return u;
         });
-        AuditHook audit = (actor, action, target, detail) -> audits.add(action + ":" + target + ":" + detail);
-        service = new UserService(repository, codec, hasher, passwordEncoder, audit);
+        fx = IntegrityFlagTestSupport.create((actor, action, target, detail) -> audits.add(action + ":" + target + ":" + detail));
+        AuditHook audit = fx.hook();
+        service = new UserService(repository, codec, hasher, passwordEncoder, audit, fx.flags());
     }
 
     private static void setId(AppUser user, long id) {
@@ -160,6 +163,30 @@ class UserServiceTest {
         assertEquals("ACTIVE", result.status());
         assertTrue(result.integrityValid());
         assertTrue(audits.getFirst().startsWith("USER_CREATED:USER#1"));
+    }
+
+    @Test
+    @DisplayName("DB 직접 변조로 위반된 사용자는 값을 원복해도 위반으로 남고, 재해시로만 정상이 된다")
+    void violationStaysUntilReseal() {
+        AppUser existing = existingUser();
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        existing.changeStatus(UserStatus.SUSPENDED);          // 해시 재계산 없이 변조 (DB 직접 수정)
+        assertFalse(service.get(1L).integrityValid());        // 해시 불일치
+        fx.flags().flag(AuditHook.userTarget(1L), "trigger"); // 트리거 알림 핸들러가 남기는 위반 기록
+        assertTrue(audits.getLast().startsWith("USER_INTEGRITY_VIOLATION:USER#1"));
+
+        existing.changeStatus(UserStatus.ACTIVE);             // DB 직접 원복 — 해시는 다시 일치
+        assertTrue(hasher.verify(existing));
+        assertFalse(service.get(1L).integrityValid());        // 그래도 위반 (표시 유지)
+
+        UserSummary sealed = service.resealIntegrity(1L, "변조 확인 후 재봉인", "admin");
+        assertTrue(sealed.integrityValid());
+        assertTrue(audits.getLast().startsWith("USER_INTEGRITY_RESEALED:USER#1:reason=변조 확인 후 재봉인"));
+        assertTrue(service.get(1L).integrityValid());
+
+        BusinessException e = assertThrows(BusinessException.class,
+                () -> service.resealIntegrity(1L, "다시", "admin"));
+        assertEquals(ErrorCode.INTEGRITY_NOT_FLAGGED, e.getErrorCode());
     }
 
     @Test

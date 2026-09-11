@@ -90,7 +90,7 @@ const KEYS=[
 const USERS=[
  {id:101,name:'김민준',phone:'010-****-****',email:'****@****.**',plainPhone:'010-2847-3421',plainEmail:'mjkim88@naver.com',status:'ACTIVE',joined:'2026-03-11'},
  {id:102,name:'이서연',phone:'010-****-****',email:'****@****.**',plainPhone:'010-9034-7788',plainEmail:'sylee0412@gmail.com',status:'ACTIVE',joined:'2026-04-02'},
- {id:103,name:'박지훈',phone:'010-****-****',email:'****@****.**.**',plainPhone:'010-5511-1204',plainEmail:'jhpark@ineb.co.kr',status:'ACTIVE',joined:'2026-05-19'},
+ {id:103,name:'박지훈',phone:'010-****-****',email:'****@****.**.**',plainPhone:'010-5511-1204',plainEmail:'jhpark@ineb.co.kr',status:'ACTIVE',joined:'2026-05-19',integrity:false},
  {id:104,name:'최유나',phone:'010-****-****',email:'****@****.**',plainPhone:'010-7723-6650',plainEmail:'ynchoi_c@daum.net',status:'SUSPENDED',joined:'2026-06-07'},
  {id:105,name:'정다은',phone:'010-****-****',email:'****@****.**',plainPhone:'010-3308-9917',plainEmail:'dejung95@kakao.com',status:'ACTIVE',joined:'2026-07-28'},
 ];

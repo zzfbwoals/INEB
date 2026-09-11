@@ -2,6 +2,7 @@ package com.ineb.kms.key;
 
 import com.ineb.kms.common.ApiResponse;
 import com.ineb.kms.common.PageResponse;
+import com.ineb.kms.common.ReasonRequest;
 import com.ineb.kms.domain.KeyAction;
 import com.ineb.kms.domain.KeyAlgorithm;
 import com.ineb.kms.domain.KeyPurpose;
@@ -18,6 +19,7 @@ import com.ineb.kms.security.AuthPrincipal;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -93,6 +95,19 @@ public class KeyController {
                                                               @AuthenticationPrincipal AuthPrincipal principal) {
         return ApiResponse.ok(keyService.revealMaterial(keyUid, version, request.reason(), principal.loginId()),
                 "키 값이 조회되었습니다.");
+    }
+
+    /**
+     * 무결성 재해시 — ADMIN 한정, 사유 필수. 현재 값으로 키 메타·전 버전 해시를 다시 봉인하고 위반 표시를 해제한다.
+     * 위반에서 정상으로 가는 유일한 경로(KEY_INTEGRITY_RESEALED 기록). 위반 상태가 아니면 409.
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{keyUid}/integrity/reseal")
+    public ApiResponse<KeyDetail> resealIntegrity(@PathVariable String keyUid,
+                                                  @Valid @RequestBody ReasonRequest request,
+                                                  @AuthenticationPrincipal AuthPrincipal principal) {
+        return ApiResponse.ok(keyService.resealIntegrity(keyUid, request.reason(), principal.loginId()),
+                "현재 값으로 재해시되었습니다.");
     }
 
     @GetMapping("/{keyUid}/history")

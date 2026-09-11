@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 
 import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.common.BusinessException;
+import com.ineb.kms.integrity.IntegrityFlagService;
+import com.ineb.kms.integrity.IntegrityFlagTestSupport;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.domain.CryptoKey;
 import com.ineb.kms.domain.DeactivationTrigger;
@@ -34,6 +36,7 @@ class KeyIntegrityGuardTest {
     private KeyIntegrityHasher hasher;
     private KeyStateMachine machine;
     private KeyIntegrityGuard guard;
+    private IntegrityFlagService flags;
     private final List<String> audits = new ArrayList<>();
 
     private CryptoKey key;
@@ -44,8 +47,10 @@ class KeyIntegrityGuardTest {
         materialRepository = mock(KeyMaterialRepository.class);
         hasher = new KeyIntegrityHasher(new byte[32]);
         machine = new KeyStateMachine(materialRepository, mock(KeyStatusHistoryRepository.class), hasher);
-        guard = new KeyIntegrityGuard(hasher, machine, materialRepository,
+        IntegrityFlagTestSupport.Fixture fx = IntegrityFlagTestSupport.create(
                 (actor, action, target, detail) -> audits.add(action + ":" + detail));
+        flags = fx.flags();
+        guard = new KeyIntegrityGuard(hasher, machine, materialRepository, fx.hook(), flags);
 
         key = new CryptoKey("K", KeyAlgorithm.AES, 256, KeyMode.GCM, KeyPurpose.ENC_DEC, true, 90, null);
         setId(key, 1L);
@@ -182,5 +187,38 @@ class KeyIntegrityGuardTest {
         assertEquals(KeyState.ACTIVE, ok.getState());
         assertEquals(KeyState.DEACTIVATED, bad.getState());
         assertEquals(0, guard.sweep());
+    }
+
+    @Test
+    @DisplayName("운영 버전이 없는 키의 메타 변조는 상태 변화 없이 위반 표시만 한 번 남기고, 값을 원복해도 표시는 유지된다")
+    void keyTamperWithoutActiveFlaggedOnceAndSticky() {
+        hasher.rehash(key);                                   // 버전 없는 키 — 정지할 대상이 없다
+        key.rename("TAMPERED", null);
+
+        assertTrue(guard.enforceKey(key));                    // 위반 표시(KEY_INTEGRITY_VIOLATION)만 기록
+        assertEquals(List.of("KEY_INTEGRITY_VIOLATION:scope=KEY, deactivated=0"), audits);
+        assertFalse(guard.enforceKey(key));                   // 지속 위반은 재기록하지 않는다
+
+        key.rename("K", null);                                // DB 직접 원복 — 해시는 다시 일치
+        assertTrue(guard.isValid(key));
+        assertFalse(guard.enforceKey(key));
+        assertTrue(flags.isFlagged(AuditHook.keyTarget(key.getKeyUid())));   // 그래도 재해시 전까지 위반
+        assertEquals(1, audits.size());
+    }
+
+    @Test
+    @DisplayName("자동 정지된 버전의 값을 원복해도 위반 표시는 유지되고, 배치는 재기록하지 않는다")
+    void deactivatedVersionRestoreStaysFlagged() throws Exception {
+        KeyMaterial bad = material(1, KeyState.ACTIVE);
+        key.pointCurrent(1);
+        Instant original = bad.getActivationDate();
+        bad.rescheduleActivation(Instant.now().plusSeconds(1));
+        assertEquals(1, guard.sweep());
+        assertEquals(KeyState.DEACTIVATED, bad.getState());
+
+        bad.rescheduleActivation(original);                   // 값만 원복 — 상태는 DEACTIVATED 라 해시는 여전히 불일치
+        assertEquals(0, guard.sweep());                       // 이미 표시 중 → 기록 없음
+        assertEquals(1, audits.size());
+        assertTrue(flags.isFlagged(AuditHook.keyTarget(key.getKeyUid())));
     }
 }

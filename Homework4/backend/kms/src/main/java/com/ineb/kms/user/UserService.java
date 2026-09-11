@@ -2,6 +2,7 @@ package com.ineb.kms.user;
 
 import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.common.BusinessException;
+import com.ineb.kms.integrity.IntegrityFlagService;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.common.KstTime;
 import com.ineb.kms.common.PageResponse;
@@ -16,6 +17,7 @@ import com.ineb.kms.user.dto.UserUpdateRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -39,13 +41,17 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuditHook auditHook;
 
+    private final IntegrityFlagService flags;
+
     public UserService(AppUserRepository repository, PersonalDataCodec codec,
-                       UserIntegrityHasher hasher, PasswordEncoder passwordEncoder, AuditHook auditHook) {
+                       UserIntegrityHasher hasher, PasswordEncoder passwordEncoder, AuditHook auditHook,
+                       IntegrityFlagService flags) {
         this.repository = repository;
         this.codec = codec;
         this.hasher = hasher;
         this.passwordEncoder = passwordEncoder;
         this.auditHook = auditHook;
+        this.flags = flags;
     }
 
     // ---------------------------------------------------------------- 목록 · 상세
@@ -66,18 +72,21 @@ public class UserService {
 
         String q = keyword == null ? "" : keyword.trim();
         if (q.isEmpty()) {
-            // 검색어 없음 — DB 페이징, 한 페이지만 복호화
+            // 검색어 없음 — DB 페이징, 한 페이지만 복호화. 위반 표시는 페이지 단위로 한 번 조회
             Page<AppUser> result = repository.findAll(spec, PageRequest.of(safePage, safeSize, order));
-            return PageResponse.of(result, this::toSummary);
+            IntegrityFlagService.Snapshot flagged = flaggedOf(result.getContent());
+            return PageResponse.of(result, u -> toSummary(u, safeDecrypt(u.getPhoneEnc()), safeDecrypt(u.getEmailEnc()), flagged));
         }
 
         // 검색어 있음 — 상태 조건에 맞는 행 전부를 복호화해 부분일치 판정 후 서버 측 페이징
+        List<AppUser> candidates = repository.findAll(spec, order);
+        IntegrityFlagService.Snapshot flagged = flaggedOf(candidates);
         List<UserSummary> matched = new ArrayList<>();
-        for (AppUser user : repository.findAll(spec, order)) {
+        for (AppUser user : candidates) {
             String phone = safeDecrypt(user.getPhoneEnc());
             String email = safeDecrypt(user.getEmailEnc());
             if (matches(user.getName(), phone, email, q)) {
-                matched.add(toSummary(user, phone, email));
+                matched.add(toSummary(user, phone, email, flagged));
             }
         }
         int from = Math.min(safePage * safeSize, matched.size());
@@ -195,16 +204,46 @@ public class UserService {
     private static final String DECRYPT_FAILED = "(복호화 실패)";
 
     private UserSummary toSummary(AppUser user) {
-        return toSummary(user, safeDecrypt(user.getPhoneEnc()), safeDecrypt(user.getEmailEnc()));
+        return toSummary(user, safeDecrypt(user.getPhoneEnc()), safeDecrypt(user.getEmailEnc()), flaggedOf(List.of(user)));
     }
 
-    /** 검색 경로는 판정에 쓴 복호화 값을 그대로 넘겨 이중 복호화를 피한다 */
-    private UserSummary toSummary(AppUser user, String phone, String email) {
+    private IntegrityFlagService.Snapshot flaggedOf(List<AppUser> users) {
+        return flags.snapshot(users.stream().map(u -> AuditHook.userTarget(u.getId())).toList());
+    }
+
+    /**
+     * 검색 경로는 판정에 쓴 복호화 값을 그대로 넘겨 이중 복호화를 피한다.
+     * 무결성 = 해시 일치 && 위반 표시 없음(2026-09-11) — 위반 표시는 감사 체인에서 파생되며 관리자 재해시로만 지워진다.
+     * 불일치를 조회에서 처음 보면 그 자리에서 기록해, 이후 원복해도 위반이 유지된다.
+     */
+    private UserSummary toSummary(AppUser user, String phone, String email, IntegrityFlagService.Snapshot flagged) {
+        boolean integrityValid = flagged.check(AuditHook.userTarget(user.getId()), hasher.verify(user),
+                "integrity_hash 불일치 — 조회 중 감지(자동 조치 없음, 재해시 전까지 유지)");
         return new UserSummary(user.getId(), user.getName(),
                 phone == null ? DECRYPT_FAILED : PrivacyMask.phone(phone),
                 email == null ? DECRYPT_FAILED : PrivacyMask.email(email),
-                user.getStatus().name(), user.getEncVer(), hasher.verify(user),
+                user.getStatus().name(), user.getEncVer(), integrityValid,
                 KstTime.format(user.getCreatedAt()), KstTime.format(user.getUpdatedAt()));
+    }
+
+    // ---------------------------------------------------------------- 무결성 재해시 (ADMIN)
+
+    /**
+     * 현재 저장된 값으로 integrity_hash 를 다시 계산해 봉인하고 위반 표시를 해제한다 (2026-09-11).
+     * 위반에서 정상으로 가는 <b>유일한</b> 경로 — 값을 원복해도, PUT 으로 해시가 재계산돼도 표시는 남는다.
+     * 위반 상태(표시 또는 해시 불일치)가 아니면 409.
+     */
+    @Transactional
+    public UserSummary resealIntegrity(Long id, String reason, String actor) {
+        AppUser user = load(id);
+        String target = AuditHook.userTarget(user.getId());
+        boolean hashOk = hasher.verify(user);
+        if (hashOk && !flags.isFlagged(target)) {
+            throw new BusinessException(ErrorCode.INTEGRITY_NOT_FLAGGED);
+        }
+        hasher.rehash(user);
+        flags.reseal(target, actor, "reason=" + reason + ", hashMatched=" + hashOk);
+        return toSummary(user);
     }
 
     /** 목록은 암호문 손상 행이 있어도 나머지를 보여줘야 한다 — 실패 시 표시 문자열로 대체 */

@@ -47,8 +47,8 @@
   <div class="card">
     <div class="tbl-wrap"><table class="tbl-fixed">
       <thead><tr>
-        <th class="sortable" style="width:22%" onclick="sortKeys('name')">키명</th><th class="sortable" style="width:14%" onclick="sortKeys('algo')">알고리즘</th>
-        <th class="sortable" style="width:8%" onclick="sortKeys('mode')">모드</th><th class="sortable" style="width:17%" onclick="sortKeys('purpose')">용도</th><th style="width:13%">버전</th><th style="width:11%">갱신 주기</th><th class="sortable" style="width:15%" onclick="sortKeys('expire')">다음 갱신</th>
+        <th class="sortable" style="width:21%" onclick="sortKeys('name')">키명</th><th class="sortable" style="width:13%" onclick="sortKeys('algo')">알고리즘</th>
+        <th class="sortable" style="width:7%" onclick="sortKeys('mode')">모드</th><th class="sortable" style="width:16%" onclick="sortKeys('purpose')">용도</th><th style="width:12%">버전</th><th style="width:10%">갱신 주기</th><th class="sortable" style="width:14%" onclick="sortKeys('expire')">다음 갱신</th><th style="width:7%"></th>
       </tr></thead>
       <tbody id="keyTbody"></tbody>
     </table></div>
@@ -97,6 +97,21 @@
   </div>
 </div>
 
+<!-- 무결성 재해시 확인 모달 — 위반 행의 재해시 버튼 → 사유 입력 → 현재 값으로 키 메타·전 버전 해시 재봉인(KEY_INTEGRITY_RESEALED).
+     위반에서 정상으로 가는 유일한 경로: DB 원복·수정 저장으로는 위반 표시가 풀리지 않는다 -->
+<div class="modal-bk" id="mdReseal" onclick="bkClose(event,this)">
+  <div class="modal">
+    <div class="modal-h"><h3>현재 값으로 재해시</h3><button class="x" onclick="closeModal('mdReseal')">✕</button></div>
+    <div class="modal-b">
+      <p class="reseal-note"><b id="resealSubject"></b>의 무결성 해시를 지금 저장된 값으로 다시 계산하고 위반 표시를 해제합니다.</p>
+      <div class="field"><label>사유 <em>*</em> <span class="badge b-bad" style="margin-left:6px">ADMIN 한정</span></label><textarea class="input txt" id="resealReason" style="min-height:70px" placeholder="예: 변조 원인 확인 후 재봉인"></textarea></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-danger" onclick="doReseal()">재해시</button>
+    </div>
+  </div>
+</div>
+
 <script src="assets/data.js"></script>
 <script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
@@ -133,8 +148,26 @@ function renderKeys(){
       <td><span class="vtxt">v${k.currentVersion}/${k.versions.length}</span>${sched?` <span class="vtag sched" title="활성일 ${sched.activationDate}">↻ v${sched.v} 예약</span>`:''}</td>
       <td class="mono" style="color:var(--text-2)">${k.autoRotate?k.rotationPeriodDays+'일':'<span style="color:var(--text-3)">—</span>'}</td>
       <td class="mono">${rotCell}</td>
-    </tr>`;}).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:34px">조건에 맞는 키가 없습니다 — 필터를 조정해 보세요</td></tr>';
+      <td onclick="event.stopPropagation()">${k.integrity?'':`<div style="display:flex;justify-content:flex-end"><button class="icon-btn danger" data-tip="현재 값으로 재해시" aria-label="현재 값으로 재해시" onclick="openReseal(${k.id})"><i data-lucide="stamp" width="15" height="15" stroke-width="2"></i></button></div>`}</td>
+    </tr>`;}).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:34px">조건에 맞는 키가 없습니다 — 필터를 조정해 보세요</td></tr>';
   renderPager(document.getElementById('keyPager'),total,keyPage,totalPages,'goKeyPage');
+}
+/* ---- 무결성 재해시 (위반 행 전용, ADMIN) — POST /api/keys/{uid}/integrity/reseal, 감사 KEY_INTEGRITY_RESEALED.
+   실제 앱은 DB 직접 수정을 트리거 알림으로 즉시 감지해 위반을 기록·SSE 로 표시하고, DB 원복만으로는 위반 표시가 풀리지 않는다 ---- */
+let resealTarget=null;
+function openReseal(id){
+  resealTarget=KEYS.find(k=>k.id===id);
+  document.getElementById('resealSubject').textContent='키 '+resealTarget.name;
+  document.getElementById('resealReason').value='';
+  openModal('mdReseal');
+}
+function doReseal(){
+  const r=document.getElementById('resealReason').value.trim();
+  if(!r){toast('재해시 사유를 입력해주세요');return;}
+  resealTarget.integrity=true;
+  closeModal('mdReseal');
+  renderKeys();
+  toast('현재 값으로 재해시되었습니다.');
 }
 /* ---- 등록 모달 ---- */
 function openKeyNew(){

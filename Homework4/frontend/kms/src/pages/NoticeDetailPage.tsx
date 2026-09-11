@@ -38,10 +38,13 @@ export default function NoticeDetailPage() {
     load(countView)
   }, [load, noticeId])
 
-  // 실시간 갱신 — 이 공지를 대상으로 한 수정·첨부 삭제는 refetch, 삭제는 목록으로
+  // 실시간 갱신 — 이 공지를 대상으로 한 수정·첨부 삭제는 refetch, 삭제는 목록으로.
+  // DB 직접 수정(DB_DIRECT_CHANGE, 이 공지 또는 NOTICE#* 대량 변경)도 refetch — 행이 지워졌으면 load 가 404 로 목록으로 보낸다
   useEffect(() => {
     return subscribeUiEvents((e) => {
-      if (e.target !== `NOTICE#${noticeId}`) return
+      const mine = e.target === `NOTICE#${noticeId}`
+      if (e.action === 'DB_DIRECT_CHANGE' && (mine || e.target === 'NOTICE#*')) { load(false); return }
+      if (!mine) return
       if (e.action === 'NOTICE_DELETED') {
         toast('공지사항이 삭제되었습니다.')
         navigate('/notices', { replace: true })

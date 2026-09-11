@@ -74,6 +74,21 @@
   </div>
 </div>
 
+<!-- 무결성 재해시 확인 모달 — 위반 행의 재해시 버튼 → 사유 입력 → 현재 값으로 해시 재봉인(USER_INTEGRITY_RESEALED).
+     위반에서 정상으로 가는 유일한 경로: DB 원복·수정 저장으로는 위반 표시가 풀리지 않는다 -->
+<div class="modal-bk" id="mdReseal" onclick="bkClose(event,this)">
+  <div class="modal">
+    <div class="modal-h"><h3>현재 값으로 재해시</h3><button class="x" onclick="closeModal('mdReseal')">✕</button></div>
+    <div class="modal-b">
+      <p class="reseal-note"><b id="resealSubject"></b>의 무결성 해시를 지금 저장된 값으로 다시 계산하고 위반 표시를 해제합니다.</p>
+      <div class="field"><label>사유 <em>*</em> <span class="badge b-bad" style="margin-left:6px">ADMIN 한정</span></label><textarea class="input txt" id="resealReason" style="min-height:70px" placeholder="예: 변조 원인 확인 후 재봉인"></textarea></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-danger" onclick="doReseal()">재해시</button>
+    </div>
+  </div>
+</div>
+
 <script src="assets/data.js"></script>
 <script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
@@ -96,13 +111,14 @@ function renderUsers(){
   const total=rows.length;rows=rows.slice(userPage*size,(userPage+1)*size);
   renderPager(document.getElementById('userPager'),total,userPage,totalPages,'goUserPage','명');
   document.getElementById('userTbody').innerHTML=rows.map(u=>`
-    <tr>
+    <tr class="${u.integrity===false?'row-bad':''}" ${u.integrity===false?'title="무결성 위반 — 재해시 전까지 유지"':''}>
       <td><span class="uav"><span class="uavatar" style="background:var(--blue-bg);color:var(--blue)">${u.name[0]}</span>${userDot(u.status)}</span><b class="nm">${u.name}</b></td>
       <td class="${revealed.has(u.id)?'mono':'mask'}">${revealed.has(u.id)?u.plainPhone:u.phone}</td>
       <td class="${revealed.has(u.id)?'mono':'mask'}">${revealed.has(u.id)?u.plainEmail:u.email}</td>
       <td class="mono" style="color:var(--text-2)">${u.joined}</td>
       <td>
         <div style="display:flex;gap:4px;justify-content:flex-end">
+          ${u.integrity===false?`<button class="icon-btn danger" data-tip="현재 값으로 재해시" aria-label="현재 값으로 재해시" onclick="openReseal(${u.id})"><i data-lucide="stamp" width="15" height="15" stroke-width="2"></i></button>`:''}
           <a class="icon-btn" data-tip="감사 로그" aria-label="감사 로그" href="audit.html?target=USER%23${u.id}"><i data-lucide="shield-check" width="15" height="15" stroke-width="2"></i></a>
           ${revealed.has(u.id)
             ?`<button class="icon-btn" data-tip="원문 숨기기" aria-label="원문 숨기기" onclick="togglePlain(${u.id})"><i data-lucide="eye" width="15" height="15" stroke-width="2"></i></button>`
@@ -166,6 +182,23 @@ function viewPlain(){
   closeModal('mdPlain');
   renderUsers();
   toast('원문이 조회되었습니다.');
+}
+/* 무결성 재해시 — 위반 행에만 버튼. 사유 입력(POST /api/users/{id}/integrity/reseal, 감사 USER_INTEGRITY_RESEALED) 후 정상.
+   실제 앱은 DB 직접 수정을 트리거 알림으로 즉시 감지해 위반을 기록·SSE 로 표시하고, DB 원복만으로는 위반 표시가 풀리지 않는다 */
+let resealTarget=null;
+function openReseal(id){
+  resealTarget=USERS.find(u=>u.id===id);
+  document.getElementById('resealSubject').textContent='사용자 '+resealTarget.name;
+  document.getElementById('resealReason').value='';
+  openModal('mdReseal');
+}
+function doReseal(){
+  const r=document.getElementById('resealReason').value.trim();
+  if(!r){toast('재해시 사유를 입력해주세요');return;}
+  resealTarget.integrity=true;
+  closeModal('mdReseal');
+  renderUsers();
+  toast('현재 값으로 재해시되었습니다.');
 }
 renderUsers();
 if(qs('id'))openUserForm(+qs('id'));   // 통합 검색에서 진입 — 해당 사용자 수정 모달

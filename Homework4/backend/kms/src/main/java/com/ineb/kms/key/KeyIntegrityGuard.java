@@ -2,6 +2,7 @@ package com.ineb.kms.key;
 
 import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.common.BusinessException;
+import com.ineb.kms.integrity.IntegrityFlagService;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.domain.CryptoKey;
 import com.ineb.kms.domain.HistoryTrigger;
@@ -33,13 +34,16 @@ public class KeyIntegrityGuard {
     private final KeyStateMachine stateMachine;
     private final KeyMaterialRepository materialRepository;
     private final AuditHook auditHook;
+    private final IntegrityFlagService flags;
 
     public KeyIntegrityGuard(KeyIntegrityHasher hasher, KeyStateMachine stateMachine,
-                             KeyMaterialRepository materialRepository, AuditHook auditHook) {
+                             KeyMaterialRepository materialRepository, AuditHook auditHook,
+                             IntegrityFlagService flags) {
         this.hasher = hasher;
         this.stateMachine = stateMachine;
         this.materialRepository = materialRepository;
         this.auditHook = auditHook;
+        this.flags = flags;
     }
 
     /** 조회용 — 상태를 바꾸지 않고 검증 결과만 돌려준다. */
@@ -84,14 +88,34 @@ public class KeyIntegrityGuard {
     @Transactional
     public void enforceOnRead(CryptoKey key) {
         for (KeyMaterial m : materialRepository.findByKeyIdOrderByVersionDesc(key.getId())) {
-            if (m.getState() == KeyState.DEACTIVATED || m.getState() == KeyState.DESTROYED || hasher.verify(m)) {
+            if (hasher.verify(m)) {
+                continue;
+            }
+            if (m.getState() == KeyState.DEACTIVATED || m.getState() == KeyState.DESTROYED) {
+                flagQuiet(key, "version=" + m.getVersion() + ", state=" + m.getState() + ", autoDeactivated=false");
                 continue;
             }
             deactivateForViolation(m);
         }
-        if (!hasher.verify(key) && !materialRepository.findByKeyIdAndState(key.getId(), KeyState.ACTIVE).isEmpty()) {
-            deactivateKeyWide(key);
+        if (!hasher.verify(key)) {
+            if (materialRepository.findByKeyIdAndState(key.getId(), KeyState.ACTIVE).isEmpty()) {
+                flagQuiet(key, "scope=KEY, deactivated=0");
+            } else {
+                deactivateKeyWide(key);
+            }
         }
+    }
+
+    /**
+     * 상태 변화가 없는 위반(이미 정지·폐기된 버전, 운영 버전이 없는 키의 메타)도 위반 표시는 남겨야 한다 —
+     * 표시가 없으면 값을 원복했을 때 정상으로 돌아가 버린다. 이미 표시 중이면 기록하지 않는다(2026-09-11).
+     */
+    private boolean flagQuiet(CryptoKey key, String detail) {
+        boolean recorded = flags.flag(AuditHook.keyTarget(key.getKeyUid()), detail);
+        if (recorded) {
+            log.warn("무결성 위반 표시(상태 변화 없음): keyUid={}, {}", key.getKeyUid(), detail);
+        }
+        return recorded;
     }
 
     private void deactivateKeyWide(CryptoKey key) {
@@ -116,24 +140,31 @@ public class KeyIntegrityGuard {
      */
     @Transactional
     public boolean enforceKey(CryptoKey key) {
-        if (key.getStatus() == KeyState.DESTROYED || hasher.verify(key)) {
+        if (hasher.verify(key)) {
             return false;
         }
         if (materialRepository.findByKeyIdAndState(key.getId(), KeyState.ACTIVE).isEmpty()) {
-            return false;
+            return flagQuiet(key, "scope=KEY, deactivated=0");
         }
         deactivateKeyWide(key);
         return true;
     }
 
     /**
-     * 배치 검증(스케줄러): 재료가 남아 있는 모든 버전을 검사해 위반 버전을 정지한다. 정지 건수를 돌려준다.
+     * 배치 검증(스케줄러): 재료가 남아 있는 모든 버전을 검사해 위반 버전을 정지한다.
+     * 이미 정지된 버전의 위반은 상태 변화 없이 표시만 남긴다. 새로 정지·기록한 건수를 돌려준다.
      */
     @Transactional
     public int sweep() {
         int violated = 0;
         for (KeyMaterial m : materialRepository.findByStateNot(KeyState.DESTROYED)) {
-            if (m.getState() == KeyState.DEACTIVATED || hasher.verify(m)) {
+            if (hasher.verify(m)) {
+                continue;
+            }
+            if (m.getState() == KeyState.DEACTIVATED) {
+                if (flagQuiet(m.getKey(), "version=" + m.getVersion() + ", state=DEACTIVATED, autoDeactivated=false")) {
+                    violated++;
+                }
                 continue;
             }
             deactivateForViolation(m);

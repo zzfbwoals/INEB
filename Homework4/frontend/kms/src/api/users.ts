@@ -68,6 +68,13 @@ export async function updateUser(id: number, body: UserUpdateRequest): Promise<{
   return { data: res.data.data, message: res.data.message }
 }
 
+/** 무결성 재해시 — ADMIN 한정, 사유 필수. 현재 값으로 해시를 다시 봉인하고 위반 표시를 해제(USER_INTEGRITY_RESEALED).
+    위반에서 정상으로 가는 유일한 경로 — DB 원복·수정 저장으로는 풀리지 않는다 */
+export async function resealUserIntegrity(id: number, reason: string): Promise<{ data: UserSummary; message: string | null }> {
+  const res = await api.post<ApiEnvelope<UserSummary>>(`/api/users/${id}/integrity/reseal`, { reason })
+  return { data: res.data.data, message: res.data.message }
+}
+
 /** 개인정보 원문 조회 — ADMIN 한정, 사유 필수, USER_PLAIN_VIEWED 감사 기록 */
 export async function viewUserPlain(id: number, reason: string): Promise<{ data: UserPlain; message: string | null }> {
   const res = await api.post<ApiEnvelope<UserPlain>>(`/api/users/${id}/plain`, { reason })

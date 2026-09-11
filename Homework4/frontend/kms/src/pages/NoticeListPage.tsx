@@ -52,10 +52,11 @@ export default function NoticeListPage() {
     if (data && data.totalPages > 0 && page >= data.totalPages) setPage(data.totalPages - 1)
   }, [data, page])
 
-  // 실시간 갱신 — 등록·수정·삭제·첨부 삭제가 커밋되면 목록 refetch (다운로드는 목록에 영향 없음)
+  // 실시간 갱신 — 등록·수정·삭제·첨부 삭제와 notice·notice_file 의 DB 직접 수정(DB_DIRECT_CHANGE, target NOTICE#…)이 커밋되면 목록 refetch (다운로드는 목록에 영향 없음)
   useEffect(() => {
     return subscribeUiEvents((e) => {
-      if (e.action.startsWith('NOTICE') && e.action !== 'NOTICE_FILE_DOWNLOADED') setReloadTick((t) => t + 1)
+      if ((e.action.startsWith('NOTICE') && e.action !== 'NOTICE_FILE_DOWNLOADED')
+        || (e.action === 'DB_DIRECT_CHANGE' && e.target.startsWith('NOTICE#'))) setReloadTick((t) => t + 1)
     })
   }, [])
 

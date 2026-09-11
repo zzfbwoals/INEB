@@ -189,6 +189,13 @@ export async function revealMaterial(keyUid: string, version: number, reason: st
   return { data: res.data.data, message: res.data.message }
 }
 
+/** 무결성 재해시 — ADMIN 한정, 사유 필수. 현재 값으로 키 메타·전 버전 해시를 다시 봉인하고 위반 표시를 해제(KEY_INTEGRITY_RESEALED).
+    위반에서 정상으로 가는 유일한 경로 — DB 원복·수정 저장으로는 풀리지 않는다 */
+export async function resealKeyIntegrity(keyUid: string, reason: string): Promise<{ data: KeyDetail; message: string | null }> {
+  const res = await api.post<ApiEnvelope<KeyDetail>>(`/api/keys/${keyUid}/integrity/reseal`, { reason })
+  return { data: res.data.data, message: res.data.message }
+}
+
 export async function testEncrypt(keyUid: string, plaintext: string): Promise<{ ciphertext: string; version: number }> {
   const res = await api.post<ApiEnvelope<{ ciphertext: string; version: number }>>(`/api/keys/${keyUid}/test/encrypt`, { plaintext })
   return res.data.data
