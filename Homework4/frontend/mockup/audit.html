@@ -72,7 +72,7 @@
       <div class="meta-box">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="mono" style="color:var(--text-3)">#1288</span><span style="font-size:12px;color:var(--text-3)">행위자, 상세</span></div>
         <div class="diff-grid">
-          <div class="h">필드</div><div class="h">원본</div><div class="h">현재</div>
+          <div class="h">필드</div><div class="h">원본</div><div class="h">변조 값</div>
           <div class="k">행위자</div><div class="mono del">admin</div><div class="mono add">intruder</div>
           <div class="k">행위</div><div class="mono">KEY_STATUS_CHANGED</div><div class="mono">KEY_STATUS_CHANGED</div>
           <div class="k">상세</div><div class="mono del">action=DEACTIVATE, version=2</div><div class="mono add">(복호화 실패 · 변조 추정)</div>
@@ -103,7 +103,7 @@ function renderAudit(){
   /* 섀도 비교 표시(목업): 수정·삽입 행은 row-bad + 배지, 지워진 행은 섀도 값으로 유령 행(취소선 "삭제됨")을 id 위치에 끼워 넣는다.
      실제 앱은 GET /api/audit-logs/forensics 결과를 목록에 병합 — 기본 정렬(id 내림차순)·필터 없음일 때만 유령 행 인라인, 페이지당 3개 상한.
      '위반 행만' 은 forensics 의 수정·삽입·삭제 행만(클라이언트 필터·정렬·페이징) */
-  const MOD=new Set([AUDITS[1]?.id]), INS=new Set([AUDITS[0]?.id]);   // 시연용 위반 행은 필터와 무관하게 고정
+  const MOD=new Map([[AUDITS[1]?.id,'행위자, 상세']]), INS=new Set([AUDITS[0]?.id]);   // MOD: id → 바뀐 컬럼(원복해도 증거로 유지)   // 시연용 위반 행은 필터와 무관하게 고정
   const GHOST={id:(AUDITS[2]?.id??0)+0.5, at:AUDITS[2]?.at??'', actor:'admin', action:'LOGIN_SUCCESS', target:'AUTH#admin', detail:'role=ADMIN'};
   const view=document.getElementById('auditView').dataset.v,onlyBad=view==='bad';
   if(onlyBad)list=list.filter(a=>MOD.has(a.id)||INS.has(a.id));
@@ -119,7 +119,7 @@ function renderAudit(){
     <td><b>${a.actor}</b></td>
     <td><span class="actchip">${a.action}</span></td>
     <td class="mono" style="color:var(--text-2)">${a.target}</td>
-    <td class="mono" style="color:var(--text-3)" title="${a.detail}">${MOD.has(a.id)?'<span class="row-tag">수정됨</span>':INS.has(a.id)?'<span class="row-tag">삽입됨</span>':''}${a.detail}</td>
+    <td class="mono" style="color:var(--text-3)" title="${a.detail}">${MOD.has(a.id)?'<span class="row-tag">수정됨 · '+(MOD.get(a.id)||'행위자')+'</span>':INS.has(a.id)?'<span class="row-tag">삽입됨</span>':''}${a.detail}</td>
   </tr>`;
   const ghostHtml=g=>`
   <tr class="row-ghost" onclick="openModal('mdForensics')">

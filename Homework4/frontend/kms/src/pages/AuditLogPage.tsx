@@ -13,7 +13,7 @@ import { useAutoPageSize } from '@/lib/usePageSize'
 import { useColumnResize } from '@/lib/useColumnResize'
 import { SortMark, sortClass } from '@/components/ui/sort-mark'
 import { Pager } from '@/components/ui/pager'
-import { AuditForensicsDialog, type ForensicsView } from '@/components/audit/AuditForensicsDialog'
+import { AuditForensicsDialog, FIELD_KO, type ForensicsView } from '@/components/audit/AuditForensicsDialog'
 import { AuditLogDetailDialog } from '@/components/audit/AuditLogDetailDialog'
 
 /* 목업 audit.html — 감사 로그. append-only 해시 체인 + 섀도(복사본) 비교 + CSV 내려받기.
@@ -230,7 +230,8 @@ export default function AuditLogPage() {
                 }
                 const modified = modifiedById.get(a.id)
                 if (modified) {
-                  return <LogRow key={a.id} item={a} className="row-bad rowlink" badge={<span className="row-tag">수정됨</span>} onClick={() => setForensicsOpen({ mode: 'single', kind: 'modified', id: a.id })} />
+                  // 바뀐 컬럼을 태그에 함께 표시 — 증거 기반이라 DB 를 원복한 뒤에도 그대로 남는다
+                  return <LogRow key={a.id} item={a} className="row-bad rowlink" badge={<span className="row-tag">수정됨 · {modified.fields.map((f) => FIELD_KO[f] ?? f).join(', ')}</span>} onClick={() => setForensicsOpen({ mode: 'single', kind: 'modified', id: a.id })} />
                 }
                 if (insertedIds.has(a.id)) {
                   return <LogRow key={a.id} item={a} className="row-bad rowlink" badge={<span className="row-tag">삽입됨</span>} onClick={() => setForensicsOpen({ mode: 'single', kind: 'inserted', id: a.id })} />
@@ -264,13 +265,10 @@ function LogRow({ item, className, badge, onClick }: { item: AuditLogItem; class
   )
 }
 
-/** 헤더 배지 문구 — 체인 위반 구간 수 (삭제·삽입·수정 내역은 위반 상세 아이콘으로).
-    감사 로그 위반은 영구(재해시 없음): 지금 검사가 통과해도 위반 기록이 있으면 "위반 이력"으로 표시한다 */
+/** 헤더 배지 문구 — 체인 위반 건수만. 건수는 남아 있는 변조 증거 행 수와 지금 체인 위반 구간 수 중 큰 값
+    (감사 로그 위반은 영구라 DB 를 원복해도 증거 행 수는 줄지 않는다) */
 function badgeText(chain: AuditVerifyResult): string {
-  const s = chain.shadow
-  const checksOk = chain.valid && (!s || (s.deleted + s.inserted + s.modified === 0 && s.guard === 'ACTIVE'))
-  if (chain.flagged && checksOk) return '위반 이력 — 원복됨 · 복구 불가'
-  return `체인 위반 ${chain.violations.length}건${chain.flagged ? ' · 복구 불가' : ''}`
+  return `체인 위반 ${Math.max(chain.flaggedRows, chain.violations.length)}건`
 }
 
 /**

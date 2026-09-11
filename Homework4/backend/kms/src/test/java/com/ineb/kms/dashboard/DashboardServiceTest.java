@@ -79,7 +79,7 @@ class DashboardServiceTest {
         service = new DashboardService(keyRepository, materialRepository, usageLogRepository, userRepository,
                 noticeRepository, fileRepository, auditLogRepository, keyHasher, userHasher, auditLogService,
                 IntegrityFlagTestSupport.create((actor, action, target, detail) -> { }).flags());
-        when(auditLogService.status()).thenReturn(new AuditVerifyResponse(true, true, false, 0, "", List.of(), null));
+        when(auditLogService.status()).thenReturn(new AuditVerifyResponse(true, true, false, 0, 0, "", List.of(), null));
     }
 
     private static void set(Object target, String field, Object value) {
@@ -132,7 +132,7 @@ class DashboardServiceTest {
         when(noticeRepository.count()).thenReturn(3L);
         when(noticeRepository.countByPinnedTrue()).thenReturn(1L);
         when(fileRepository.count()).thenReturn(4L);
-        when(auditLogService.status()).thenReturn(new AuditVerifyResponse(false, false, true, 10, "",
+        when(auditLogService.status()).thenReturn(new AuditVerifyResponse(false, false, true, 1, 10, "",
                 List.of(new AuditVerifyResponse.ViolationRange(3, 4, "TAMPERED")), null));
         when(auditLogRepository.findActionTargetSince(any())).thenReturn(List.of(
                 new Object[]{"LOGIN_FAILED", "AUTH#admin"}, new Object[]{"LOGIN_FAILED", "AUTH#admin"},

@@ -35,8 +35,10 @@ export interface AuditVerifyResult {
   valid: boolean
   /** 체인 + 섀도 비교 + 보호 트리거 + 위반 표시(flagged)를 합친 최종 판정 (shadowChainValid 는 참고용) */
   healthy: boolean
-  /** AUDIT_CHAIN_VIOLATION 이 한 번이라도 기록됐는지 — 영구 위반(재해시 없음). valid·섀도·트리거가 정상인데 true 면 원복 뒤에도 남은 위반 이력 */
+  /** AUDIT_CHAIN_VIOLATION 기록 또는 변조 증거가 있는지 — 영구 위반(재해시 없음). valid·섀도·트리거가 정상인데 true 면 원복 뒤에도 남은 위반 */
   flagged: boolean
+  /** 변조 증거(audit_violation)에 남은 행 수 — 원복해도 유지, 배지 "체인 위반 N건" */
+  flaggedRows: number
   totalRows: number
   verifiedAt: string
   violations: AuditViolation[]
