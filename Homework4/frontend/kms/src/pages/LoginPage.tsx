@@ -1,3 +1,4 @@
+import { Lock, User } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { isAxiosError } from 'axios'
@@ -57,10 +58,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="lfield">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
-            </svg>
+            <User size={15} />
             <Input
               id="loginId"
               placeholder="아이디"
@@ -70,10 +68,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="lfield">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="4" y="10" width="16" height="10" rx="2" />
-              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-            </svg>
+            <Lock size={15} />
             <Input
               id="loginPw"
               type="password"

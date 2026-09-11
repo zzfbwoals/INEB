@@ -56,7 +56,6 @@ export function KeyRevealDialog({ detail, version, onClose }: { detail: KeyDetai
           )}
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>닫기</Button>
           {!result
             ? <Button disabled={pending} onClick={run}>조회</Button>
             : <Button onClick={() => copy(result.material)}>복사</Button>}

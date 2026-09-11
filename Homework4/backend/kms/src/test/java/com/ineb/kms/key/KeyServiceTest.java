@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.ineb.kms.audit.AuditHook;
+import com.ineb.kms.integrity.IntegrityFlagTestSupport;
 import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.crypto.MasterKeyHolder;
@@ -59,10 +60,11 @@ class KeyServiceTest {
 
         KeyIntegrityHasher hasher = new KeyIntegrityHasher(new byte[32]);
         KeyStateMachine machine = new KeyStateMachine(materialRepository, mock(KeyStatusHistoryRepository.class), hasher);
-        AuditHook audit = (actor, action, target, detail) -> audits.add(action);
-        KeyIntegrityGuard guard = new KeyIntegrityGuard(hasher, machine, materialRepository, audit);
+        IntegrityFlagTestSupport.Fixture fx = IntegrityFlagTestSupport.create((actor, action, target, detail) -> audits.add(action));
+        AuditHook audit = fx.hook();
+        KeyIntegrityGuard guard = new KeyIntegrityGuard(hasher, machine, materialRepository, audit, fx.flags());
         service = new KeyService(keyRepository, materialRepository, usageLogRepository,
-                mock(KeyStatusHistoryRepository.class), new KeyMaterialFactory(holder), machine, hasher, guard, audit);
+                mock(KeyStatusHistoryRepository.class), new KeyMaterialFactory(holder), machine, hasher, guard, audit, fx.flags());
 
         // 저장 시 id 부여, 목록 조회는 메모리 리스트
         when(keyRepository.save(any(CryptoKey.class))).thenAnswer(inv -> {
@@ -171,6 +173,29 @@ class KeyServiceTest {
         assertNull(d.nextRotationAt().isEmpty() ? null : d.nextRotationAt());
         assertFalse(before.equals(key.getIntegrityHash()));
         assertTrue(audits.contains("KEY_UPDATED"));
+    }
+
+    @Test
+    @DisplayName("DB 직접 변조로 위반된 키는 값을 원복해도 위반으로 남고, 재해시로만 정상이 된다")
+    void violationStaysUntilReseal() {
+        KeyDetail created = service.create(request(KeyAlgorithm.AES, 256, KeyMode.GCM, null), "admin");
+        CryptoKey key = keyOf(created);
+        key.rename("TAMPERED", "설명");                        // 해시 재계산 없이 변조 (DB 직접 수정)
+        assertFalse(service.get(created.keyUid()).integrityValid());   // 감지(트리거 알림·상세 조회 경로) → 위반 기록 + 자동 정지
+        assertEquals("KEY_INTEGRITY_VIOLATION", audits.getLast());
+
+        key.rename("PAY-GW", "설명");                          // DB 직접 원복 — 메타 해시는 다시 일치
+        assertFalse(service.toSummary(key).integrityValid());  // 그래도 위반 (표시 유지)
+        assertFalse(service.get(created.keyUid()).integrityValid());
+        assertEquals("KEY_INTEGRITY_VIOLATION", audits.getLast());   // 재기록 없음
+
+        KeyDetail sealed = service.resealIntegrity(created.keyUid(), "변조 확인 후 재봉인", "admin");
+        assertTrue(sealed.integrityValid());
+        assertEquals("KEY_INTEGRITY_RESEALED", audits.getLast());
+        assertTrue(service.toSummary(key).integrityValid());
+
+        assertEquals(ErrorCode.INTEGRITY_NOT_FLAGGED,
+                fail(() -> service.resealIntegrity(created.keyUid(), "다시", "admin")));
     }
 
     @Test

@@ -13,6 +13,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -41,10 +43,18 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(message, ErrorCode.INVALID_INPUT.name()));
     }
 
-    /** 본문 JSON 파싱 실패·enum 값 오류·경로/쿼리 타입 불일치는 클라이언트 입력 오류(400) */
-    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    /** 본문 JSON 파싱 실패·enum 값 오류·경로/쿼리 타입 불일치·multipart 파트 누락은 클라이언트 입력 오류(400) */
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
+            MissingServletRequestPartException.class})
     public ResponseEntity<ApiResponse<Void>> handleUnreadable(Exception e) {
         ErrorCode code = ErrorCode.INVALID_INPUT;
+        return ResponseEntity.status(code.getStatus()).body(ApiResponse.error(code.getMessage(), code.name()));
+    }
+
+    /** multipart 크기 상한(spring.servlet.multipart.max-file-size / max-request-size) 초과 — 컨트롤러 진입 전에 발생 */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUploadSize(MaxUploadSizeExceededException e) {
+        ErrorCode code = ErrorCode.NOTICE_FILE_TOO_LARGE;
         return ResponseEntity.status(code.getStatus()).body(ApiResponse.error(code.getMessage(), code.name()));
     }
 

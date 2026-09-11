@@ -2,6 +2,7 @@ package com.ineb.kms.key;
 
 import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.common.BusinessException;
+import com.ineb.kms.integrity.IntegrityFlagService;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.common.KstTime;
 import com.ineb.kms.common.PageResponse;
@@ -64,12 +65,13 @@ public class KeyService {
     private final KeyIntegrityHasher hasher;
     private final KeyIntegrityGuard integrityGuard;
     private final AuditHook auditHook;
+    private final IntegrityFlagService flags;
 
     public KeyService(CryptoKeyRepository keyRepository, KeyMaterialRepository materialRepository,
                       KeyUsageLogRepository usageLogRepository, KeyStatusHistoryRepository historyRepository,
                       KeyMaterialFactory materialFactory,
                       KeyStateMachine stateMachine, KeyIntegrityHasher hasher,
-                      KeyIntegrityGuard integrityGuard, AuditHook auditHook) {
+                      KeyIntegrityGuard integrityGuard, AuditHook auditHook, IntegrityFlagService flags) {
         this.keyRepository = keyRepository;
         this.materialRepository = materialRepository;
         this.usageLogRepository = usageLogRepository;
@@ -79,6 +81,7 @@ public class KeyService {
         this.hasher = hasher;
         this.integrityGuard = integrityGuard;
         this.auditHook = auditHook;
+        this.flags = flags;
     }
 
     // ---------------------------------------------------------------- 목록
@@ -109,7 +112,29 @@ public class KeyService {
             return cb.and(ps.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
         Page<CryptoKey> result = keyRepository.findAll(spec, pageable(page, size, sort, direction));
-        return PageResponse.of(result, this::toSummary);
+        return pageOf(result);
+    }
+
+    /** 통합 검색 — 키명·알고리즘명·key_uid·설명 부분일치(대소문자 무시), 폐기 포함, 최신 등록순 limit 건 */
+    @Transactional(readOnly = true)
+    public PageResponse<KeySummary> search(String q, int limit) {
+        String needle = q.trim().toLowerCase();
+        String like = "%" + needle + "%";
+        List<KeyAlgorithm> algorithms = java.util.Arrays.stream(KeyAlgorithm.values())
+                .filter(a -> a.name().toLowerCase().contains(needle)).toList();
+        Specification<CryptoKey> spec = (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> ors = new ArrayList<>();
+            ors.add(cb.like(cb.lower(root.get("keyName")), like));
+            ors.add(cb.like(cb.lower(root.get("keyUid")), like));
+            ors.add(cb.like(cb.lower(root.get("description")), like));
+            if (!algorithms.isEmpty()) {
+                ors.add(root.get("algorithm").in(algorithms));
+            }
+            return cb.or(ors.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+        Page<CryptoKey> result = keyRepository.findAll(spec,
+                PageRequest.of(0, Math.min(Math.max(limit, 1), 100), Sort.by(Sort.Direction.DESC, "createdAt")));
+        return pageOf(result);
     }
 
     private static KeyState parseState(String value) {
@@ -333,8 +358,28 @@ public class KeyService {
 
     // ---------------------------------------------------------------- DTO 변환
 
+    /** 한 페이지의 위반 표시를 한 번에 조회한 뒤 행을 변환한다 (행마다 감사 로그를 읽지 않도록) */
+    private PageResponse<KeySummary> pageOf(Page<CryptoKey> result) {
+        IntegrityFlagService.Snapshot snapshot = flags.snapshot(
+                result.getContent().stream().map(k -> AuditHook.keyTarget(k.getKeyUid())).toList());
+        return PageResponse.of(result, k -> toSummary(k, snapshot));
+    }
+
     KeySummary toSummary(CryptoKey key) {
+        return toSummary(key, flags.snapshot(List.of(AuditHook.keyTarget(key.getKeyUid()))));
+    }
+
+    /**
+     * 목록 행의 무결성 = 키 메타·전 버전 해시 일치 && 위반 표시 없음(2026-09-11). 위반 표시는 감사 체인에서 파생되며
+     * 관리자 재해시로만 지워지므로, DB 값을 원복해 해시가 다시 맞아도 위반으로 남는다. 불일치를 여기서 처음 보면 그 자리에서 기록한다.
+     */
+    KeySummary toSummary(CryptoKey key, IntegrityFlagService.Snapshot snapshot) {
         List<KeyMaterial> materials = materialRepository.findByKeyIdOrderByVersionDesc(key.getId());
+        String badVersions = materials.stream().filter(m -> !integrityGuard.isValid(m))
+                .map(m -> String.valueOf(m.getVersion())).collect(java.util.stream.Collectors.joining("/"));
+        boolean keyOk = integrityGuard.isValid(key);
+        boolean integrityValid = snapshot.check(AuditHook.keyTarget(key.getKeyUid()), keyOk && badVersions.isEmpty(),
+                "detected=LIST, scope=" + (keyOk ? "VERSION" : "KEY") + (badVersions.isEmpty() ? "" : ", versions=" + badVersions));
         KeyMaterial scheduled = materials.stream()
                 .filter(m -> m.getState() == KeyState.PRE_ACTIVE && m.getVersion() != key.getCurrentVersion())
                 .findFirst().orElse(null);
@@ -345,7 +390,38 @@ public class KeyService {
                 scheduled == null ? null : scheduled.getVersion(),
                 scheduled == null ? null : KstTime.format(scheduled.getActivationDate()),
                 key.isAutoRotate(), key.getRotationPeriodDays(), KstTime.format(key.getNextRotationAt()),
-                integrityGuard.isValid(key) && materials.stream().allMatch(integrityGuard::isValid));
+                integrityValid);
+    }
+
+    // ---------------------------------------------------------------- 무결성 재해시 (ADMIN)
+
+    /**
+     * 현재 저장된 값으로 키 메타와 전 버전의 integrity_hash 를 다시 계산해 봉인하고 위반 표시를 해제한다 (2026-09-11).
+     * 위반에서 정상으로 가는 <b>유일한</b> 경로 — 값을 원복해도, PUT 으로 해시가 재계산돼도 표시는 남는다.
+     * 위반 상태(표시 또는 해시 불일치)가 아니면 409. 정지된 버전의 상태는 바꾸지 않는다(복귀는 REACTIVATE).
+     */
+    @Transactional
+    public KeyDetail resealIntegrity(String keyUid, String reason, String actor) {
+        CryptoKey key = load(keyUid);
+        String target = AuditHook.keyTarget(key.getKeyUid());
+        List<KeyMaterial> materials = materialRepository.findByKeyIdOrderByVersionDesc(key.getId());
+        boolean hashOk = integrityGuard.isValid(key) && materials.stream().allMatch(integrityGuard::isValid);
+        if (hashOk && !flags.isFlagged(target)) {
+            throw new BusinessException(ErrorCode.INTEGRITY_NOT_FLAGGED);
+        }
+        int resealed = 0;
+        for (KeyMaterial m : materials) {
+            if (!integrityGuard.isValid(m)) {
+                hasher.rehash(m);
+                resealed++;
+            }
+        }
+        boolean keyResealed = !integrityGuard.isValid(key);
+        if (keyResealed) {
+            hasher.rehash(key);
+        }
+        flags.reseal(target, actor, "reason=" + reason + ", key=" + keyResealed + ", versions=" + resealed);
+        return toDetail(key);
     }
 
     KeyDetail toDetail(CryptoKey key) {
@@ -375,7 +451,16 @@ public class KeyService {
                 key.getCurrentVersion(), materials.size(), CryptoKey.MAX_VERSIONS,
                 key.isAutoRotate(), key.getRotationPeriodDays(), KstTime.format(key.getNextRotationAt()),
                 key.getDescription(), KstTime.format(key.getCreatedAt()), KeyMaterial.WRAP_ALGO, pem, shortHash,
-                integrityGuard.isValid(key), versions, usageStats(key));
+                detailIntegrity(key, versions), versions, usageStats(key));
+    }
+
+    /** 상세의 키 수준 무결성 = 메타 해시 일치 && 위반 표시 없음. 메타·버전 불일치를 여기서 처음 보면 그 자리에서 위반을 기록한다 */
+    private boolean detailIntegrity(CryptoKey key, List<VersionInfo> versions) {
+        String target = AuditHook.keyTarget(key.getKeyUid());
+        boolean keyOk = integrityGuard.isValid(key);
+        IntegrityFlagService.Snapshot snapshot = flags.snapshot(List.of(target));
+        snapshot.check(target, keyOk && versions.stream().allMatch(VersionInfo::integrityValid), "detected=DETAIL");
+        return keyOk && !snapshot.isFlagged(target);
     }
 
     private UsageStats usageStats(CryptoKey key) {

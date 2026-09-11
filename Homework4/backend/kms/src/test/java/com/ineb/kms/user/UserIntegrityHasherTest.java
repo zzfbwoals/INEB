@@ -15,7 +15,7 @@ class UserIntegrityHasherTest {
 
     private AppUser user() {
         return new AppUser("홍길동", "$2a$10$hash", UserStatus.ACTIVE,
-                "phoneEnc", "phoneHash", "emailEnc", "emailHash");
+                "phoneEnc", "emailEnc", "emailHash");
     }
 
     @Test
@@ -43,7 +43,7 @@ class UserIntegrityHasherTest {
     void encColumnsNotCovered() {
         AppUser u = user();
         hasher.rehash(u);
-        u.applyPhone("다른암호문", "다른해시");
+        u.applyPhone("다른암호문");
         assertTrue(hasher.verify(u));
     }
 }

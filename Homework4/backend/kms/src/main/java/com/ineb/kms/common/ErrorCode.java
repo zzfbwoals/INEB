@@ -32,12 +32,21 @@ public enum ErrorCode {
     KEY_CIPHERTEXT_FORMAT(HttpStatus.BAD_REQUEST, "암호문(서명값) 형식이 올바르지 않습니다. 기대 형식: {version}:{iv}:{ciphertext}"),
     KEY_CRYPTO_FAILED(HttpStatus.BAD_REQUEST, "암호 연산에 실패했습니다. 암호문 손상 또는 키 불일치입니다."),
     KEY_INTEGRITY_VIOLATION(HttpStatus.CONFLICT, "무결성 위반이 감지되어 해당 버전이 자동 정지되었습니다."),
+    INTEGRITY_NOT_FLAGGED(HttpStatus.CONFLICT, "무결성 위반 상태가 아닙니다."),
 
     // ---- 사용자 관리 (3주차) ----
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     USER_EMAIL_DUPLICATE(HttpStatus.CONFLICT, "이미 등록된 이메일입니다."),
     USER_PASSWORD_POLICY(HttpStatus.BAD_REQUEST, "비밀번호는 8자 이상이며 특수문자를 포함해야 합니다."),
-    USER_DATA_CORRUPTED(HttpStatus.CONFLICT, "개인정보 암호문 복호화에 실패했습니다. 데이터 손상 여부를 확인하세요.");
+    USER_DATA_CORRUPTED(HttpStatus.CONFLICT, "개인정보 암호문 복호화에 실패했습니다. 데이터 손상 여부를 확인하세요."),
+
+    // ---- 공지사항 (4주차) ----
+    NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지사항을 찾을 수 없습니다."),
+    NOTICE_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "첨부파일을 찾을 수 없습니다."),
+    NOTICE_FILE_LIMIT(HttpStatus.BAD_REQUEST, "첨부파일은 공지당 최대 5개입니다."),
+    NOTICE_FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "첨부파일은 파일당 20MB 이하여야 합니다."),
+    NOTICE_FILE_EMPTY(HttpStatus.BAD_REQUEST, "빈 파일은 첨부할 수 없습니다."),
+    NOTICE_FILE_CORRUPTED(HttpStatus.CONFLICT, "첨부파일 복호화에 실패했습니다. 데이터 손상 여부를 확인하세요.");
 
     private final HttpStatus status;
     private final String message;

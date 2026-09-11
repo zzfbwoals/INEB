@@ -1,16 +1,21 @@
 package com.ineb.kms.user;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.ineb.kms.audit.AuditHook;
+import com.ineb.kms.integrity.IntegrityFlagTestSupport;
 import com.ineb.kms.common.BusinessException;
 import com.ineb.kms.common.ErrorCode;
+import com.ineb.kms.common.PageResponse;
 import com.ineb.kms.crypto.MasterKeyHolder;
 import com.ineb.kms.crypto.PersonalDataCodec;
 import com.ineb.kms.crypto.WrappedSecretStore;
@@ -28,6 +33,10 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -41,6 +50,7 @@ class UserServiceTest {
     private PersonalDataCodec codec;
     private UserIntegrityHasher hasher;
     private UserService service;
+    private IntegrityFlagTestSupport.Fixture fx;
 
     @BeforeEach
     void setUp() {
@@ -59,8 +69,9 @@ class UserServiceTest {
             setId(u, 1L);
             return u;
         });
-        AuditHook audit = (actor, action, target, detail) -> audits.add(action + ":" + target + ":" + detail);
-        service = new UserService(repository, codec, hasher, passwordEncoder, audit);
+        fx = IntegrityFlagTestSupport.create((actor, action, target, detail) -> audits.add(action + ":" + target + ":" + detail));
+        AuditHook audit = fx.hook();
+        service = new UserService(repository, codec, hasher, passwordEncoder, audit, fx.flags());
     }
 
     private static void setId(AppUser user, long id) {
@@ -80,11 +91,65 @@ class UserServiceTest {
     /** 저장돼 있던 사용자 — 서비스가 만든 것과 같은 형태로 직접 구성 */
     private AppUser existingUser() {
         AppUser u = new AppUser("홍길동", passwordEncoder.encode(PASSWORD), UserStatus.ACTIVE,
-                codec.encrypt("010-1234-5678"), codec.phoneHash("010-1234-5678"),
-                codec.encrypt("user@ineb.co.kr"), codec.emailHash("user@ineb.co.kr"));
+                codec.encrypt("010-1234-5678"), codec.encrypt("user@ineb.co.kr"), codec.emailHash("user@ineb.co.kr"));
         hasher.rehash(u);
         setId(u, 1L);
         return u;
+    }
+
+    private AppUser userOf(long id, String name, String phone, String email) {
+        AppUser u = new AppUser(name, passwordEncoder.encode(PASSWORD), UserStatus.ACTIVE,
+                codec.encrypt(phone), codec.encrypt(email), codec.emailHash(email));
+        hasher.rehash(u);
+        setId(u, id);
+        return u;
+    }
+
+    @Test
+    @DisplayName("검색어가 있으면 전량 복호화해 이름·연락처·이메일 부분일치로 거르고 서버에서 페이징한다")
+    void keywordSearchesDecryptedFields() {
+        List<AppUser> all = List.of(
+                userOf(1L, "홍길동", "010-1234-5678", "hong@ineb.co.kr"),
+                userOf(2L, "김철수", "010-9876-5432", "kim@example.com"),
+                userOf(3L, "이영희", "010-1234-0000", "lee@ineb.co.kr"));
+        when(repository.findAll(any(Specification.class), any(Sort.class))).thenReturn(all);
+
+        // 연락처 중간 4자리 — 하이픈 유무 무관
+        PageResponse<UserSummary> byPhone = service.list("1234", null, 0, 20, null, null);
+        assertEquals(2, byPhone.totalElements());
+        assertEquals(List.of(1L, 3L), byPhone.content().stream().map(UserSummary::id).toList());
+        assertEquals(2, service.list("010-1234", null, 0, 20, null, null).totalElements());
+
+        // 이메일 일부 — 대소문자 무관, 도메인도 검색됨
+        assertEquals(1, service.list("KIM@", null, 0, 20, null, null).totalElements());
+        assertEquals(2, service.list("ineb.co", null, 0, 20, null, null).totalElements());
+
+        // 이름
+        assertEquals(1, service.list("영희", null, 0, 20, null, null).totalElements());
+
+        // 서버 측 페이징 — 페이지 크기 1, 두 번째 페이지
+        PageResponse<UserSummary> page2 = service.list("1234", null, 1, 1, null, null);
+        assertEquals(1, page2.content().size());
+        assertEquals(3L, page2.content().getFirst().id());
+        assertEquals(2, page2.totalPages());
+
+        // 응답은 여전히 마스킹
+        assertEquals("010-****-****", byPhone.content().getFirst().phoneMasked());
+        // 검색 결과 없음
+        assertEquals(0, service.list("없는사람", null, 0, 20, null, null).totalElements());
+    }
+
+    @Test
+    @DisplayName("검색어가 없으면 DB 페이징 경로를 탄다 (전량 복호화 없음)")
+    void noKeywordUsesDbPaging() {
+        AppUser existing = existingUser();   // when(...) 안에서 다른 mock 을 호출하지 않도록 먼저 생성
+        when(repository.findAll(any(Specification.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(existing), PageRequest.of(0, 20), 1));
+
+        PageResponse<UserSummary> result = service.list("  ", null, 0, 20, null, null);
+
+        assertEquals(1, result.totalElements());
+        verify(repository, never()).findAll(any(Specification.class), any(Sort.class));
     }
 
     @Test
@@ -98,6 +163,30 @@ class UserServiceTest {
         assertEquals("ACTIVE", result.status());
         assertTrue(result.integrityValid());
         assertTrue(audits.getFirst().startsWith("USER_CREATED:USER#1"));
+    }
+
+    @Test
+    @DisplayName("DB 직접 변조로 위반된 사용자는 값을 원복해도 위반으로 남고, 재해시로만 정상이 된다")
+    void violationStaysUntilReseal() {
+        AppUser existing = existingUser();
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        existing.changeStatus(UserStatus.SUSPENDED);          // 해시 재계산 없이 변조 (DB 직접 수정)
+        assertFalse(service.get(1L).integrityValid());        // 해시 불일치
+        fx.flags().flag(AuditHook.userTarget(1L), "trigger"); // 트리거 알림 핸들러가 남기는 위반 기록
+        assertTrue(audits.getLast().startsWith("USER_INTEGRITY_VIOLATION:USER#1"));
+
+        existing.changeStatus(UserStatus.ACTIVE);             // DB 직접 원복 — 해시는 다시 일치
+        assertTrue(hasher.verify(existing));
+        assertFalse(service.get(1L).integrityValid());        // 그래도 위반 (표시 유지)
+
+        UserSummary sealed = service.resealIntegrity(1L, "변조 확인 후 재봉인", "admin");
+        assertTrue(sealed.integrityValid());
+        assertTrue(audits.getLast().startsWith("USER_INTEGRITY_RESEALED:USER#1:reason=변조 확인 후 재봉인"));
+        assertTrue(service.get(1L).integrityValid());
+
+        BusinessException e = assertThrows(BusinessException.class,
+                () -> service.resealIntegrity(1L, "다시", "admin"));
+        assertEquals(ErrorCode.INTEGRITY_NOT_FLAGGED, e.getErrorCode());
     }
 
     @Test
@@ -125,7 +214,7 @@ class UserServiceTest {
         audits.clear();
 
         UserSummary result = service.update(1L,
-                new UserUpdateRequest("홍길순", "010-1234-5678", "user@ineb.co.kr", UserStatus.SUSPENDED, "New!2345678"),
+                new UserUpdateRequest("홍길순", "010 1234 5678", "user@ineb.co.kr", UserStatus.SUSPENDED, "New!2345678"),
                 "admin");
 
         assertEquals("홍길순", result.name());
@@ -136,6 +225,22 @@ class UserServiceTest {
         assertTrue(audit.contains("name"));
         assertTrue(audit.contains("status:ACTIVE→SUSPENDED"));
         assertTrue(audit.contains("password"));
+        // 연락처는 표기만 다르고 숫자가 같으므로 변경으로 잡히지 않는다 (해시 없이 복호화·정규화 비교)
+        assertFalse(audit.contains("phone"));
+    }
+
+    @Test
+    @DisplayName("연락처 숫자가 바뀌면 변경 필드에 phone 이 남는다")
+    void updateDetectsPhoneChange() {
+        AppUser existing = existingUser();
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        audits.clear();
+
+        service.update(1L,
+                new UserUpdateRequest("홍길동", "010-1234-9999", "user@ineb.co.kr", UserStatus.ACTIVE, null),
+                "admin");
+
+        assertTrue(audits.getFirst().contains("phone"));
     }
 
     @Test

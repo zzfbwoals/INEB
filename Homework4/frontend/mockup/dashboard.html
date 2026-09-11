@@ -10,9 +10,9 @@
 :root{--amber:#E2A33B;--amber-bg:#3A2A10}
 [data-theme="light"]{--amber:#B26E00;--amber-bg:#FFF1D6}
 
-/* 한 화면 고정 — 콘텐츠를 100vh 그리드로 잡고 중간·하단 행이 남은 높이를 나눠 가짐. 카드 내부만 스크롤 */
+/* 한 화면 고정 — 콘텐츠를 100vh 그리드로 잡고 패널 보드가 남은 높이를 가짐. 카드 내부만 스크롤 */
 .content{height:100vh;overflow:hidden;padding:18px 24px 16px;gap:12px;
-  display:grid;grid-template-rows:auto auto auto minmax(0,1.15fr) minmax(0,1fr)}
+  display:grid;grid-template-rows:auto auto minmax(0,1fr)}
 .page-h{align-items:center}
 .card.fill{display:flex;flex-direction:column;min-height:0}
 .card.fill .body{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
@@ -21,31 +21,127 @@
 
 /* 상단 상태줄: 체인 상태 + Quick actions */
 .dash-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.chain-band{display:flex;align-items:center;gap:12px;padding:7px 12px;border-radius:10px;
+.chain-band{display:flex;align-items:center;gap:12px;padding:5px 12px;border-radius:10px;
   background:var(--surface);border:1px solid var(--line);font-size:12.5px;color:var(--text-2)}
 .chain-band .sep{width:1px;height:14px;background:var(--line-strong)}
+.chain-band .icon-btn{margin:0 -6px}
 .chain-band.bad{border-color:var(--red)}
-.quick{display:flex;gap:8px;flex-wrap:wrap}
-.quick .btn svg{flex:none;width:13px;height:13px}
+.chain-ic{display:inline-flex;align-items:center;margin-right:-2px}
+.chain-ic.ok{color:var(--green)}
+.chain-ic.bad{color:var(--red)}
+.quick{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.quick .btn svg{flex:none}
 .quick .qic{display:inline-flex}
+.quick .qic svg{width:14px;height:14px}
+.quick .btn-sm{gap:4px}
+
+/* 드롭다운(.dd/.dd-menu)은 common.css 공용 — 등록 · 패널 편집 · 동작 테스트 버전 콤보박스가 함께 쓴다 */
+
+/* 헤더 검색창 — 토스증권 상단 검색창처럼 "/" 키 배지 안내 */
+.sbox{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 11px;min-width:224px;border:1px solid var(--line-strong);border-radius:10px;
+  background:var(--raised);color:var(--text-3);font-size:12.5px;cursor:text;transition:border-color .15s,color .15s}
+.sbox:hover{border-color:var(--text-3);color:var(--text-2)}
+.sbox kbd,.srch kbd{font:inherit;font-size:11px;font-weight:700;line-height:1;padding:3px 6px;border-radius:6px;background:var(--surface);border:1px solid var(--line-strong);color:var(--text-2)}
+.srch kbd{background:var(--raised)}
+
+/* 통합 검색 모달 */
+.modal.srch{max-width:660px;max-height:82vh}
+.srch-in{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);color:var(--text-3)}
+.srch-in input{flex:1;min-width:0;background:none;border:0;outline:0;font-size:16px;font-weight:600;color:var(--text)}
+.srch-in input::placeholder{color:var(--text-3);font-weight:500}
+.sq-clear{display:inline-grid;place-items:center;color:var(--text-3);background:none;border:0;cursor:pointer;visibility:hidden}
+.sq-clear:hover{color:var(--text)}
+.srch-tabs{padding:6px 14px 0}
+.srch-body{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr);flex:1;min-height:340px;max-height:58vh;overflow:hidden}
+.srch-list,.srch-side{min-height:0}
+.srch-list{overflow:auto;padding:8px 8px 8px 12px;border-right:1px solid var(--line);scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+.srch-side{padding:18px 20px;overflow:auto;font-size:12.5px;color:var(--text-2)}
+.sq-sec{font-size:11.5px;color:var(--text-3);font-weight:600;padding:10px 10px 6px}
+.sq-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;text-decoration:none;color:inherit}
+.sq-row.on{background:var(--hover)}
+.sq-row .ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--raised);color:var(--text-2);flex:none}
+.sq-row .tx{flex:1;min-width:0}
+.sq-row .tx>b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sq-row .tx>span{display:block;font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.sq-row .rt{flex:none;font-size:11.5px;color:var(--text-3);text-align:right;white-space:nowrap}
+.sq-row .ent{width:24px;height:24px;border-radius:7px;background:var(--raised);color:var(--text-2);display:none;place-items:center;flex:none}
+.sq-row.on .ent{display:grid}
+.sq-more{display:flex;align-items:center;gap:10px;margin:4px 10px 10px}
+.sq-more i{flex:1;height:1px;background:var(--line)}
+.sq-more a{font-size:12px;color:var(--text-2);cursor:pointer;transition:color .15s;white-space:nowrap}
+.sq-more a:hover{color:var(--blue)}
+.srch mark{background:none;color:var(--blue)}
+.sq-empty{padding:44px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+.sq-side-h{font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px;line-height:1.4}
+.srch-side dl{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin-top:14px}
+.srch-side dt{color:var(--text-3);white-space:nowrap}
+.srch-side dd{color:var(--text);min-width:0;overflow-wrap:anywhere}
+.srch-foot{display:flex;gap:18px;padding:12px 18px;border-top:1px solid var(--line);font-size:12px;color:var(--text-2)}
+.srch-foot span{display:inline-flex;align-items:center;gap:6px}
 
 /* 실시간 표시 */
 .live{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
 .live i{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 55%,transparent)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
 
+/* ---- 패널 보드 (토스증권 '패널 편집' 참고) — 분할 트리(row/col 컨테이너 + panel 리프) ----
+   처음엔 원래 그리드(grid4 · grid-mid · grid-bot)로 그려 행 높이·카드 너비를 측정 → 기본 트리의 비율(size). 그 뒤 .tree 로 전환.
+   · 이동: 손잡이(⋮⋮)만 잡고 끌 수 있다. 다른 카드의 상하좌우 가장자리에 놓으면 그 사이에 끼어든다(겹침 없음). 놓일 자리는 파란 막대로 표시
+   · 크기: 카드 사이 12px 간격이 분할선. 올리면 파란 선이 자라나고, 끌면 양쪽 카드가 상대 비율로 조절된다(다른 카드 불변)
+   · X 닫기 / 패널 편집 메뉴로 표시·숨김 · 초기화. 트리는 localStorage(kms.dash.layout.v2)에 저장 */
+.board{display:grid;grid-template-rows:auto minmax(0,1.15fr) minmax(0,1fr);gap:12px;min-height:0}
+.board.tree{display:flex;flex-direction:column;position:relative;min-height:0}
+.board.tree .node{display:flex;min-width:0;min-height:0}
+.board.tree .node.row{flex-direction:row}
+.board.tree .node.col{flex-direction:column}
+.board.tree .card{min-width:0;min-height:0;margin:0;box-sizing:border-box}
+.board.tree .card.fill{display:flex}
+.board.tree .stat{overflow:hidden}
+.board.tree .card.dragging{opacity:.35}
+.split{flex:none;position:relative;z-index:2}
+.split.v{width:12px;cursor:col-resize}
+.split.h{height:12px;cursor:row-resize}
+.split::after{content:'';position:absolute;background:var(--blue);border-radius:2px;transition:transform .18s ease}
+.split.v::after{left:5px;top:0;width:2px;height:100%;transform:scaleY(0)}
+.split.h::after{top:5px;left:0;height:2px;width:100%;transform:scaleX(0)}
+.split:hover::after,.split.on::after{transform:scale(1)}
+.drop-ind{position:absolute;background:var(--blue);border-radius:3px;pointer-events:none;display:none;z-index:5;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 28%,transparent)}
+.ghost{position:fixed;pointer-events:none;opacity:.85;z-index:200;box-shadow:var(--modal-shadow)}
+.grip{display:inline-flex;align-items:center;color:var(--text-3);flex:none;margin-right:-2px;opacity:.7;cursor:grab;touch-action:none}
+.grip:hover{color:var(--text);opacity:1}
+.grip:active{cursor:grabbing}
+.card-h .grip{margin-left:-6px}
+.board.tree .card-h{justify-content:flex-start}
+.board.tree .card-h .hr{margin-left:auto;min-width:0;overflow:hidden;flex:none;max-width:70%}
+.seg button{white-space:nowrap}
+.board.tree .card-h h3{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.board.tree .card-h .hint{white-space:nowrap}
+.cx{margin-left:auto;flex:none}
+.hr~.cx{margin-left:8px}
+/* 요약 카드는 제목만 링크 — 카드 본문 클릭은 이동하지 않는다 */
+.stat .tl{color:inherit;text-decoration:none}
+.stat .tl:hover{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+
 /* 요약 카드 */
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.stat{padding:12px 16px;display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit}
-.stat:hover{border-color:var(--line-strong)}
-.stat .lb{font-size:12px;color:var(--text-2);font-weight:600;display:flex;align-items:center;gap:8px}
-.stat .lb .ic{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:var(--raised);color:var(--text-2)}
+.stat{display:flex;flex-direction:column;color:inherit}
+.stat .stat-b{flex:1;min-height:0;padding:12px 16px;display:flex;flex-direction:column;gap:6px}
 .stat .num{font-size:25px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
 .stat .delta{font-size:11.5px;color:var(--text-3);line-height:1.5}
 .stat .delta b{font-weight:700;color:var(--text-2)}
 .stat.warn-ring{border-color:var(--red)}
-.stat .row{display:flex;align-items:center;gap:12px}
-.donut{flex:none}
+.stat .row{display:flex;align-items:center;gap:12px;flex:1;min-height:0}
+/* 도넛 크기는 JS(ResizeObserver)가 카드 본문 크기에 맞춰 px 로 지정 — 카드를 키우면 같이 커진다 */
+.donut{flex:none;width:72px;height:72px}
+/* 도넛 호버 — 가리킨 구간만 굵게, 나머지 흐리게, 같은 상태 칩 강조. 툴팁은 공용 data-tip(tip-up)을 도넛 래퍼에 걸어 도넛 위에 띄운다(숫자·칩을 가리지 않음) */
+.donut-wrap{display:inline-flex;flex:none}
+.donut circle{transition:opacity .15s,stroke-width .15s}
+.donut.hv circle{opacity:.3}
+.donut.hv circle.on{opacity:1;stroke-width:12}
+.chips span{transition:color .15s}
+.chips span.on{color:var(--text)}
+.chips span.on b{font-weight:800}
 .chips{display:flex;flex-wrap:wrap;gap:2px 9px;font-size:11.5px;color:var(--text-3)}
 .chips span{display:inline-flex;align-items:center;gap:4px}
 .chips i{width:7px;height:7px;border-radius:2px;display:inline-block}
@@ -60,8 +156,10 @@
 .card-h .hint{font-size:11.5px;color:var(--text-3);font-weight:500}
 .card-h .cnt{font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--raised);color:var(--text-2);font-variant-numeric:tabular-nums}
 .card-h .cnt.red{background:var(--red-bg);color:var(--red)}
-.card-h a.more{font-size:11.5px;color:var(--text-3);text-decoration:none}
-.card-h a.more:hover{color:var(--blue)}
+/* "전체 보기 →"·체인 밴드 "감사 로그 →" 공용 — 호버 시 파란색으로 부드럽게 전환 */
+.card-h a.more,.chain-band a.more{color:var(--text-3);text-decoration:none;transition:color .15s}
+.card-h a.more{font-size:11.5px}
+.card-h a.more:hover,.chain-band a.more:hover{color:var(--blue)}
 .empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:12.5px}
 
 /* 중간 행: 추이 차트 + 임박 키 */
@@ -134,7 +232,7 @@
 .rot-row input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px}
 
 @media (max-width:1280px){.grid-bot{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:1100px){.content{height:auto;overflow:visible;display:flex}.grid4{grid-template-columns:repeat(2,1fr)}.grid-mid{grid-template-columns:1fr}.chart-wrap{height:220px}}
+@media (max-width:1100px){.content{height:auto;overflow:visible;display:flex}.grid4{grid-template-columns:repeat(2,1fr)}.grid-mid{grid-template-columns:1fr}.chart-wrap{height:220px}.board.tree{height:900px}}
 @media (max-width:720px){.grid-bot{grid-template-columns:1fr}}
 
 /* 전체화면(관제) 모드 — 사이드바 숨기고 대시보드만 표시 */
@@ -149,15 +247,18 @@ html.dash-full .stat .num{font-size:30px}
 <div class="shell" id="shell"></div>
 <template id="page-body">
   <div class="page-h">
-    <div><h2>대시보드</h2></div>
-    <div class="acts" style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <h2>대시보드</h2>
       <!-- SSE(GET /api/events) 수신 시 마지막 이벤트 시각 갱신. 연결 끊기면 점을 회색으로 -->
       <span class="live" id="liveTag"><i></i>실시간 · 마지막 이벤트 <span id="lastEvt"></span></span>
-      <button class="btn btn-ghost" onclick="refreshDash()" title="새로고침" aria-label="새로고침" style="padding:7px 9px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>
+    </div>
+    <div class="acts" style="display:flex;align-items:center;gap:8px">
+      <!-- 통합 검색 — 클릭 또는 "/" 로 검색 모달 (토스증권 검색 참고) -->
+      <button type="button" class="sbox" onclick="openSearch()" aria-label="검색">
+        <i data-lucide="search" width="14" height="14" stroke-width="2"></i><kbd>/</kbd><span>를 눌러 검색하세요</span>
       </button>
-      <button class="btn btn-ghost" id="fsBtn" onclick="toggleFullscreen()" title="대시보드 전체화면 (ESC로 종료)" aria-label="대시보드 전체화면" style="padding:7px 9px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+      <button class="icon-btn" id="fsBtn" onclick="toggleFullscreen()" data-tip="전체화면" aria-label="전체화면">
+        <i data-lucide="maximize" width="16" height="16" stroke-width="2"></i>
       </button>
     </div>
   </div>
@@ -165,57 +266,74 @@ html.dash-full .stat .num{font-size:30px}
   <!-- 상태줄: 감사 체인 상태(배치 검증 60초 + SSE 갱신) / Quick actions — 등록은 화면 이동 없이 모달로 바로 -->
   <div class="dash-top">
     <div class="chain-band" id="chainBand">
-      <span class="badge b-active">체인 정상</span>
+      <!-- 체인 상태 = 감사 로그 아이콘 색상 (정상 초록 · 위반 빨강), 텍스트는 툴팁 -->
+      <span class="chain-ic ok" id="chainIc" data-tip="체인 정상"><i data-lucide="shield-check" width="16" height="16" stroke-width="2.2"></i></span>
       <span>마지막 검증 <b class="mono" id="chainAt">09:41:03</b></span>
+      <button class="icon-btn sm" data-tip="체인 재검증" aria-label="체인 재검증" onclick="verifyChain()"><i data-lucide="rotate-cw" width="14" height="14" stroke-width="2.2"></i></button>
       <span class="sep"></span>
-      <span>감사 로그 <b class="mono">1,291</b>행 · 위반 구간 <b class="mono">0</b></span>
-      <span class="sep"></span>
-      <a href="audit.html" style="color:var(--text-3);text-decoration:none">감사 로그 →</a>
+      <a class="more" href="audit.html">감사 로그 →</a>
     </div>
     <div class="quick">
-      <!-- 등록 버튼 아이콘은 사이드바 탭 아이콘(shell.js IC)을 그대로 사용 -->
-      <button class="btn btn-ghost btn-sm" onclick="openKeyNew()"><span class="qic" data-ic="key"></span>키 등록</button>
-      <button class="btn btn-ghost btn-sm" onclick="openUserNew()"><span class="qic" data-ic="user"></span>사용자 등록</button>
-      <button class="btn btn-ghost btn-sm" onclick="openModal('mdNotice')"><span class="qic" data-ic="notice"></span>공지사항 등록</button>
-      <button class="btn btn-ghost btn-sm" onclick="verifyChain()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/><path d="m9 12 2 2 4-4"/></svg>체인 재검증</button>
+      <!-- 등록: + 아이콘 → 키/사용자/공지 등록 메뉴 (아이콘은 사이드바 탭 아이콘 shell.js IC 재사용) · 패널 편집: 카드 표시/숨김 + 초기화. 체인 재검증은 체인 밴드의 배지 왼쪽 아이콘 -->
+      <div class="dd" id="ddNew">
+        <button class="btn btn-primary" style="padding:7px 10px" data-tip="등록" aria-label="등록" onclick="ddToggle(event,'ddNew')"><i data-lucide="plus" width="15" height="15" stroke-width="2.2"></i></button>
+        <div class="dd-menu" role="menu">
+          <button class="mm-it" onclick="ddClose();openKeyNew()"><span class="qic" data-ic="key"></span>키 등록</button>
+          <button class="mm-it" onclick="ddClose();openUserNew()"><span class="qic" data-ic="user"></span>사용자 등록</button>
+          <button class="mm-it" onclick="ddClose();openModal('mdNotice')"><span class="qic" data-ic="notice"></span>공지사항 등록</button>
+        </div>
+      </div>
+      <div class="dd" id="ddPanel">
+        <button class="btn btn-ghost btn-sm" onclick="ddToggle(event,'ddPanel')">패널 편집<i data-lucide="chevron-down" width="13" height="13" stroke-width="2.2"></i></button>
+        <div class="dd-menu" id="panelMenu" role="menu"></div>
+      </div>
     </div>
   </div>
 
+  <!-- 패널 보드 — 아래 세 그리드는 기본 배치 측정용 초기 구조. 측정 후 분할 트리(.node.row/.col + .split)로 다시 그린다 -->
+  <div class="board" id="board">
   <!-- 요약 카드 4종 (GET /api/dashboard/summary) -->
   <div class="grid4">
-    <a class="card stat" href="keys.html">
-      <div class="lb"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5"/><path d="m11 12 9.6-9.6"/><path d="m15.2 7.8 3 3L22 7l-3-3"/></svg></span>전체 KMS 키</div>
+    <div class="card stat" data-card="keys" data-title="전체 KMS 키">
+      <div class="card-h"><h3><a class="tl" href="keys.html">전체 KMS 키</a></h3></div>
+      <div class="stat-b">
       <div class="row">
-        <svg class="donut" id="keyDonut" width="52" height="52" viewBox="0 0 64 64"></svg>
+        <span class="donut-wrap tip-up" id="donutWrap" data-tip=""><svg class="donut" id="keyDonut" width="72" height="72" viewBox="0 0 64 64"></svg></span>
         <div style="min-width:0">
           <div class="num" id="keyTotal">0</div>
           <div class="chips" id="keyChips" style="margin-top:4px"></div>
         </div>
       </div>
       <div class="delta" id="keyVer"></div>
-    </a>
-    <a class="card stat" href="users.html">
-      <div class="lb"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg></span>서비스 사용자</div>
+      </div>
+    </div>
+    <div class="card stat" data-card="users" data-title="서비스 사용자">
+      <div class="card-h"><h3><a class="tl" href="users.html">서비스 사용자</a></h3></div>
+      <div class="stat-b">
       <div class="num" id="userTotal">0</div>
       <div class="delta" id="userDelta"></div>
-    </a>
-    <a class="card stat" href="notices.html">
-      <div class="lb"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v12H8l-4 4V5z"/></svg></span>공지사항</div>
+      </div>
+    </div>
+    <div class="card stat" data-card="notices" data-title="공지사항">
+      <div class="card-h"><h3><a class="tl" href="notices.html">공지사항</a></h3></div>
+      <div class="stat-b">
       <div class="num" id="noticeTotal">0</div>
       <div class="delta" id="noticeDelta"></div>
-    </a>
+      </div>
+    </div>
     <!-- 무결성 대상 4종(crypto_key · key_material · app_user · audit_log)별 집계. 0건이면 warn-ring 없음 -->
-    <a class="card stat" id="ivCard" href="keys.html">
-      <div class="lb"><span class="ic" id="ivIcon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4m0 3.2v.1"/></svg></span>무결성 위반</div>
+    <div class="card stat" id="ivCard" data-card="integrity" data-title="무결성 위반">
+      <div class="card-h"><h3>무결성 위반</h3></div>
+      <div class="stat-b">
       <div class="num" id="ivTotal">0</div>
       <div class="iv-grid" id="ivGrid"></div>
-      <div class="delta" id="ivHint"></div>
-    </a>
+      </div>
+    </div>
   </div>
 
   <!-- 사용 추이 (GET /api/dashboard/usage-trend?days=30&op=ALL) + 갱신 임박·예약 활성 (GET /api/dashboard/expiring?days=30) -->
   <div class="grid-mid">
-    <div class="card fill">
+    <div class="card fill" data-card="trend" data-title="키 사용 추이">
       <div class="card-h">
         <h3>키 사용 추이</h3>
         <div style="display:flex;gap:8px">
@@ -237,7 +355,7 @@ html.dash-full .stat .num{font-size:30px}
         <span><i style="background:var(--red)"></i>실패</span>
       </div>
     </div>
-    <div class="card fill">
+    <div class="card fill" data-card="expiring" data-title="갱신 임박 · 예약 활성">
       <div class="card-h">
         <h3>갱신 임박 · 예약 활성 <span class="cnt" id="expCnt">0</span></h3>
         <span class="hint" id="expHint">30일 이내</span>
@@ -248,23 +366,24 @@ html.dash-full .stat .num{font-size:30px}
 
   <!-- 최근 활동 (GET /api/audit-logs?size=10, SSE 로 실시간 추가) · 보안 신호 · 연산 실패 · 알고리즘 분포 -->
   <div class="grid-bot">
-    <div class="card fill">
+    <div class="card fill" data-card="feed" data-title="최근 활동">
       <div class="card-h"><h3>최근 활동</h3><a class="more" href="audit.html">전체 보기 →</a></div>
       <div class="body" id="feed"></div>
     </div>
-    <div class="card fill">
+    <div class="card fill" data-card="signals" data-title="보안 신호">
       <div class="card-h"><h3>보안 신호</h3><span class="hint">최근 24시간</span></div>
       <div class="body" id="sigList"></div>
     </div>
-    <div class="card fill">
+    <div class="card fill" data-card="fails" data-title="연산 실패">
       <div class="card-h"><h3>연산 실패 <span class="cnt red" id="failCnt">0</span></h3><span class="hint">최근 30일</span></div>
       <div class="body" id="failList"></div>
     </div>
-    <div class="card fill">
+    <div class="card fill" data-card="algos" data-title="알고리즘 분포">
       <div class="card-h"><h3>알고리즘 분포</h3><span class="hint">폐기 제외</span></div>
       <div class="body bars" id="algoBars"></div>
     </div>
   </div>
+  </div><!-- /board -->
 </template>
 
 <!-- 키 등록 모달 — keys.html 과 동일 (POST /api/keys) -->
@@ -302,7 +421,6 @@ html.dash-full .stat .num{font-size:30px}
       <div class="field"><label>설명</label><input class="input" id="nkDesc" placeholder="용도·연동 시스템 등 (선택)"></div>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdKeyNew')">취소</button>
       <button class="btn btn-primary" onclick="createKey()">생성</button>
     </div>
   </div>
@@ -325,8 +443,26 @@ html.dash-full .stat .num{font-size:30px}
       </div>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdUser')">취소</button>
       <button class="btn btn-primary" onclick="saveUser()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 통합 검색 모달 (토스증권 검색 참고) — "/" 또는 헤더 검색창. 전체 탭은 항목별 5건 + 더 보기, 오른쪽은 선택 항목 상세. ↑↓ 탐색 · ↵ 이동 · ESC 지우기/닫기 -->
+<div class="modal-bk" id="mdSearch" onclick="bkClose(event,this)">
+  <div class="modal srch">
+    <div class="srch-in">
+      <i data-lucide="search" width="17" height="17" stroke-width="2.2"></i>
+      <input id="sqInput" placeholder="검색어를 입력해주세요" autocomplete="off" spellcheck="false">
+      <button type="button" class="sq-clear" id="sqClear" data-tip="지우기" aria-label="지우기" onclick="sqClear()"><i data-lucide="circle-x" width="16" height="16" stroke-width="2"></i></button>
+    </div>
+    <div class="tabs srch-tabs" id="sqTabs"></div>
+    <div class="srch-body">
+      <div class="srch-list" id="sqList"></div>
+      <div class="srch-side" id="sqSide"></div>
+    </div>
+    <div class="srch-foot">
+      <span><kbd>↵</kbd>이동하기</span><span><kbd>ESC</kbd>지우기 · 닫기</span><span><kbd>↑</kbd><kbd>↓</kbd>탐색하기</span>
     </div>
   </div>
 </div>
@@ -338,19 +474,20 @@ html.dash-full .stat .num{font-size:30px}
     <div class="modal-b">
       <div class="field"><label>제목 <em>*</em></label><input class="input" id="ntTitle" placeholder="공지 제목을 입력하세요"></div>
       <div class="field"><label>본문 <em>*</em></label><textarea class="input txt" id="ntBody" style="min-height:130px" placeholder="공지 내용을 입력하세요"></textarea></div>
-      <div class="field"><label>첨부파일 <span style="font-weight:400;color:var(--text-3)">— 업로드 시 마스터키로 암호화 저장</span></label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2);cursor:pointer"><input type="checkbox" style="accent-color:var(--red);width:14px;height:14px"> 상단 고정</label>
+      <div class="field"><label>첨부파일 <span style="font-weight:400;color:var(--text-3)">— 마스터키 암호화 저장 · 파일당 20MB · 최대 5개</span></label>
         <button class="btn btn-ghost" style="justify-content:center;border-style:dashed;padding:16px" onclick="toast('파일 선택은 목업에서 생략됩니다 — 암호화 업로드 처리')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V5m0 0 4 4m-4-4L8 9M4 19h16"/></svg>파일을 끌어오거나 클릭하여 선택
+          <i data-lucide="upload" width="15" height="15" stroke-width="2"></i>파일을 끌어오거나 클릭하여 선택
         </button></div>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdNotice')">취소</button>
       <button class="btn btn-primary" onclick="createNotice()">등록</button>
     </div>
   </div>
 </div>
 
 <script src="assets/data.js"></script>
+<script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
 <script>
 renderShell('dashboard');
@@ -372,8 +509,85 @@ const keyById=id=>KEYS.find(k=>k.id===id);
 
 /* ---------- 상단 ---------- */
 document.querySelectorAll('.quick .qic').forEach(el=>{el.innerHTML=IC[el.dataset.ic];});
+/* 드롭다운 열기/닫기(ddToggle/ddClose)는 shell.js 공용. 패널 편집 메뉴는 항목을 눌러도 닫히지 않는다(연속 토글) */
+
+/* ---------- 통합 검색 (토스증권 검색 참고) ----------
+   "/" 로 열기(입력 중이 아닐 때) · 탭(전체·키·사용자·공지사항·감사 로그)은 항상 표시, 검색어가 비면 목록·상세 모두 비움
+   전체 탭은 항목별 5건 + 구분선 + 더 보기(→ 해당 탭) · 오른쪽은 선택 항목 상세 · ↑↓ 탐색, ↵ 상세 화면 이동, ESC 지우기→닫기
+   API 전환 시: GET /api/search?q=&type= (키·사용자·공지·감사 통합, 사용자는 서버 복호화 부분검색) */
+const SQ_CATS=[['keys','키'],['users','사용자'],['notices','공지사항'],['audits','감사 로그']];
+let sqTab='all',sqRows=[],sqSel=0;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function hl(s,q){s=String(s??'');if(!q)return esc(s);const i=s.toLowerCase().indexOf(q);if(i<0)return esc(s);
+  return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+q.length))+'</mark>'+esc(s.slice(i+q.length));}
+const hasQ=(q,...f)=>!q||f.some(v=>String(v??'').toLowerCase().includes(q));
+const ICON=(n)=>`<span class="ic"><i data-lucide="${n}" width="14" height="14" stroke-width="2"></i></span>`;
+function sqSearch(q){
+  return {
+    keys:KEYS.filter(k=>hasQ(q,k.name,k.algo,k.uid,k.desc,STATE_KO[k.status])).map(k=>({cat:'keys',d:k,href:`key-detail.html?id=${k.id}`,
+      html:`${ICON('key-round')}<div class="tx"><b>${hl(k.name,q)}</b><span>${hl(k.algo,q)}${k.mode?' · '+k.mode:''} · v${k.currentVersion}</span></div><span class="rt">${stateDot(k.status)}</span>`})),
+    users:USERS.filter(u=>hasQ(q,u.name,u.plainEmail,u.plainPhone,u.plainPhone.replace(/\D/g,''))).map(u=>({cat:'users',d:u,href:`users.html?id=${u.id}`,
+      html:`${ICON('user')}<div class="tx"><b>${hl(u.name,q)}</b><span class="mono">${u.phone} · ${u.email}</span></div><span class="rt">${u.status==='ACTIVE'?'활성':'정지'}</span>`})),
+    notices:NOTICES.filter(n=>hasQ(q,n.title,n.by)).map(n=>({cat:'notices',d:n,href:`notice-detail.html?id=${n.id}`,
+      html:`${ICON('message-square')}<div class="tx"><b>${n.pinned?'<span class="pin-mark" style="margin-right:5px;vertical-align:-2px"><i data-lucide="pin" width="12" height="12"></i></span>':''}${hl(n.title,q)}</b><span>${hl(n.by,q)} · ${n.at} · 조회 ${n.views}</span></div><span class="rt">${n.files?'📎 '+n.files:''}</span>`})),
+    audits:AUDITS.filter(a=>hasQ(q,a.action,a.actor,a.target,a.detail,a.keyId&&keyById(a.keyId)?.name)).map(a=>({cat:'audits',d:a,href:`audit.html?id=${a.id}`,
+      html:`${ICON('shield-check')}<div class="tx"><b>${hl(a.action,q)}</b><span>${hl(a.actor,q)} · ${hl(a.target,q)}${a.keyId&&keyById(a.keyId)?' · '+hl(keyById(a.keyId).name,q):''}</span></div><span class="rt">${rel(a.at)}</span>`}))
+  };
+}
+function openSearch(){const i=document.getElementById('sqInput');i.value='';sqTab='all';openModal('mdSearch');sqRender();setTimeout(()=>i.focus(),30);}
+function sqClear(){const i=document.getElementById('sqInput');i.value='';sqTab='all';sqRender();i.focus();}
+function sqRender(){
+  const i=document.getElementById('sqInput'),q=i.value.trim().toLowerCase();
+  document.getElementById('sqClear').style.visibility=q?'visible':'hidden';
+  const tabs=document.getElementById('sqTabs');
+  tabs.innerHTML=[['all','전체'],...SQ_CATS].map(([k,l])=>`<button type="button" class="tab ${sqTab===k?'on':''}" data-tab="${k}">${l}</button>`).join('');
+  const res=q?sqSearch(q):null;sqRows=[];let h='';
+  const cats=q?(sqTab==='all'?SQ_CATS:SQ_CATS.filter(c=>c[0]===sqTab)):[];
+  const LIM=sqTab==='all'?5:100;
+  cats.forEach(([c,label])=>{const arr=res[c];if(!arr.length)return;
+    h+=`<div class="sq-sec">${label}</div>`;
+    arr.slice(0,LIM).forEach(r=>{const n=sqRows.push(r)-1;h+=`<a class="sq-row" data-i="${n}" href="${r.href}">${r.html}<span class="ent"><i data-lucide="corner-down-left" width="12" height="12" stroke-width="2.2"></i></span></a>`;});
+    // 구분선과 같은 줄에 "더 보기" (------ 더 보기 →)
+    if(sqTab==='all')h+=`<div class="sq-more"><i></i>${arr.length>LIM?`<a data-tab="${c}">${label} 더 보기 (${arr.length}) →</a>`:''}</div>`;});
+  if(q&&!sqRows.length)h+=`<div class="sq-empty">'${esc(i.value.trim())}' 검색 결과가 없습니다</div>`;
+  document.getElementById('sqList').innerHTML=h;sqSel=0;sqPaint();
+}
+function sqPaint(){
+  const list=document.getElementById('sqList'),lr=list.getBoundingClientRect();
+  list.querySelectorAll('.sq-row').forEach(el=>{const on=+el.dataset.i===sqSel;el.classList.toggle('on',on);
+    if(on){const rr=el.getBoundingClientRect();if(rr.top<lr.top+8)list.scrollTop+=rr.top-lr.top-8;else if(rr.bottom>lr.bottom-8)list.scrollTop+=rr.bottom-lr.bottom+8;}});
+  const r=sqRows[sqSel],side=document.getElementById('sqSide');
+  if(!r){side.innerHTML=sqRows.length||!document.getElementById('sqInput').value.trim()?'':'<div class="sq-empty">항목을 선택하면 상세가 표시됩니다</div>';return;}
+  const d=r.d,badge=st=>stateBadge(st);
+  if(r.cat==='keys')side.innerHTML=`<div class="sq-side-h">${esc(d.name)}</div><div class="mono" style="font-size:11px;color:var(--text-3)">${d.uid}</div>
+    <dl><dt>알고리즘</dt><dd>${d.algo}${d.mode?' · '+d.mode:''}</dd><dt>용도</dt><dd>${PURPOSE[d.purpose]}</dd><dt>현재 버전</dt><dd class="mono">v${d.currentVersion}</dd>
+    <dt>자동 갱신</dt><dd>${d.autoRotate?d.rotationPeriodDays+'일 · 다음 '+d.nextRotationAt.slice(0,10):'사용 안 함'}</dd><dt>등록</dt><dd class="mono">${d.created}</dd>${d.desc?`<dt>설명</dt><dd>${esc(d.desc)}</dd>`:''}</dl>`;
+  else if(r.cat==='users')side.innerHTML=`<div class="sq-side-h">${esc(d.name)}</div>
+    <dl><dt>연락처</dt><dd class="mono">${d.phone}</dd><dt>이메일</dt><dd class="mono">${d.email}</dd><dt>가입일</dt><dd class="mono">${d.joined}</dd></dl>
+    <div style="margin-top:14px;font-size:11.5px;color:var(--text-3)">원문은 사용자 관리에서 사유 입력 후 조회</div>`;
+  else if(r.cat==='notices')side.innerHTML=`<div class="sq-side-h">${esc(d.title)}</div>${d.pinned?'<span class="badge b-bad">고정</span>':''}
+    <dl><dt>작성자</dt><dd>${esc(d.by)}</dd><dt>등록일</dt><dd class="mono">${d.at}</dd><dt>조회수</dt><dd class="mono">${d.views}</dd><dt>첨부</dt><dd>${d.files?d.files+'건 (암호화 저장)':'없음'}</dd></dl>`;
+  else side.innerHTML=`<div class="sq-side-h"><span class="actchip">${d.action}</span></div>
+    <dl><dt>번호</dt><dd class="mono">#${d.id}</dd><dt>시각</dt><dd class="mono">${d.at}</dd><dt>행위자</dt><dd>${esc(d.actor)}</dd><dt>대상</dt><dd class="mono">${esc(d.target)}</dd><dt>상세</dt><dd>${esc(d.detail)}</dd></dl>`;
+}
+function sqGo(){const r=sqRows[sqSel];if(!r)return;location.href=r.href;}
+(function bindSearch(){
+  const i=document.getElementById('sqInput'),list=document.getElementById('sqList');
+  i.addEventListener('input',sqRender);
+  i.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){e.preventDefault();if(sqRows.length){sqSel=(sqSel+1)%sqRows.length;sqPaint();}}
+    else if(e.key==='ArrowUp'){e.preventDefault();if(sqRows.length){sqSel=(sqSel-1+sqRows.length)%sqRows.length;sqPaint();}}
+    else if(e.key==='Enter'){e.preventDefault();sqGo();}
+    else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();if(i.value){sqClear();}else closeModal('mdSearch');}});
+  list.addEventListener('mouseover',e=>{const r=e.target.closest('.sq-row');if(r&&+r.dataset.i!==sqSel){sqSel=+r.dataset.i;sqPaint();}});
+  list.addEventListener('click',e=>{const more=e.target.closest('[data-tab]');if(more){sqTab=more.dataset.tab;sqRender();i.focus();}});
+  document.getElementById('sqTabs').addEventListener('click',e=>{const t=e.target.closest('[data-tab]');if(t){sqTab=t.dataset.tab;sqRender();i.focus();}});
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey)return;
+    if(e.target.closest('input,textarea,select,[contenteditable]')||document.querySelector('.modal-bk.open'))return;
+    e.preventDefault();openSearch();});
+})();
 document.getElementById('lastEvt').textContent=hhmmss(parseKst(AUDITS[0].at));
-function refreshDash(){document.getElementById('lastEvt').textContent=hhmmss(NOW);toast('대시보드를 갱신했습니다.');}
 function verifyChain(){document.getElementById('chainAt').textContent=hhmmss(NOW);toast('해시 체인 검증을 통과했습니다.');}
 function toggleFullscreen(){
   if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>toast('이 브라우저에서는 전체화면을 사용할 수 없습니다'));}
@@ -385,10 +599,10 @@ document.addEventListener('fullscreenchange',()=>{
   const b=document.getElementById('fsBtn');
   if(b){
     b.innerHTML=on
-      ?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5"/></svg>'
-      :'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>';
-    b.title=on?'전체화면 종료 (ESC)':'대시보드 전체화면 (ESC로 종료)';
-    b.setAttribute('aria-label',on?'전체화면 종료':'대시보드 전체화면');
+      ?'<i data-lucide="minimize" width="16" height="16" stroke-width="2"></i>'
+      :'<i data-lucide="maximize" width="16" height="16" stroke-width="2"></i>';
+    b.dataset.tip=on?'전체화면 종료':'전체화면';
+    b.setAttribute('aria-label',b.dataset.tip);
   }
 });
 
@@ -398,12 +612,25 @@ document.addEventListener('fullscreenchange',()=>{
   const COLOR={ACTIVE:'var(--green)',PRE_ACTIVE:'var(--blue)',DEACTIVATED:'var(--text-2)',DESTROYED:'var(--text-3)'};
   const cnt=Object.fromEntries(ORDER.map(s=>[s,KEYS.filter(k=>k.status===s).length]));
   document.getElementById('keyTotal').textContent=KEYS.length;
-  document.getElementById('keyChips').innerHTML=ORDER.map(s=>`<span><i style="background:${COLOR[s]}"></i>${STATE_KO[s]} <b>${cnt[s]}</b></span>`).join('');
+  document.getElementById('keyChips').innerHTML=ORDER.map(s=>`<span data-s="${s}"><i style="background:${COLOR[s]}"></i>${STATE_KO[s]} <b>${cnt[s]}</b></span>`).join('');
   // 도넛 — 상태 4구간
   const R=26,C=2*Math.PI*R;let off=0,d='';
   ORDER.forEach(s=>{const f=cnt[s]/KEYS.length;if(!f)return;
-    d+=`<circle cx="32" cy="32" r="${R}" fill="none" stroke="${COLOR[s]}" stroke-width="9" stroke-dasharray="${f*C-1.5} ${C-f*C+1.5}" stroke-dashoffset="${-off*C}" transform="rotate(-90 32 32)"><title>${STATE_KO[s]} ${cnt[s]}건</title></circle>`;off+=f;});
-  document.getElementById('keyDonut').innerHTML=d;
+    d+=`<circle data-s="${s}" cx="32" cy="32" r="${R}" fill="none" stroke="${COLOR[s]}" stroke-width="9" stroke-dasharray="${f*C-1.5} ${C-f*C+1.5}" stroke-dashoffset="${-off*C}" transform="rotate(-90 32 32)"></circle>`;off+=f;});
+  const svg=document.getElementById('keyDonut');svg.innerHTML=d;
+  // 도넛 호버 — 구간 강조 + 같은 상태 칩 강조 + 도넛 위 툴팁(상태 · 건수 · 비율). 구간 밖(가운데·틈)에서는 전체 건수
+  const chips=document.getElementById('keyChips'),wrap=document.getElementById('donutWrap');
+  const total=`전체 ${KEYS.length}건`;wrap.dataset.tip=total;
+  const clear=()=>{svg.classList.remove('hv');svg.querySelectorAll('circle').forEach(x=>x.classList.remove('on'));
+    chips.querySelectorAll('span').forEach(x=>x.classList.remove('on'));wrap.dataset.tip=total;};
+  svg.addEventListener('mouseover',e=>{const c=e.target.closest('circle');if(!c){clear();return;}const s=c.dataset.s;
+    clear();svg.classList.add('hv');c.classList.add('on');chips.querySelector(`span[data-s="${s}"]`).classList.add('on');
+    wrap.dataset.tip=`${STATE_KO[s]} ${cnt[s]}건 · ${Math.round(cnt[s]/KEYS.length*100)}%`;});
+  svg.addEventListener('mouseleave',clear);
+  // 도넛 유동 크기 — 본문 행 높이와 너비의 40% 중 작은 값(44~200px). 카드 크기 조절·전체화면에 즉시 반응
+  const row=svg.closest('.row');
+  const fit=()=>{const sz=Math.round(Math.max(44,Math.min(200,row.clientHeight,row.clientWidth*0.4)));svg.style.width=svg.style.height=sz+'px';};
+  new ResizeObserver(fit).observe(row);fit();
   // 버전 지표 — 네이버식 버전 운영
   const vers=KEYS.flatMap(k=>k.versions.map(v=>({...v,cur:k.currentVersion===v.v})));
   const decOnly=vers.filter(v=>v.state==='ACTIVE'&&!v.cur).length;
@@ -416,11 +643,11 @@ document.addEventListener('fullscreenchange',()=>{
   document.getElementById('userTotal').textContent=USERS.length;
   document.getElementById('userDelta').innerHTML=`활성 <b>${uAct}</b> · 정지 <b>${USERS.length-uAct}</b> · 최근 30일 가입 <b>${uNew}</b>`;
 
-  const nImp=NOTICES.filter(n=>n.important).length, nFiles=NOTICES.reduce((a,n)=>a+n.files,0);
+  const nImp=NOTICES.filter(n=>n.pinned).length, nFiles=NOTICES.reduce((a,n)=>a+n.files,0);
   const ym=NOW.getFullYear()+'-'+String(NOW.getMonth()+1).padStart(2,'0');
   const nMonth=NOTICES.filter(n=>n.at.slice(0,7)===ym).length;
   document.getElementById('noticeTotal').textContent=NOTICES.length;
-  document.getElementById('noticeDelta').innerHTML=`중요 <b>${nImp}</b> · 이번 달 <b>${nMonth}</b> · 첨부 <b>${nFiles}</b>건 암호화 저장`;
+  document.getElementById('noticeDelta').innerHTML=`고정 <b>${nImp}</b> · 이번 달 <b>${nMonth}</b> · 첨부 <b>${nFiles}</b>건 암호화 저장`;
 
   // 무결성 위반 — 키 메타(crypto_key) / 키 버전(key_material) / 사용자(app_user) / 감사 체인(audit_log 구간)
   const ivKey=KEYS.filter(k=>!k.integrity).length;
@@ -434,12 +661,6 @@ document.addEventListener('fullscreenchange',()=>{
   if(ivTotal){
     card.classList.add('warn-ring');
     document.getElementById('ivTotal').style.color='var(--red)';
-    document.getElementById('ivIcon').style.cssText='background:var(--red-bg);color:var(--red)';
-    const first=KEYS.find(k=>!k.integrity||k.versions.some(v=>!v.integrity));
-    card.href=`key-detail.html?id=${first.id}`;
-    document.getElementById('ivHint').innerHTML=`<span style="color:var(--red)">${first.name} 확인 필요 →</span>`;
-  }else{
-    document.getElementById('ivHint').textContent='위반 없음';
   }
 })();
 
@@ -601,6 +822,175 @@ drawTrend();
   const rows=Object.entries(m).sort((a,b)=>b[1]-a[1]);const max=rows.length?rows[0][1]:1;
   document.getElementById('algoBars').innerHTML=rows.map(([n,v])=>`
     <div class="bar-it"><span class="nm">${n}</span><div class="tr"><div class="fl" style="width:${v/max*100}%"></div></div><span class="v">${v}</span></div>`).join('');
+})();
+
+/* ---------- 패널 보드 — 토스증권 '패널 편집' 참고 (분할 트리) ----------
+   트리: {type:'row'|'col', size, children:[…]} | {type:'panel', id, size}. size 는 형제 사이의 flex 비율.
+   · 기본 트리 = 원래 그리드로 그린 행 높이·카드 너비 비율. 카드 렌더가 끝난 뒤 측정하므로 이 블록은 스크립트 끝에 둔다
+   · 이동(손잡이만): 놓는 위치의 카드 가장자리에 따라 같은 방향 컨테이너면 형제로 끼어들고, 아니면 그 카드와 둘이서 새 컨테이너로 묶인다
+   · 분할선 드래그: 양옆 두 형제의 size 합을 유지하며 나눈다 → 나머지 카드는 그대로
+   · 저장: localStorage kms.dash.layout.v2 — React 전환 시 서버 저장(관리자별) 또는 그대로 브라우저 저장 선택 */
+const LS_KEY='kms.dash.layout.v2';
+const PANEL_GROUPS=[['요약',['keys','users','notices','integrity']],['분석',['trend','expiring','algos']],['활동',['feed','signals','fails']]];
+const DEFAULT_ROW={keys:'A',users:'A',notices:'A',integrity:'A',trend:'B',expiring:'B',feed:'C',signals:'C',fails:'C',algos:'C'};
+const board=document.getElementById('board');
+const cardEl=Object.fromEntries([...board.querySelectorAll('.card[data-card]')].map(c=>[c.dataset.card,c]));
+const MIN_W=160,MIN_H=80;
+const clamp=(v,a,b)=>Math.min(Math.max(v,a),b);
+let DEFAULT_TREE=null,tree=null;
+function measureDefaults(){
+  const b=board.getBoundingClientRect();
+  DEFAULT_TREE={type:'col',size:1,children:[['A','.grid4'],['B','.grid-mid'],['C','.grid-bot']].map(([k,sel])=>{
+    const g=board.querySelector(sel),gr=g.getBoundingClientRect();
+    return {type:'row',k,size:gr.height/b.height,children:[...g.querySelectorAll('.card[data-card]')]
+      .map(c=>({type:'panel',id:c.dataset.card,size:c.getBoundingClientRect().width/gr.width}))};})};
+}
+const cloneTree=t=>JSON.parse(JSON.stringify(t,(k,v)=>k==='el'?undefined:v));
+function loadTree(){try{const v=JSON.parse(localStorage.getItem(LS_KEY));if(v&&v.v===2&&v.tree)return v.tree;}catch(e){}return null;}
+function saveTree(){try{localStorage.setItem(LS_KEY,JSON.stringify({v:2,tree:cloneTree(tree)}));}catch(e){}}
+function visibleIds(n=tree,out=[]){if(n.type==='panel')out.push(n.id);else n.children.forEach(c=>visibleIds(c,out));return out;}
+function findParent(n,id){if(n.type==='panel')return null;for(const c of n.children){if(c.type==='panel'&&c.id===id)return n;const r=findParent(c,id);if(r)return r;}return null;}
+/* 자식이 하나뿐인 컨테이너는 걷어내고, 같은 방향이 중첩되면 평탄화한다.
+   형제 size 합은 항상 100 으로 맞춘다 — flex-grow 합이 1 미만이면 남는 공간을 그 비율만큼만 써서 행 오른쪽 끝이 비기 때문 */
+function normalize(){
+  const walk=n=>{
+    if(n.type==='panel')return n;
+    n.children=n.children.map(walk).filter(c=>c.type==='panel'||c.children.length);
+    const flat=[];
+    n.children.forEach(c=>{
+      if(c.type===n.type){const s=c.children.reduce((a,x)=>a+x.size,0)||1;c.children.forEach(x=>flat.push({...x,size:c.size*x.size/s}));}
+      else flat.push(c);});
+    n.children=flat;
+    if(n.children.length===1&&n!==tree)return {...n.children[0],size:n.size};
+    const sum=n.children.reduce((a,x)=>a+x.size,0)||1;n.children.forEach(x=>{x.size=x.size/sum*100;});
+    return n;};
+  tree=walk(tree);
+  if(tree.type!=='panel'&&tree.children.length===1&&tree.children[0].type!=='panel')tree={...tree.children[0],size:1};
+}
+function removeLeaf(id){const p=findParent(tree,id);if(!p)return;p.children=p.children.filter(c=>!(c.type==='panel'&&c.id===id));normalize();}
+/* sizes = [leaf, target] 비율을 지정하면(다시 표시 시 기본 비율) 그대로 쓰고, 없으면 형제 평균 / 1:1 */
+function insertLeaf(id,targetId,zone,sizes){
+  const leaf={type:'panel',id,size:1};
+  const p=findParent(tree,targetId);if(!p)return;
+  const i=p.children.findIndex(c=>c.type==='panel'&&c.id===targetId),t=p.children[i];
+  const horiz=zone==='left'||zone==='right',after=zone==='right'||zone==='bottom',want=horiz?'row':'col';
+  if(p.type===want){leaf.size=sizes?t.size*sizes[0]/sizes[1]:p.children.reduce((a,x)=>a+x.size,0)/p.children.length;p.children.splice(after?i+1:i,0,leaf);}
+  else{const ls=sizes?sizes[0]:1,ts=sizes?sizes[1]:1;p.children[i]={type:want,size:t.size,children:after?[{...t,size:ts},{...leaf,size:ls}]:[{...leaf,size:ls},{...t,size:ts}]};}
+  normalize();
+}
+function render(){
+  board.innerHTML='';
+  const build=n=>{
+    if(n.type==='panel'){const el=cardEl[n.id];el.style.flex=`${n.size} 1 0`;n.el=el;return el;}
+    const el=document.createElement('div');el.className='node '+n.type;el.style.flex=`${n.size} 1 0`;n.el=el;
+    n.children.forEach((c,i)=>{
+      if(i){const sp=document.createElement('div');sp.className='split '+(n.type==='row'?'v':'h');bindSplit(sp,n,i);el.appendChild(sp);}
+      el.appendChild(build(c));});
+    return el;};
+  const root=build(tree);root.style.flex='1 1 0';board.appendChild(root);
+  const ind=document.createElement('div');ind.className='drop-ind';ind.id='dropInd';board.appendChild(ind);
+  renderPanelMenu();
+}
+/* 분할선 — 양옆 형제(a,b)의 size 합을 유지하며 픽셀 비율로 재분배 */
+function bindSplit(sp,n,i){
+  sp.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;e.preventDefault();
+    const a=n.children[i-1],b=n.children[i],horiz=n.type==='row';
+    const ra=a.el.getBoundingClientRect(),rb=b.el.getBoundingClientRect();
+    const aPx=horiz?ra.width:ra.height,bPx=horiz?rb.width:rb.height,total=aPx+bPx,sum=a.size+b.size;
+    const min=Math.min(horiz?MIN_W:MIN_H,total/2),s0=horiz?e.clientX:e.clientY;
+    sp.classList.add('on');document.body.style.cursor=horiz?'col-resize':'row-resize';
+    const mv=ev=>{const na=clamp(aPx+((horiz?ev.clientX:ev.clientY)-s0),min,total-min);
+      a.size=sum*na/total;b.size=sum-a.size;a.el.style.flexGrow=a.size;b.el.style.flexGrow=b.size;};
+    const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);
+      sp.classList.remove('on');document.body.style.cursor='';saveTree();};
+    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
+  });
+}
+/* 놓을 자리 판정 — 커서에 가장 가까운(자기 제외) 카드를 찾고, 그 카드 안에서 가장 가까운 가장자리를 zone 으로 */
+function hitTest(x,y,selfId){
+  const b=board.getBoundingClientRect();if(x<b.left||x>b.right||y<b.top||y>b.bottom)return null;
+  let best=null,bd=Infinity;
+  visibleIds().filter(i=>i!==selfId).forEach(i=>{const r=cardEl[i].getBoundingClientRect();
+    const d=Math.hypot(Math.max(r.left-x,0,x-r.right),Math.max(r.top-y,0,y-r.bottom));
+    if(d<bd){bd=d;best={id:i,r};}});
+  if(!best)return null;
+  const r=best.r,dl=(x-r.left)/r.width,dr=1-dl,dt=(y-r.top)/r.height,db=1-dt,m=Math.min(dl,dr,dt,db);
+  return {id:best.id,r,zone:m===dl?'left':m===dr?'right':m===dt?'top':'bottom'};
+}
+function showInd(ind,t){
+  if(!t){ind.style.display='none';return;}
+  const b=board.getBoundingClientRect(),r=t.r,T=4;ind.style.display='block';
+  if(t.zone==='left'||t.zone==='right'){ind.style.top=(r.top-b.top)+'px';ind.style.height=r.height+'px';ind.style.width=T+'px';
+    ind.style.left=((t.zone==='left'?r.left-8:r.right+4)-b.left)+'px';}
+  else{ind.style.left=(r.left-b.left)+'px';ind.style.width=r.width+'px';ind.style.height=T+'px';
+    ind.style.top=((t.zone==='top'?r.top-8:r.bottom+4)-b.top)+'px';}
+}
+/* 손잡이 드래그 — 4px 이상 움직이면 고스트(복제본)가 커서를 따라가고 원본은 흐려진다. 놓으면 트리에서 빼서 목표 자리에 끼운다 */
+function bindGrip(c){
+  const id=c.dataset.card;
+  c.querySelector('.grip').addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;e.preventDefault();
+    const sx=e.clientX,sy=e.clientY,r0=c.getBoundingClientRect(),offX=sx-r0.left,offY=sy-r0.top;
+    let ghost=null,target=null;const ind=document.getElementById('dropInd');
+    const mv=ev=>{
+      if(!ghost){if(Math.hypot(ev.clientX-sx,ev.clientY-sy)<4)return;
+        ghost=c.cloneNode(true);ghost.classList.add('ghost');ghost.style.width=r0.width+'px';ghost.style.height=r0.height+'px';
+        document.body.appendChild(ghost);c.classList.add('dragging');document.body.style.cursor='grabbing';}
+      ghost.style.left=(ev.clientX-offX)+'px';ghost.style.top=(ev.clientY-offY)+'px';
+      target=hitTest(ev.clientX,ev.clientY,id);showInd(ind,target);};
+    const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);
+      if(!ghost)return;ghost.remove();c.classList.remove('dragging');document.body.style.cursor='';ind.style.display='none';
+      if(target){removeLeaf(id);insertLeaf(id,target.id,target.zone);render();saveTree();}};
+    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
+  });
+}
+function hidePanel(id){removeLeaf(id);render();saveTree();}
+/* 다시 표시 — 기본 배치에서 같은 행에 있던 이웃 중 아직 보이는 카드를 찾아 그 옆(원래 순서·기본 비율)에 끼운다.
+   이웃이 모두 숨겨졌으면 원래 행 위치에 새 행으로 */
+function showPanel(id){
+  const k=DEFAULT_ROW[id],drow=DEFAULT_TREE.children.find(r=>r.k===k),ids=drow.children.map(c=>c.id),vis=new Set(visibleIds());
+  const dsize=x=>drow.children.find(c=>c.id===x).size,i=ids.indexOf(id);
+  let sib=null,zone='right';
+  for(let j=i-1;j>=0&&!sib;j--)if(vis.has(ids[j]))sib=ids[j];
+  if(!sib){zone='left';for(let j=i+1;j<ids.length&&!sib;j++)if(vis.has(ids[j]))sib=ids[j];}
+  if(sib){insertLeaf(id,sib,zone,[dsize(id),dsize(sib)]);}
+  else{
+    if(tree.type!=='col')tree={type:'col',size:1,children:[{...tree,size:1}]};
+    const nr={type:'row',k,size:drow.size,children:[{type:'panel',id,size:1}]};
+    const order=n=>n.k||(visibleIds(n).map(x=>DEFAULT_ROW[x]).sort()[0]||'Z');
+    const idx=tree.children.findIndex(n=>order(n)>k);tree.children.splice(idx<0?tree.children.length:idx,0,nr);
+  }
+  normalize();render();saveTree();
+}
+function resetLayout(){tree=cloneTree(DEFAULT_TREE);normalize();try{localStorage.removeItem(LS_KEY);}catch(e){}render();}
+function renderPanelMenu(){
+  const m=document.getElementById('panelMenu'),vis=new Set(visibleIds());
+  m.innerHTML=PANEL_GROUPS.map(([g,ids])=>`<div class="mm-sec">${g}</div>`+ids.map(id=>
+    `<button type="button" class="mm-it ${vis.has(id)?'on':''}" data-id="${id}"><span class="ck"><i data-lucide="check" width="14" height="14" stroke-width="2.6"></i></span>${cardEl[id].dataset.title}</button>`).join('')).join('')
+    +`<div class="mm-div"></div><button type="button" class="mm-it" data-reset><span class="ck" style="opacity:1;color:var(--text-3)"><i data-lucide="rotate-ccw" width="14" height="14" stroke-width="2"></i></span>초기화</button>`;
+  m.onclick=e=>{e.stopPropagation();const b=e.target.closest('.mm-it');if(!b)return;
+    if(b.hasAttribute('data-reset')){resetLayout();toast('기본 배치로 되돌렸습니다.');return;}
+    vis.has(b.dataset.id)?hidePanel(b.dataset.id):showPanel(b.dataset.id);};
+}
+function addChrome(c){
+  const head=c.querySelector('.card-h');
+  head.insertAdjacentHTML('afterbegin','<span class="grip" aria-label="이동"><i data-lucide="grip-vertical" width="14" height="14" stroke-width="2"></i></span>');
+  const h3=head.querySelector('h3'),nx=h3&&h3.nextElementSibling;if(nx&&!nx.matches('a.more'))nx.classList.add('hr');   // "전체 보기 →" 는 제목 옆에 붙인다
+  head.insertAdjacentHTML('beforeend','<button type="button" class="icon-btn sm cx" data-tip="닫기" aria-label="닫기"><i data-lucide="x" width="14" height="14" stroke-width="2"></i></button>');
+  head.querySelector('.cx').addEventListener('click',e=>{e.stopPropagation();hidePanel(c.dataset.card);});
+  bindGrip(c);
+}
+(function initBoard(){
+  measureDefaults();
+  Object.values(cardEl).forEach(addChrome);
+  tree=loadTree()||cloneTree(DEFAULT_TREE);
+  // 저장본에 알 수 없는 카드 id 가 있으면 제거
+  const known=new Set(Object.keys(cardEl));
+  (function prune(n){if(n.type!=='panel'){n.children=n.children.filter(c=>c.type!=='panel'||known.has(c.id));n.children.forEach(prune);}})(tree);
+  normalize();
+  board.classList.add('tree');
+  render();
 })();
 
 /* ---------- Quick actions 등록 모달 (keys.html · users.html · notices.html 과 동일 로직) ---------- */

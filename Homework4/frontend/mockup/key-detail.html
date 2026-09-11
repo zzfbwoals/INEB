@@ -55,10 +55,6 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
 .opt.dis{opacity:.45;cursor:not-allowed}
 .opt input{accent-color:var(--blue);margin-top:3px}
 .opt b{font-size:13px;display:block}.opt span{font-size:12px;color:var(--text-3)}
-.tabs{display:flex;gap:4px;padding:10px 14px 0;border-bottom:1px solid var(--line)}
-.tab{padding:8px 12px;font-size:13px;font-weight:600;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab.on{color:var(--text);border-color:var(--blue)}
-.tab:hover{color:var(--text)}
 .rot-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .rot-row .input{width:110px;text-align:right}
 .rot-row label.sw{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-2);cursor:pointer}
@@ -78,28 +74,26 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
   <div class="page-h">
     <div>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <a class="btn btn-ghost btn-sm" href="keys.html">← 목록</a>
         <h2 id="kdName">-</h2>
         <span id="kdBadge"></span>
-        <span class="vtag cur" id="kdCur"></span>
       </div>
       <div class="desc mono" style="margin-top:8px;display:flex;align-items:center;gap:8px">
         <span id="kdUid"></span>
-        <button class="copy-btn" onclick="copyEl('kdUid')" title="UID 복사"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>복사</button>
+        <button class="icon-btn sm" data-tip="UID 복사" aria-label="UID 복사" onclick="copyEl('kdUid')"><i data-lucide="copy" width="13" height="13"></i></button>
       </div>
     </div>
-    <div class="acts" id="kdActs"></div>
+    <div class="acts icon-acts" id="kdActs"></div>
   </div>
   <div class="detail-grid">
     <div class="card" id="kdMetaCard">
-      <div class="card-h"><h3>키 메타정보</h3><button class="btn btn-ghost btn-sm" id="btnEdit" onclick="openEdit()">수정</button></div>
+      <div class="card-h"><h3>키 메타정보</h3><button class="icon-btn" id="btnEdit" data-tip="수정" aria-label="수정" onclick="openEdit()"><i data-lucide="pencil" width="15" height="15"></i></button></div>
       <div class="meta-grid" id="kdMeta"></div>
       <div class="usage-mini" id="kdUsage"></div>
     </div>
     <div class="card tl-card" id="kdTlCard">
       <div class="card-h"><h3>상태 변경 타임라인</h3></div>
       <div class="timeline" id="kdTimeline"></div>
-      <div class="tl-more" id="tlMore"><button class="btn btn-ghost btn-sm" onclick="openTimeline()">더보기</button></div>
+      <div class="tl-more" id="tlMore"><button class="icon-btn tip-up" data-tip="더보기" aria-label="더보기" onclick="openTimeline()"><i data-lucide="chevron-down" width="16" height="16"></i></button></div>
     </div>
   </div>
   <div class="card">
@@ -107,12 +101,26 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
       <button class="tab on" id="tabVer" onclick="showTab('ver')">버전 목록</button>
       <button class="tab" id="tabAud" onclick="showTab('aud')">사용 이력</button>
     </div>
-    <div id="paneVer" class="tbl-wrap tbl-scroll"><table>
-      <thead><tr><th>버전</th><th>상태</th><th>활성일</th><th>마지막 사용</th><th>사용 횟수</th><th id="thCap">암호화 / 복호화</th><th>무결성</th><th></th></tr></thead>
+    <!-- 정렬 가능한 열은 sortable + onclick, 열 폭은 tbl-fixed + th % (shell.js enableColResize 가 드래그 핸들을 붙인다) -->
+    <div id="paneVer" class="tbl-wrap tbl-scroll"><table class="tbl-fixed">
+      <thead><tr>
+        <th class="sortable" style="width:11%" onclick="sortVer('v')">버전</th>
+        <th class="sortable" style="width:21%" onclick="sortVer('activationDate')">활성일</th>
+        <th class="sortable" style="width:21%" onclick="sortVer('lastUsedAt')">마지막 사용</th>
+        <th class="sortable" style="width:13%" onclick="sortVer('usageCount')">사용 횟수</th>
+        <th id="thCap" style="width:20%">암호화 / 복호화</th>
+        <th style="width:14%"></th>
+      </tr></thead>
       <tbody id="kdVersions"></tbody>
     </table></div>
-    <div id="paneAud" class="tbl-wrap tbl-scroll" style="display:none"><table>
-      <thead><tr><th>일시</th><th>연산</th><th>버전</th><th>결과</th><th>실패 사유 / 비고</th></tr></thead>
+    <div id="paneAud" class="tbl-wrap tbl-scroll" style="display:none"><table class="tbl-fixed">
+      <thead><tr>
+        <th class="sortable" style="width:20%" onclick="sortAud('at')">일시</th>
+        <th class="sortable" style="width:14%" onclick="sortAud('operation')">연산</th>
+        <th class="sortable" style="width:12%" onclick="sortAud('version')">버전</th>
+        <th class="sortable" style="width:10%" onclick="sortAud('result')">결과</th>
+        <th style="width:44%">실패 사유 / 비고</th>
+      </tr></thead>
       <tbody id="kdAudit"></tbody>
     </table></div>
   </div>
@@ -125,7 +133,6 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
     <div class="modal-b" style="max-height:62vh;overflow-y:auto">
       <div class="timeline" id="mdTlBody" style="padding:0"></div>
     </div>
-    <div class="modal-f"><button class="btn btn-ghost" onclick="closeModal('mdTimeline')">닫기</button></div>
   </div>
 </div>
 <!-- 활성화 -->
@@ -136,7 +143,6 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
       <div class="field"><label>사유 <em>*</em></label><textarea class="input txt" id="actReason" style="min-height:70px" placeholder="예: 연동 시스템 배포 완료로 예정보다 앞당겨 활성"></textarea></div>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdActivate')">취소</button>
       <button class="btn btn-primary" onclick="doAction('ACTIVATE')">지금 활성화</button></div>
   </div>
 </div>
@@ -148,7 +154,6 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
       <div class="field"><label>사유 <em>*</em></label><textarea class="input txt" id="reactReason" style="min-height:70px" placeholder="예: DB 점검 중 활성일 컬럼 수동 수정으로 인한 오탐 확인, 재암호화 위해 복구"></textarea></div>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdReactivate')">취소</button>
       <button class="btn btn-primary" onclick="doAction('REACTIVATE')">재활성화</button></div>
   </div>
 </div>
@@ -161,7 +166,6 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
       <div class="field"><label>사유 <em>*</em></label><textarea class="input txt" id="deactReason" style="min-height:70px" placeholder="예: 해당 버전 암호문 전량 재암호화 완료"></textarea></div>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdDeactivate')">취소</button>
       <button class="btn btn-danger" onclick="doAction('DEACTIVATE')">정지</button></div>
   </div>
 </div>
@@ -174,7 +178,6 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
       <div class="field"><label>사유 <em>*</em></label><textarea class="input txt" id="rotReason" style="min-height:70px" placeholder="예: 수동 갱신 — 연동 시스템 교체"></textarea></div>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdRotate')">취소</button>
       <button class="btn btn-primary" id="rotBtn" onclick="doAction('ROTATE')">갱신</button></div>
   </div>
 </div>
@@ -189,7 +192,6 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
       <label class="ack"><input type="checkbox" id="desAck" onchange="document.getElementById('desBtn').disabled=!this.checked">키 재료가 영구 삭제되며 복구할 수 없음을 확인합니다</label>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdDestroy')">취소</button>
       <button class="btn btn-danger" id="desBtn" disabled onclick="doAction('DESTROY')">삭제</button></div>
   </div>
 </div>
@@ -206,7 +208,7 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
         </div>
       <div id="edDates"></div>
     </div>
-    <div class="modal-f"><button class="btn btn-ghost" onclick="closeModal('mdEdit')">취소</button><button class="btn btn-primary" onclick="saveEdit()">저장</button></div>
+    <div class="modal-f"><button class="btn btn-primary" onclick="saveEdit()">저장</button></div>
   </div>
 </div>
 
@@ -219,16 +221,16 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
         <textarea class="input" id="rvReason" placeholder="예: 연동 시스템 키 배포를 위한 값 확인" style="min-height:70px"></textarea></div>
       <div class="field" id="rvResult" style="display:none"><label id="rvLabel">키 재료 (Base64)</label>
         <div class="result-box ok" id="rvValue" style="word-break:break-all;user-select:none"></div>
-        <div style="margin-top:8px"><button class="copy-btn" onclick="copyEl('rvValue')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>복사</button></div></div>
+        <div style="margin-top:8px"><button class="icon-btn sm" data-tip="복사" aria-label="복사" onclick="copyEl('rvValue')"><i data-lucide="copy" width="13" height="13"></i></button></div></div>
     </div>
     <div class="modal-f">
-      <button class="btn btn-ghost" onclick="closeModal('mdReveal')">닫기</button>
       <button class="btn btn-primary" id="rvBtn" onclick="doReveal()">조회</button>
     </div>
   </div>
 </div>
 
 <script src="assets/data.js"></script>
+<script src="assets/lucide.min.js"></script>
 <script src="assets/shell.js"></script>
 <script>
 renderShell('keys');
@@ -260,14 +262,17 @@ function render(){
   key.status=deriveStatus();
   document.getElementById('kdName').textContent=key.name;
   document.getElementById('kdUid').textContent=key.uid;
-  document.getElementById('kdBadge').innerHTML=stateBadge(key.status);
-  document.getElementById('kdCur').textContent='v'+key.currentVersion;
+  document.getElementById('kdBadge').innerHTML=stateDot(key.status);
   const s=key.status,pv=preV(),acts=[],cv=cur();
-  if(s!=='DESTROYED')acts.push(`<a class="btn btn-ghost" href="test.html?id=${key.id}">동작 테스트</a>`);
-  if(pv)acts.push(`<button class="btn btn-primary" onclick="openActivate()">활성화</button>`);
-  if(actives().length)acts.push(`<button class="btn btn-ghost" onclick="openDeactivate(null)">정지</button>`);
-  if(s==='ACTIVE'||s==='DEACTIVATED')acts.push(`<button class="btn btn-primary" onclick="openRotate()">갱신</button>`);
-  if(s!=='DESTROYED'&&key.versions.some(v=>v.state==='DEACTIVATED'||v.state==='PRE_ACTIVE'))acts.push(`<button class="btn btn-danger" onclick="openDestroy()">삭제</button>`);
+  // 헤더 액션 — 아이콘 전용 버튼 + 툴팁 (목록의 등록 + 와 동일 스타일)
+  // 배경 없는 아이콘 버튼(.icon-btn) — 링크는 a, 액션은 button
+  const ib=(tag,cls,tip,attrs,icon)=>`<${tag} class="icon-btn${cls?' '+cls:''}" data-tip="${tip}" aria-label="${tip}" ${attrs}><i data-lucide="${icon}" width="17" height="17"></i></${tag}>`;
+  acts.push(ib('a','','감사 로그',`href="audit.html?target=KEY%23${key.uid}"`,'shield-check'));
+  if(s!=='DESTROYED')acts.push(ib('a','','동작 테스트',`href="test.html?id=${key.id}"`,'flask-conical'));
+  if(pv)acts.push(ib('button','primary','활성화','onclick="openActivate()"','play'));
+  if(actives().length)acts.push(ib('button','','정지','onclick="openDeactivate(null)"','ban'));
+  if(s==='ACTIVE'||s==='DEACTIVATED')acts.push(ib('button','primary','갱신','onclick="openRotate()"','refresh-cw'));
+  if(s!=='DESTROYED'&&key.versions.some(v=>v.state==='DEACTIVATED'||v.state==='PRE_ACTIVE'))acts.push(ib('button','danger','삭제','onclick="openDestroy()"','trash-2'));
   document.getElementById('kdActs').innerHTML=acts.join('');
   document.getElementById('btnEdit').style.display=s==='DESTROYED'?'none':'';
   const a=ALGOS[key.algoName];
@@ -281,8 +286,8 @@ function render(){
     <div class="meta-it"><div class="k">생성일</div><div class="v mono">${key.created}</div></div>
     <div class="meta-it"><div class="k">integrity_hash</div><div class="v mono" style="font-size:11.5px;color:var(--text-3)">a3f9c2…e81d <b style="color:${key.integrity?'var(--green)':'var(--red)'}">${key.integrity?'✓':'✕'}</b></div></div>
     ${a&&a.asym?`<div class="meta-it" style="grid-column:1/-1"><div class="k" style="display:flex;align-items:center;gap:8px">공개키 (v${key.currentVersion}, PEM)
-      <button class="copy-btn" onclick="copyText(PEM_TEXT)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>복사</button>
-      <button class="copy-btn" onclick="downloadPem()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg>.pem</button></div>
+      <button class="icon-btn sm" data-tip="복사" aria-label="복사" onclick="copyText(PEM_TEXT)"><i data-lucide="copy" width="13" height="13"></i></button>
+      <button class="icon-btn sm" data-tip=".pem 다운로드" aria-label=".pem 다운로드" onclick="downloadPem()"><i data-lucide="download" width="13" height="13"></i></button></div>
     <div class="pubkey" title="전문은 복사 또는 .pem 다운로드로 확인">${abbreviatePem(PEM_TEXT)}</div></div>`:''}`;
   const lastUse=key.versions.map(v=>v.lastUsedAt).filter(Boolean).sort().pop()||null;
   document.getElementById('kdUsage').innerHTML=`
@@ -294,29 +299,33 @@ function render(){
     <div><div class="k">실패·차단</div><div class="v" style="color:var(--red)">2</div></div>`;
   document.getElementById('thCap').textContent=capLabel;
   const lt=latest();
-  document.getElementById('kdVersions').innerHTML=[...key.versions].sort((a,b)=>b.v-a.v).map(v=>{
+  document.getElementById('kdVersions').innerHTML=sortRows([...key.versions].sort((a,b)=>b.v-a.v),verSort).map(v=>{
     const isCur=v.v===key.currentVersion,isLatest=v.v===lt.v;
     let act='';
-    if(v.state==='PRE_ACTIVE')act=`<button class="btn btn-ghost btn-sm" onclick="openActivate()">활성화</button> <button class="btn btn-ghost btn-sm" onclick="openDestroy(${v.v})">삭제</button>`;
-    else if(v.state==='ACTIVE')act=isLatest?`<span class="help" title="최신 버전은 단독 정지 불가 — 키 정지 또는 갱신 후 정지">최신 버전</span>`:`<button class="btn btn-ghost btn-sm" onclick="openDeactivate(${v.v})" title="정지 시 이 버전의 복호화·검증이 차단됩니다">정지</button>`;
-    else if(v.state==='DEACTIVATED')act=(v.deactivationTrigger==='INTEGRITY'?`<button class="btn btn-primary btn-sm" onclick="openReactivate(${v.v})">재활성화</button> `:'')+`<button class="btn btn-ghost btn-sm" onclick="openDestroy(${v.v})">삭제</button>`;
-    return `<tr class="${isCur?'vcur':''}${v.state!=='DESTROYED'?' rowlink':''}"${v.state!=='DESTROYED'?` onclick="openReveal(${v.v})" title="클릭하여 키값 조회 — 사유 필수 · 감사로그 기록"`:''}>
-      <td><span class="vtag ${isCur?'cur':''}">v${v.v}</span></td>
-      <td>${stateBadge(v.state)}</td>
+    const destroy=`<button class="icon-btn danger tip-left" data-tip="삭제" aria-label="삭제" onclick="openDestroy(${v.v})"><i data-lucide="trash-2" width="15" height="15"></i></button>`;
+    if(v.state==='PRE_ACTIVE')act=`<button class="icon-btn tip-left" data-tip="활성화" aria-label="활성화" onclick="openActivate()"><i data-lucide="play" width="15" height="15"></i></button>${destroy}`;
+    else if(v.state==='ACTIVE')act=isLatest?`<span class="help" title="최신 버전은 단독 정지 불가 — 키 정지 또는 갱신 후 정지">최신 버전</span>`:`<button class="icon-btn tip-left" data-tip="정지" aria-label="정지" onclick="openDeactivate(${v.v})"><i data-lucide="ban" width="15" height="15"></i></button>`;
+    else if(v.state==='DEACTIVATED')act=(v.deactivationTrigger==='INTEGRITY'?`<button class="icon-btn primary tip-left" data-tip="재활성화" aria-label="재활성화" onclick="openReactivate(${v.v})"><i data-lucide="power" width="15" height="15"></i></button>`:'')+destroy;
+    return `<tr class="${isCur?'vcur':''}${v.state!=='DESTROYED'?' rowlink':''}${v.state!=='DESTROYED'&&v.integrity===false?' row-bad':''}"${v.state!=='DESTROYED'?` onclick="openReveal(${v.v})" title="${v.integrity===false?'무결성 위반 — 재활성화로 복구 · ':''}클릭하여 키값 조회 — 사유 필수 · 감사로그 기록"`:''}>
+      <td><span class="vtxt ${isCur?'cur':''}">v${v.v}</span>${stateDot(v.state)}</td>
       <td class="mono">${fmt(v.activationDate)}${v.state==='PRE_ACTIVE'?' <span style="color:var(--blue)">예정</span>':v.state==='DESTROYED'?` <span style="color:var(--text-3)">· 폐기 ${fmt(v.destroyedAt)}</span>`:''}</td>
       <td class="mono">${fmt(v.lastUsedAt)}</td>
       <td class="mono">${v.usageCount.toLocaleString()}</td>
       <td class="mono" style="color:var(--text-2)">${capOf(v)}</td>
-      <td>${v.state==='DESTROYED'?'<span style="color:var(--text-3)">—</span>':v.integrity?'<span class="badge b-ok">정상</span>':'<span class="badge b-bad">위반</span>'}</td>
-      <td style="text-align:right" onclick="event.stopPropagation()">${act}</td></tr>`;}).join('');
-  document.getElementById('kdAudit').innerHTML=USAGE.filter(u=>u.keyId===key.id).map(u=>
-    `<tr><td class="mono">${u.at}</td><td class="mono">${u.operation}</td><td><span class="vtag">v${u.version}</span>${u.note?` <span class="help">${u.note}</span>`:''}</td><td>${u.result==='SUCCESS'?'<span class="badge b-ok">성공</span>':'<span class="badge b-bad">실패</span>'}</td><td class="mono" style="color:${u.failReason?'var(--red)':'var(--text-3)'};font-size:11.5px">${u.failReason||'—'}</td></tr>`
+      <td style="text-align:right;white-space:nowrap" title="" onclick="event.stopPropagation()">${act}</td></tr>`;}).join('');
+  document.getElementById('kdAudit').innerHTML=sortRows(USAGE.filter(u=>u.keyId===key.id),audSort).map(u=>
+    `<tr><td class="mono">${u.at}</td><td class="mono">${u.operation}</td><td><span class="vtxt">v${u.version}</span>${u.note?` <span class="help">${u.note}</span>`:''}</td><td>${u.result==='SUCCESS'?'<span class="badge b-ok">성공</span>':'<span class="badge b-bad">실패</span>'}</td><td class="mono" style="color:${u.failReason?'var(--red)':'var(--text-3)'};font-size:11.5px">${u.failReason||'—'}</td></tr>`
   ).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:28px">이 키에 대한 사용 기록이 없습니다</td></tr>';
   document.getElementById('kdTimeline').innerHTML=key.history.map((h,i)=>`
     <div class="tl-it"><span class="tl-dot" style="background:${h.trigger==='INTEGRITY'?'var(--red)':i===0?'var(--blue)':'var(--text-3)'}"></span>
-      <div class="tl-body"><b><span class="vtag">v${h.v}</span> ${h.from?h.from+' → ':'생성 → '}${h.to}</b><span class="trg ${h.trigger==='INTEGRITY'?'bad':h.trigger.startsWith('DATE')||h.trigger==='SCHEDULE'?'sys':h.trigger==='REACTIVATE'?'ok':''}">${TRIGGER_KO[h.trigger]}</span>
+      <div class="tl-body"><b><span class="vtxt">v${h.v}</span> ${h.from?h.from+' → ':'생성 → '}${h.to}</b><span class="trg ${h.trigger==='INTEGRITY'?'bad':h.trigger.startsWith('DATE')||h.trigger==='SCHEDULE'?'sys':h.trigger==='REACTIVATE'?'ok':''}">${TRIGGER_KO[h.trigger]}</span>
       <div class="rs">사유: ${h.reason}</div><div class="at">${h.at} · ${h.by}</div></div></div>`).join('');
 }
+/* 표 정렬 — 화면에 있는 행을 클라이언트에서 정렬, 빈 값은 뒤로 */
+const verSort={f:null,dir:1},audSort={f:null,dir:1};
+function sortRows(rows,s){if(!s.f)return rows;return [...rows].sort((a,b)=>{const x=a[s.f]??null,y=b[s.f]??null;if(x===y)return 0;if(x===null)return 1;if(y===null)return -1;return (x<y?-1:1)*s.dir;});}
+function sortVer(f){verSort.dir=verSort.f===f?-verSort.dir:1;verSort.f=f;markSort(f,verSort.dir);render();}
+function sortAud(f){audSort.dir=audSort.f===f?-audSort.dir:1;audSort.f=f;markSort(f,audSort.dir);render();}
 function showTab(t){
   document.getElementById('tabVer').classList.toggle('on',t==='ver');document.getElementById('tabAud').classList.toggle('on',t==='aud');
   document.getElementById('paneVer').style.display=t==='ver'?'':'none';document.getElementById('paneAud').style.display=t==='aud'?'':'none';

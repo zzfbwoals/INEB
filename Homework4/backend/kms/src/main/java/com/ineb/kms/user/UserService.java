@@ -2,6 +2,7 @@ package com.ineb.kms.user;
 
 import com.ineb.kms.audit.AuditHook;
 import com.ineb.kms.common.BusinessException;
+import com.ineb.kms.integrity.IntegrityFlagService;
 import com.ineb.kms.common.ErrorCode;
 import com.ineb.kms.common.KstTime;
 import com.ineb.kms.common.PageResponse;
@@ -15,6 +16,8 @@ import com.ineb.kms.user.dto.UserSummary;
 import com.ineb.kms.user.dto.UserUpdateRequest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -25,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 앱 사용자 관리 — 개인정보는 마스터키 암호화 저장, 응답은 마스킹, 원문은 ADMIN 전용 API 로만.
- * 검색: 이름은 평문 LIKE, 연락처·이메일은 HMAC 해시 정확검색만 (암호화 컬럼은 평문 LIKE 불가).
+ * 검색(2026-09-10 개정): 암호화 컬럼은 DB LIKE 가 불가능하므로, 검색어가 있으면 상태 조건만 DB 에 걸고
+ * 해당 행을 전부 읽어 요청 처리 중에 복호화 → 이름·연락처·이메일 부분일치 판정 → 서버 측 페이징한다.
+ * 평문은 응답 생성 후 버리며 어디에도 캐시하지 않는다. 단일 어드민·소규모 사용자 전제(대규모는 블라인드 인덱스로 전환).
  */
 @Service
 public class UserService {
@@ -36,13 +41,17 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuditHook auditHook;
 
+    private final IntegrityFlagService flags;
+
     public UserService(AppUserRepository repository, PersonalDataCodec codec,
-                       UserIntegrityHasher hasher, PasswordEncoder passwordEncoder, AuditHook auditHook) {
+                       UserIntegrityHasher hasher, PasswordEncoder passwordEncoder, AuditHook auditHook,
+                       IntegrityFlagService flags) {
         this.repository = repository;
         this.codec = codec;
         this.hasher = hasher;
         this.passwordEncoder = passwordEncoder;
         this.auditHook = auditHook;
+        this.flags = flags;
     }
 
     // ---------------------------------------------------------------- 목록 · 상세
@@ -50,33 +59,56 @@ public class UserService {
     private static final java.util.Set<String> SORTABLE = java.util.Set.of("name", "createdAt");
 
     @Transactional(readOnly = true)
-    public PageResponse<UserSummary> list(String keyword, String phone, String email, UserStatus status,
+    public PageResponse<UserSummary> list(String keyword, UserStatus status,
                                           int page, int size, String sort, String direction) {
-        String phoneHash = phone == null || phone.isBlank() ? null : codec.phoneHash(phone);
-        String emailHash = email == null || email.isBlank() ? null : codec.emailHash(email);
-        Specification<AppUser> spec = (root, query, cb) -> {
-            List<jakarta.persistence.criteria.Predicate> ps = new ArrayList<>();
-            if (keyword != null && !keyword.isBlank()) {
-                ps.add(cb.like(cb.lower(root.get("name")), "%" + keyword.trim().toLowerCase() + "%"));
-            }
-            if (phoneHash != null) {
-                ps.add(cb.equal(root.get("phoneHash"), phoneHash));
-            }
-            if (emailHash != null) {
-                ps.add(cb.equal(root.get("emailHash"), emailHash));
-            }
-            if (status != null) {
-                ps.add(cb.equal(root.get("status"), status));
-            }
-            return cb.and(ps.toArray(new jakarta.persistence.criteria.Predicate[0]));
-        };
+        Specification<AppUser> spec = (root, query, cb) ->
+                status == null ? cb.conjunction() : cb.equal(root.get("status"), status);
         String field = sort != null && SORTABLE.contains(sort) ? sort : "createdAt";
         Sort.Direction dir = sort == null ? Sort.Direction.DESC
                 : "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Page<AppUser> result = repository.findAll(spec,
-                PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100),
-                        Sort.by(dir, field).and(Sort.by(Sort.Direction.DESC, "id"))));
-        return PageResponse.of(result, this::toSummary);
+        Sort order = Sort.by(dir, field).and(Sort.by(Sort.Direction.DESC, "id"));
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+
+        String q = keyword == null ? "" : keyword.trim();
+        if (q.isEmpty()) {
+            // 검색어 없음 — DB 페이징, 한 페이지만 복호화. 위반 표시는 페이지 단위로 한 번 조회
+            Page<AppUser> result = repository.findAll(spec, PageRequest.of(safePage, safeSize, order));
+            IntegrityFlagService.Snapshot flagged = flaggedOf(result.getContent());
+            return PageResponse.of(result, u -> toSummary(u, safeDecrypt(u.getPhoneEnc()), safeDecrypt(u.getEmailEnc()), flagged));
+        }
+
+        // 검색어 있음 — 상태 조건에 맞는 행 전부를 복호화해 부분일치 판정 후 서버 측 페이징
+        List<AppUser> candidates = repository.findAll(spec, order);
+        IntegrityFlagService.Snapshot flagged = flaggedOf(candidates);
+        List<UserSummary> matched = new ArrayList<>();
+        for (AppUser user : candidates) {
+            String phone = safeDecrypt(user.getPhoneEnc());
+            String email = safeDecrypt(user.getEmailEnc());
+            if (matches(user.getName(), phone, email, q)) {
+                matched.add(toSummary(user, phone, email, flagged));
+            }
+        }
+        int from = Math.min(safePage * safeSize, matched.size());
+        int to = Math.min(from + safeSize, matched.size());
+        int totalPages = (int) Math.ceil(matched.size() / (double) safeSize);
+        return new PageResponse<>(List.copyOf(matched.subList(from, to)), safePage, safeSize, matched.size(), totalPages);
+    }
+
+    /**
+     * 통합 검색 판정 — 이름·이메일은 소문자 contains, 연락처는 검색어와 저장값 모두 숫자만 남겨 contains.
+     * 복호화 실패(null) 필드는 판정에서 제외한다. 검색어에 숫자가 하나도 없으면 연락처 비교는 건너뛴다.
+     */
+    static boolean matches(String name, String phone, String email, String keyword) {
+        String lower = keyword.toLowerCase(Locale.ROOT);
+        if (name != null && name.toLowerCase(Locale.ROOT).contains(lower)) {
+            return true;
+        }
+        if (email != null && PersonalDataCodec.normalizeEmail(email).contains(lower)) {
+            return true;
+        }
+        String digits = PersonalDataCodec.normalizePhone(keyword);
+        return !digits.isEmpty() && phone != null && PersonalDataCodec.normalizePhone(phone).contains(digits);
     }
 
     @Transactional(readOnly = true)
@@ -95,8 +127,7 @@ public class UserService {
         }
         AppUser user = new AppUser(req.name().trim(), passwordEncoder.encode(req.password()),
                 req.statusOrDefault(),
-                codec.encrypt(req.phone()), codec.phoneHash(req.phone()),
-                codec.encrypt(req.email()), emailHash);
+                codec.encrypt(req.phone()), codec.encrypt(req.email()), emailHash);
         hasher.rehash(user);
         repository.save(user);
         auditHook.record(actor, "USER_CREATED", AuditHook.userTarget(user.getId()),
@@ -116,7 +147,10 @@ public class UserService {
         if (!user.getName().equals(req.name().trim())) {
             changed.add("name");
         }
-        if (!user.getPhoneHash().equals(codec.phoneHash(req.phone()))) {
+        // 연락처 변경 감지 — 해시 컬럼이 없으므로 기존 암호문을 복호화해 정규화 비교(복호화 실패 행은 변경으로 본다)
+        String currentPhone = safeDecrypt(user.getPhoneEnc());
+        if (currentPhone == null
+                || !PersonalDataCodec.normalizePhone(currentPhone).equals(PersonalDataCodec.normalizePhone(req.phone()))) {
             changed.add("phone");
         }
         if (!user.getEmailHash().equals(emailHash)) {
@@ -129,7 +163,7 @@ public class UserService {
         user.rename(req.name().trim());
         user.changeStatus(req.status());
         // 변경 여부와 무관하게 새 IV 로 재암호화 — 코드가 단순하고 IV 재사용 여지가 없다
-        user.applyPhone(codec.encrypt(req.phone()), codec.phoneHash(req.phone()));
+        user.applyPhone(codec.encrypt(req.phone()));
         user.applyEmail(codec.encrypt(req.email()), emailHash);
         if (req.password() != null && !req.password().isBlank()) {
             validatePassword(req.password());
@@ -170,13 +204,46 @@ public class UserService {
     private static final String DECRYPT_FAILED = "(복호화 실패)";
 
     private UserSummary toSummary(AppUser user) {
-        String phone = safeDecrypt(user.getPhoneEnc());
-        String email = safeDecrypt(user.getEmailEnc());
+        return toSummary(user, safeDecrypt(user.getPhoneEnc()), safeDecrypt(user.getEmailEnc()), flaggedOf(List.of(user)));
+    }
+
+    private IntegrityFlagService.Snapshot flaggedOf(List<AppUser> users) {
+        return flags.snapshot(users.stream().map(u -> AuditHook.userTarget(u.getId())).toList());
+    }
+
+    /**
+     * 검색 경로는 판정에 쓴 복호화 값을 그대로 넘겨 이중 복호화를 피한다.
+     * 무결성 = 해시 일치 && 위반 표시 없음(2026-09-11) — 위반 표시는 감사 체인에서 파생되며 관리자 재해시로만 지워진다.
+     * 불일치를 조회에서 처음 보면 그 자리에서 기록해, 이후 원복해도 위반이 유지된다.
+     */
+    private UserSummary toSummary(AppUser user, String phone, String email, IntegrityFlagService.Snapshot flagged) {
+        boolean integrityValid = flagged.check(AuditHook.userTarget(user.getId()), hasher.verify(user),
+                "integrity_hash 불일치 — 조회 중 감지(자동 조치 없음, 재해시 전까지 유지)");
         return new UserSummary(user.getId(), user.getName(),
                 phone == null ? DECRYPT_FAILED : PrivacyMask.phone(phone),
                 email == null ? DECRYPT_FAILED : PrivacyMask.email(email),
-                user.getStatus().name(), user.getEncVer(), hasher.verify(user),
+                user.getStatus().name(), user.getEncVer(), integrityValid,
                 KstTime.format(user.getCreatedAt()), KstTime.format(user.getUpdatedAt()));
+    }
+
+    // ---------------------------------------------------------------- 무결성 재해시 (ADMIN)
+
+    /**
+     * 현재 저장된 값으로 integrity_hash 를 다시 계산해 봉인하고 위반 표시를 해제한다 (2026-09-11).
+     * 위반에서 정상으로 가는 <b>유일한</b> 경로 — 값을 원복해도, PUT 으로 해시가 재계산돼도 표시는 남는다.
+     * 위반 상태(표시 또는 해시 불일치)가 아니면 409.
+     */
+    @Transactional
+    public UserSummary resealIntegrity(Long id, String reason, String actor) {
+        AppUser user = load(id);
+        String target = AuditHook.userTarget(user.getId());
+        boolean hashOk = hasher.verify(user);
+        if (hashOk && !flags.isFlagged(target)) {
+            throw new BusinessException(ErrorCode.INTEGRITY_NOT_FLAGGED);
+        }
+        hasher.rehash(user);
+        flags.reseal(target, actor, "reason=" + reason + ", hashMatched=" + hashOk);
+        return toSummary(user);
     }
 
     /** 목록은 암호문 손상 행이 있어도 나머지를 보여줘야 한다 — 실패 시 표시 문자열로 대체 */

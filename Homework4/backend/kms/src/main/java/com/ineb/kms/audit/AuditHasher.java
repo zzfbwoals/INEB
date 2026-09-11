@@ -2,7 +2,7 @@ package com.ineb.kms.audit;
 
 import com.ineb.kms.common.KstTime;
 import com.ineb.kms.crypto.WrappedSecretStore;
-import com.ineb.kms.domain.AuditLog;
+import com.ineb.kms.domain.ChainRow;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
@@ -45,8 +45,8 @@ public class AuditHasher {
         return hmac(normalized);
     }
 
-    /** 저장된 row_hash 와 재계산 값을 상수 시간 비교 */
-    public boolean verifyRow(AuditLog row) {
+    /** 저장된 row_hash 와 재계산 값을 상수 시간 비교 — detail 은 저장된 값(암호문) 그대로 넣으므로 복호화 없이 검증한다 */
+    public boolean verifyRow(ChainRow row) {
         String computed = rowHash(row.getPrevHash(), row.getActor(), row.getAction(),
                 row.getTarget(), row.getDetail(), row.getCreatedAt());
         return MessageDigest.isEqual(

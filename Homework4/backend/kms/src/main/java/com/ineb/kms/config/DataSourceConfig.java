@@ -2,6 +2,8 @@ package com.ineb.kms.config;
 
 import com.ineb.kms.crypto.ConfigSecretCodec;
 import com.ineb.kms.crypto.MasterPassphrase;
+import com.ineb.kms.integrity.IntegrityChangeTrigger;
+import com.zaxxer.hikari.HikariDataSource;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import javax.sql.DataSource;
@@ -39,10 +41,14 @@ public class DataSourceConfig {
             }
         }
 
-        return DataSourceBuilder.create()
+        HikariDataSource dataSource = DataSourceBuilder.create()
+                .type(HikariDataSource.class)
                 .url(url)
                 .username(username)
                 .password(password)
                 .build();
+        // 앱 연결의 application_name — DB 변경 알림 트리거가 이 값을 실어 보내 앱 자신의 저장과 DB 직접 수정을 구분한다 (2026-09-11)
+        dataSource.addDataSourceProperty("ApplicationName", IntegrityChangeTrigger.APP_NAME);
+        return dataSource;
     }
 }

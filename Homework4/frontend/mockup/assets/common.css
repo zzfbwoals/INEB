@@ -84,6 +84,47 @@ textarea.input{resize:vertical;min-height:96px;font-size:13px;line-height:1.6;fo
 textarea.input.txt{font-size:13.5px;font-variant-numeric:normal}
 
 /* 배지 — 상태 배지는 전부 뉴트럴, 강조는 위반/중요 등 꼭 필요한 곳만 */
+/* 상태 색상점 (배지 대체) — 운영 초록 · 준비 파랑 · 정지 회색 · 폐기 회색 테두리 · 사용자 활성 초록/정지 회색 */
+.sdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:7px;vertical-align:middle;flex:none;box-sizing:border-box}
+.sdot.s-ACTIVE,.sdot.u-ACTIVE{background:var(--green)}
+.sdot.s-PRE_ACTIVE{background:var(--blue)}
+.sdot.s-DEACTIVATED,.sdot.u-SUSPENDED{background:var(--text-3)}
+.sdot.s-DESTROYED{background:color-mix(in srgb,var(--text-3) 55%,transparent)}
+.stext{display:inline-flex;align-items:center;gap:6px}
+.stext .sdot{margin-left:0}
+h2>.sdot{width:9px;height:9px;margin-left:10px;vertical-align:4px}
+.nm{display:inline-block;max-width:calc(100% - 22px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.uav{position:relative;display:inline-flex;vertical-align:middle;margin-right:10px}
+.uav .uavatar{margin:0}
+.uav .sdot{position:absolute;right:-2px;bottom:-2px;margin:0;width:11px;height:11px;border:2px solid var(--surface)}
+.uav+.nm{max-width:calc(100% - 48px)}
+.vtxt{font-size:12.5px;font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums}
+.vtxt.cur{color:var(--green)}
+/* 드롭다운(등록 · 패널 편집 · 버전 콤보박스) — 프로필 메뉴(.me-menu/.mm-it)와 같은 디자인. 열기/닫기는 shell.js ddToggle/ddClose */
+.dd{position:relative}
+.dd-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:190px;background:var(--surface);
+  border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--modal-shadow);padding:6px;z-index:120;animation:pop .16s}
+.dd.left .dd-menu{right:auto;left:0}
+.dd.narrow .dd-menu{min-width:88px}
+/* 세그먼트 칩(전체/정상/위반 · 추이 차트 구간 등) — 공용 */
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--text-3);font-size:11px;font-weight:700;padding:4px 8px;cursor:pointer;white-space:nowrap;font-family:inherit}
+.seg button.on{background:var(--raised);color:var(--text)}
+.filters .seg{height:36px;align-items:stretch}
+.filters .seg button{padding:0 12px;font-size:12.5px}
+.dd.open .dd-menu{display:block}
+.dd.open [data-tip]::after{display:none}
+.dd-menu .mm-sec{font-size:10.5px;font-weight:800;letter-spacing:.09em;color:var(--text-3);padding:8px 11px 4px;text-transform:uppercase}
+.dd-menu .mm-it{background:none;border:0;cursor:pointer}
+.dd-menu .mm-it:hover{background:var(--hover);color:var(--text)}
+.dd-menu .mm-it .ck{display:inline-flex;width:14px;color:var(--blue);opacity:0;flex:none}
+.dd-menu .mm-it.on{color:var(--text)}
+.dd-menu .mm-it.on .ck{opacity:1}
+.dd-menu .mm-it .sdot{margin-left:8px}
+/* 동작 테스트 버전 콤보박스 — 트리거는 입력창 모양, 목록 항목은 v3 + 상태 점 */
+.vsel{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;height:36px;min-width:76px;padding:0 8px 0 10px;border:1px solid var(--line-strong);border-radius:9px;background:var(--raised);color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.vsel:hover{border-color:var(--text-3)}
+.vsel>span{display:inline-flex;align-items:center}
 .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;
   font-size:11.5px;font-weight:700;letter-spacing:.02em;
   background:var(--raised);border:1px solid var(--line-strong);color:var(--text-2)}
@@ -142,21 +183,21 @@ tbody tr.rowlink:hover{background:var(--hover)}
 [data-theme="light"] .modal-bk{background:rgba(30,38,46,.35)}
 .modal-bk.open{display:flex;animation:fadein .18s}
 .modal{background:var(--surface);border:1px solid var(--line-strong);border-radius:16px;width:100%;
-  max-width:520px;box-shadow:var(--modal-shadow);animation:pop .2s}
+  max-width:520px;max-height:86vh;box-shadow:var(--modal-shadow);animation:pop .2s;display:flex;flex-direction:column;overflow:hidden}
 @keyframes fadein{from{opacity:0}}
 @keyframes pop{from{opacity:0;transform:translateY(12px) scale(.985)}}
 .modal-h{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line)}
 .modal-h h3{font-size:16px;font-weight:700}
 .modal-h .x{width:30px;height:30px;border-radius:8px;color:var(--text-3);display:grid;place-items:center;font-size:17px}
 .modal-h .x:hover{background:var(--hover);color:var(--text)}
-.modal-b{padding:22px;display:flex;flex-direction:column;gap:15px}
+.modal-b{padding:22px;display:flex;flex-direction:column;gap:15px;flex:1;min-height:0;overflow-y:auto}
 .modal-f{display:flex;justify-content:flex-end;gap:9px;padding:16px 22px;border-top:1px solid var(--line)}
 
 /* ===== 앱 셸 ===== */
 .shell{display:grid;grid-template-columns:var(--sidew) 1fr;min-height:100vh;transition:grid-template-columns .18s}
 html.collapsed .shell{grid-template-columns:66px 1fr}
 .side{background:var(--bg-deep);border-right:1px solid var(--line);padding:18px 13px;display:flex;
-  flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow:visible}
+  flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow:visible;z-index:100}
 .side .brand{display:flex;align-items:center;gap:9px;padding:4px 8px 18px;min-height:44px;position:relative}
 .side .brand .side-tgl{margin-left:auto;flex:none}
 html.collapsed .side .brand svg.full{display:none}
@@ -276,3 +317,79 @@ html.collapsed .me-menu{left:calc(100% + 10px);bottom:4px}
   html:not(.collapsed) .nav-it:hover::after{opacity:1}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* 공용 툴팁 (data-tip) — 사이드바 축소 툴팁과 동일 디자인, 아이콘 버튼용 */
+[data-tip]{position:relative}
+[data-tip]::after{content:attr(data-tip);position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%) translateY(-4px);background:var(--surface);color:var(--text);border:1px solid var(--line-strong);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;white-space:nowrap;box-shadow:var(--modal-shadow);opacity:0;pointer-events:none;transition:opacity .14s,transform .14s;z-index:130}
+[data-tip]:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 테두리 없는 아이콘 버튼 — 호버 시에만 배경, 툴팁은 data-tip */
+.icon-btn{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:6px;background:none;border:0;color:var(--text-3);cursor:pointer;transition:.12s}
+.icon-btn:hover{color:var(--text);background:var(--hover)}
+.icon-btn:disabled{opacity:.4;cursor:not-allowed}
+.icon-btn.danger:hover{color:var(--red);background:var(--red-bg)}
+
+/* 툴팁 버튼이 있는 표 셀·래퍼는 넘침 허용 (overflow:hidden 에 툴팁이 잘리지 않도록) */
+table.tbl-fixed tbody td:has([data-tip]){overflow:visible}
+.tbl-wrap:not(.tbl-scroll):has([data-tip]){overflow:visible}
+
+/* 열 너비 조절 — shell.js enableColResize(): th 우측 드래그, 더블클릭 복원 */
+thead th{position:relative}
+.col-resizer{position:absolute;top:0;bottom:0;right:-5px;width:10px;cursor:col-resize;z-index:2}
+.col-resizer::after{content:'';position:absolute;left:4px;top:12px;bottom:12px;width:2px;border-radius:1px;background:var(--line-strong);transition:background .15s,top .15s,bottom .15s}
+.col-resizer:hover::after,.col-resizer.active::after{top:6px;bottom:6px;background:var(--blue)}
+body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:none}
+
+/* 정렬 가능한 열 — 호버 밑줄 애니메이션, 정렬 중 열(.on) 파란 글자 + 방향 화살표 */
+thead th.sortable{cursor:pointer;transition:color .15s}
+thead th.sortable::after{content:'';position:absolute;left:16px;right:16px;bottom:6px;height:2px;border-radius:1px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .18s ease}
+thead th.sortable:hover{color:var(--text)}
+thead th.sortable:hover::after{transform:scaleX(1)}
+thead th.sortable:has(.col-resizer:hover)::after,body.col-resizing thead th.sortable::after{transform:scaleX(0)}
+thead th.sortable:has(.col-resizer:hover):not(.on),body.col-resizing thead th.sortable:not(.on){color:var(--text-3)}
+thead th.sortable.on{color:var(--blue)}
+.sort-mark{display:inline-block;vertical-align:-1px;margin-left:4px;animation:sortin .18s ease}
+@keyframes sortin{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+
+/* 감사 로그 섀도 비교 — 수정·삽입 행 강조, 지워진 행 유령 행, 원본|현재 diff */
+tbody tr.row-bad td{background:var(--red-bg)}
+tbody tr.vcur.row-bad td{background:var(--red-bg)}
+tbody tr.row-ghost td{color:var(--text-3);text-decoration:line-through;background:var(--raised);cursor:pointer}
+.modal.scroll-body .modal-b{overflow:hidden}
+.scroll-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+tbody tr.row-ghost td .row-tag,tbody tr.row-ghost td .actchip{display:inline-block;text-decoration:none}
+.row-tag{color:var(--red);font-size:11.5px;font-weight:700;margin-right:6px}
+.diff-grid{display:grid;grid-template-columns:80px 1fr 1fr;gap:6px 10px;font-size:12.5px;align-items:start}
+.diff-grid .h{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em}
+.diff-grid .k{color:var(--text-3)}
+.diff-grid .del{background:rgba(248,81,73,.15);color:var(--red);border-radius:6px;padding:2px 6px}
+.diff-grid .del::before{content:'- ';font-weight:700}
+.diff-grid .add{background:rgba(63,185,80,.15);color:var(--green);border-radius:6px;padding:2px 6px}
+.diff-grid .add::before{content:'+ ';font-weight:700}
+
+.kv-grid{display:grid;grid-template-columns:80px 1fr;gap:8px 10px;font-size:12.5px;align-items:start}
+.kv-grid .k{color:var(--text-3)}
+
+.modal>form{display:flex;flex-direction:column;flex:1;min-height:0}
+
+.modal-h-main{display:flex;flex-direction:column;gap:12px;min-width:0;flex:1}
+.modal-h.has-extra{align-items:flex-start;padding-bottom:0}
+.tabs{display:flex;gap:4px;padding:10px 14px 0;border-bottom:1px solid var(--line)}
+.tab{padding:8px 12px;font-size:13px;font-weight:600;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:var(--text);border-color:var(--blue)}
+.tab:hover{color:var(--text)}
+.modal-h.has-extra .tabs{padding:0;border-bottom:0;margin-bottom:-1px}
+
+.tip-up[data-tip]::after{top:auto;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(4px)}
+.tip-up[data-tip]:hover::after{transform:translateX(-50%) translateY(0)}
+.icon-btn.primary{color:var(--blue)}
+.icon-btn.primary:hover{color:var(--blue);background:var(--blue-bg)}
+.tip-left[data-tip]::after{top:50%;left:auto;right:calc(100% + 8px);transform:translateY(-50%) translateX(4px)}
+.tip-left[data-tip]:hover::after{transform:translateY(-50%) translateX(0)}
+.acts.icon-acts{gap:4px;align-items:center;align-self:flex-end}
+.icon-btn.sm{width:22px;height:22px;border-radius:5px}
+.pin-mark{display:inline-flex;align-items:center;color:var(--red)}
+
+/* 무결성 재해시 확인 모달 — 대상 표시명 + 한 문장 안내 (키·사용자 공용) */
+.reseal-note { margin: 0 0 12px; font-size: 13px; line-height: 1.6; color: var(--text-2); }
+.reseal-note b { color: var(--text); }

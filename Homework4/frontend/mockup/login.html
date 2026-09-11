@@ -5,6 +5,7 @@
 <title>로그인 — iNEB D'GuardKMS</title>
 <link rel="stylesheet" href="assets/common.css">
 <script src="assets/theme.js"></script>
+<script src="assets/lucide.min.js"></script>
 <style>
 #login-wrap{min-height:100vh;display:grid;place-items:center;position:relative;overflow:hidden;
   background:radial-gradient(1100px 700px at 72% -10%,var(--login-glow1) 0%,transparent 55%),
@@ -50,11 +51,11 @@
     <div class="login-err" id="loginErr">아이디 또는 비밀번호가 일치하지 않습니다. (남은 시도 4회)</div>
     <form onsubmit="doLogin(event)">
       <div class="lfield">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <i data-lucide="user" width="15" height="15" stroke-width="2"></i>
         <input class="input" id="loginId" placeholder="관리자 아이디" autocomplete="username" value="admin">
       </div>
       <div class="lfield">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <i data-lucide="lock" width="15" height="15" stroke-width="2"></i>
         <input class="input" id="loginPw" type="password" placeholder="비밀번호" autocomplete="current-password" value="Admin!@#$5">
       </div>
       <button class="btn btn-primary login-btn" type="submit">로그인</button>
@@ -71,5 +72,6 @@ function doLogin(e){
   else{document.getElementById('loginErr').classList.add('show');}
 }
 </script>
+<script>lucide.createIcons()</script>
 </body>
 </html>

@@ -1,16 +1,25 @@
+import { Plus, Search, Stamp } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
-import { listKeys, type KeyAlgorithm, type KeyListParams, type KeyPurpose, type KeySummary, type PageResponse } from '@/api/keys'
+import { fetchMe } from '@/api/auth'
+import { listKeys, resealKeyIntegrity, type KeyAlgorithm, type KeyListParams, type KeyPurpose, type KeySummary, type PageResponse } from '@/api/keys'
 import { PURPOSE_KO, algoLabel } from '@/lib/keyRules'
 import { dday, fmtDate } from '@/lib/format'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
+import { useColumnResize } from '@/lib/useColumnResize'
+import { SortMark, sortClass } from '@/components/ui/sort-mark'
 import { Pager } from '@/components/ui/pager'
 import { Button } from '@/components/ui/button'
 import { errorMessage, useToast } from '@/components/ui/toast'
-import { IntegrityBadge, StateBadge } from '@/components/keys/StateBadge'
+import { StateDot } from '@/components/keys/StateBadge'
 import { KeyCreateDialog } from '@/components/keys/KeyCreateDialog'
+import { IntegrityResealDialog } from '@/components/integrity/IntegrityResealDialog'
+
+/* 열 기본 폭(%) — 키명·알고리즘·모드·용도·버전·갱신 주기·다음 갱신·액션(무결성 위반 행의 재해시 버튼).
+   상태는 키명 뒤 색상점, 무결성 위반은 행 전체 빨간 배경(row-bad) */
+const COLS = [21, 13, 7, 16, 12, 10, 14, 7]
 
 /* 목업 keys.html — 키 목록. 페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
 export default function KeyListPage() {
@@ -28,6 +37,14 @@ export default function KeyListPage() {
   const [reloadTick, setReloadTick] = useState(0)
   const tblRef = useRef<HTMLDivElement>(null)
   const pageSize = useAutoPageSize(tblRef, 50)
+  const { tableRef, widths, resizer } = useColumnResize('keys', COLS)
+  const [isAdmin, setIsAdmin] = useState(false)
+  // 무결성 재해시 대상 — 위반 행에만 버튼이 뜨고, 확인 모달(사유 필수)을 거쳐야 정상으로 돌아간다
+  const [resealTarget, setResealTarget] = useState<KeySummary | null>(null)
+
+  useEffect(() => {
+    fetchMe().then((me) => setIsAdmin(me.role === 'ADMIN')).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!pageSize) return
@@ -45,10 +62,10 @@ export default function KeyListPage() {
     if (data && data.totalPages > 0 && page >= data.totalPages) setPage(data.totalPages - 1)
   }, [data, page])
 
-  // 실시간 갱신 — 키 관련 행위(생성·상태 변경·테스트·스케줄러)가 커밋되면 목록 refetch
+  // 실시간 갱신 — 키 관련 행위(생성·상태 변경·테스트·스케줄러)와 키 테이블의 DB 직접 수정(DB_DIRECT_CHANGE, target KEY#…)이 커밋되면 목록 refetch
   useEffect(() => {
     return subscribeUiEvents((e) => {
-      if (e.action.startsWith('KEY')) setReloadTick((t) => t + 1)
+      if (e.action.startsWith('KEY') || (e.action === 'DB_DIRECT_CHANGE' && e.target.startsWith('KEY#'))) setReloadTick((t) => t + 1)
     })
   }, [])
 
@@ -63,14 +80,11 @@ export default function KeyListPage() {
     <AppLayout>
       <div className="page-h">
         <div><h2>키 목록</h2></div>
-        <div className="acts">
-          <Button onClick={() => setCreateOpen(true)}>등록</Button>
-        </div>
       </div>
 
       <div className="filters">
         <div className="search">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m16.5 16.5 4.5 4.5" /></svg>
+          <Search size={14} />
           <input className="input" placeholder="키명 검색" value={keyword} onChange={(e) => { setKeyword(e.target.value); setPage(0) }} />
         </div>
         <select className="input" value={algorithm} onChange={(e) => { setAlgorithm(e.target.value as KeyAlgorithm | ''); setPage(0) }}>
@@ -91,29 +105,34 @@ export default function KeyListPage() {
           <option value="ENC_DEC_SIGN_VERIFY">암/복호화 및 서명/검증</option>
           <option value="SIGN_VERIFY">서명/검증</option>
         </select>
+        <Button className="px-[11px] ml-auto" data-tip="등록" aria-label="등록" onClick={() => setCreateOpen(true)}>
+          <Plus size={16} strokeWidth={2.2} />
+        </Button>
       </div>
 
       <div className="card">
         <div className="tbl-wrap" ref={tblRef}>
-          <table className="tbl-fixed">
+          <table className="tbl-fixed" ref={tableRef}>
             <thead>
               <tr>
-                <th className="sortable" style={{ width: '17%' }} onClick={() => toggleSort('keyName')}>키명 ↕</th>
-                <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('algorithm')}>알고리즘 ↕</th>
-                <th className="sortable" style={{ width: '6%' }} onClick={() => toggleSort('mode')}>모드 ↕</th>
-                <th className="sortable" style={{ width: '13%' }} onClick={() => toggleSort('purpose')}>용도 ↕</th>
-                <th className="sortable" style={{ width: '14%' }} onClick={() => toggleSort('status')}>상태 ↕</th>
-                <th style={{ width: '11%' }}>버전</th>
-                <th style={{ width: '8%' }}>갱신 주기</th>
-                <th className="sortable" style={{ width: '12%' }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신 ↕</th>
-                <th style={{ width: '8%' }}>무결성</th>
+                <th className={sortClass(sort, 'keyName')} style={{ width: `${widths[0]}%` }} onClick={() => toggleSort('keyName')}>키명<SortMark sort={sort} field="keyName" />{resizer(0)}</th>
+                <th className={sortClass(sort, 'algorithm')} style={{ width: `${widths[1]}%` }} onClick={() => toggleSort('algorithm')}>알고리즘<SortMark sort={sort} field="algorithm" />{resizer(1)}</th>
+                <th className={sortClass(sort, 'mode')} style={{ width: `${widths[2]}%` }} onClick={() => toggleSort('mode')}>모드<SortMark sort={sort} field="mode" />{resizer(2)}</th>
+                <th className={sortClass(sort, 'purpose')} style={{ width: `${widths[3]}%` }} onClick={() => toggleSort('purpose')}>용도<SortMark sort={sort} field="purpose" />{resizer(3)}</th>
+                <th style={{ width: `${widths[4]}%` }}>버전{resizer(4)}</th>
+                <th style={{ width: `${widths[5]}%` }}>갱신 주기{resizer(5)}</th>
+                <th className={sortClass(sort, 'nextRotationAt')} style={{ width: `${widths[6]}%` }} onClick={() => toggleSort('nextRotationAt')}>다음 갱신<SortMark sort={sort} field="nextRotationAt" />{resizer(6)}</th>
+                <th style={{ width: `${widths[7]}%` }}></th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr><td colSpan={9} className="tbl-empty">{loading ? '불러오는 중…' : '조건에 맞는 키가 없습니다 — 필터를 조정해 보세요'}</td></tr>
+                <tr><td colSpan={8} className="tbl-empty">{loading ? '불러오는 중…' : '조건에 맞는 키가 없습니다 — 필터를 조정해 보세요'}</td></tr>
               )}
-              {rows.map((k) => <KeyRow key={k.keyUid} k={k} onClick={() => navigate(`/keys/${k.keyUid}`)} />)}
+              {rows.map((k) => (
+                <KeyRow key={k.keyUid} k={k} onClick={() => navigate(`/keys/${k.keyUid}`)}
+                  onReseal={isAdmin && !k.integrityValid ? () => setResealTarget(k) : undefined} />
+              ))}
             </tbody>
           </table>
         </div>
@@ -121,11 +140,15 @@ export default function KeyListPage() {
       </div>
 
       <KeyCreateDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={() => setReloadTick((t) => t + 1)} />
+      {resealTarget && (
+        <IntegrityResealDialog subject={`키 ${resealTarget.keyName}`} onClose={() => setResealTarget(null)}
+          run={(reason) => resealKeyIntegrity(resealTarget.keyUid, reason)} />
+      )}
     </AppLayout>
   )
 }
 
-function KeyRow({ k, onClick }: { k: KeySummary; onClick: () => void }) {
+function KeyRow({ k, onClick, onReseal }: { k: KeySummary; onClick: () => void; onReseal?: () => void }) {
   const d = dday(k.nextRotationAt)
   let rotCell: React.ReactNode
   if (k.status === 'DESTROYED' || k.status === 'DEACTIVATED') rotCell = <span style={{ color: 'var(--text-3)' }}>—</span>
@@ -139,20 +162,27 @@ function KeyRow({ k, onClick }: { k: KeySummary; onClick: () => void }) {
     </span>
   )
   return (
-    <tr className="rowlink" onClick={onClick}>
-      <td><b>{k.keyName}</b></td>
+    <tr className={`rowlink ${k.integrityValid ? '' : 'row-bad'}`} onClick={onClick} title={k.integrityValid ? undefined : '무결성 위반 — 상세에서 확인'}>
+      <td><b className="nm">{k.keyName}</b><StateDot state={k.status} /></td>
       <td className="mono">{algoLabel(k.algorithm, k.keySize)}</td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{k.mode ?? '—'}</td>
       <td>{PURPOSE_KO[k.purpose]}</td>
-      <td><StateBadge state={k.status} /></td>
       <td>
-        <span className="vtag">v{k.currentVersion}</span>{' '}
-        <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>/ {k.versionCount}</span>
+        <span className="vtxt">v{k.currentVersion}/{k.versionCount}</span>
         {k.scheduledVersion && <> <span className="vtag sched" title={`활성일 ${k.scheduledAt}`}>↻ v{k.scheduledVersion} 예약</span></>}
       </td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{k.autoRotate ? `${k.rotationPeriodDays}일` : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
       <td className="mono">{rotCell}</td>
-      <td><IntegrityBadge valid={k.integrityValid} /></td>
+      <td onClick={(e) => e.stopPropagation()}>
+        {/* 무결성 위반 행에만 — 현재 값으로 재해시(ADMIN, 사유 필수). 위반에서 정상으로 가는 유일한 경로. 행 클릭(상세 이동)과 분리 */}
+        {onReseal && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="button" className="icon-btn danger" data-tip="현재 값으로 재해시" aria-label="현재 값으로 재해시" onClick={onReseal}>
+              <Stamp size={15} />
+            </button>
+          </div>
+        )}
+      </td>
     </tr>
   )
 }

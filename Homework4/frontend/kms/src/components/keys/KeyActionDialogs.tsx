@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { runKeyAction, type KeyAction, type KeyDetail, type VersionInfo } from '@/api/keys'
-import { BADGE, STATE_KO } from '@/lib/keyRules'
+import { StateText } from './StateBadge'
 import { fmt, fromDateTimeLocal, relTime, within7Days } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -75,7 +75,6 @@ function ActivateDialog({ detail, version, onClose, onDone }: { detail: KeyDetai
           <ReasonField value={reason} onChange={setReason} placeholder="예: 연동 시스템 배포 완료로 예정보다 앞당겨 활성" />
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button disabled={pending} onClick={() => run('ACTIVATE', reason, { version })}>지금 활성화</Button>
         </DialogFooter>
       </DialogContent>
@@ -94,7 +93,6 @@ function ReactivateDialog({ detail, version, onClose, onDone }: { detail: KeyDet
           <ReasonField value={reason} onChange={setReason} placeholder="예: DB 점검 중 활성일 컬럼 수동 수정으로 인한 오탐 확인, 재암호화 위해 복구" />
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button disabled={pending} onClick={() => run('REACTIVATE', reason, { version })}>재활성화</Button>
         </DialogFooter>
       </DialogContent>
@@ -122,7 +120,6 @@ function DeactivateDialog({ detail, version, onClose, onDone }: { detail: KeyDet
           <ReasonField value={reason} onChange={setReason} placeholder="예: 해당 버전 암호문 전량 재암호화 완료" />
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button variant="danger" disabled={pending} onClick={() => run('DEACTIVATE', reason, { version })}>정지</Button>
         </DialogFooter>
       </DialogContent>
@@ -147,7 +144,6 @@ function RotateDialog({ detail, onClose, onDone }: { detail: KeyDetail; onClose:
           <ReasonField value={reason} onChange={setReason} placeholder="예: 수동 갱신 — 연동 시스템 교체" />
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button disabled={pending || full} onClick={() => run('ROTATE', reason, { activationDate: fromDateTimeLocal(activationDate) })}>갱신</Button>
         </DialogFooter>
       </DialogContent>
@@ -184,7 +180,7 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
                 <label key={v.version} className={`opt ${target === v.version ? 'sel' : ''}`}>
                   <input type="radio" name="des" checked={target === v.version} onChange={() => setTarget(v.version)} />
                   <span>
-                    <b>v{v.version}만 삭제 <span className={`badge ${BADGE[v.state]}`} style={{ marginLeft: 4 }}>{STATE_KO[v.state]}</span></b>
+                    <b>v{v.version}만 삭제 <StateText state={v.state} /></b>
                     <span>마지막 사용 {fmt(v.lastUsedAt)} · 누적 {v.usageCount.toLocaleString()}회</span>
                   </span>
                 </label>
@@ -209,7 +205,6 @@ function DestroyDialog({ detail, version, onClose, onDone }: { detail: KeyDetail
           </label>
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>취소</Button>
           <Button variant="danger" disabled={pending || !ack} onClick={submit}>삭제</Button>
         </DialogFooter>
       </DialogContent>

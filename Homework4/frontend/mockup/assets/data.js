@@ -90,7 +90,7 @@ const KEYS=[
 const USERS=[
  {id:101,name:'김민준',phone:'010-****-****',email:'****@****.**',plainPhone:'010-2847-3421',plainEmail:'mjkim88@naver.com',status:'ACTIVE',joined:'2026-03-11'},
  {id:102,name:'이서연',phone:'010-****-****',email:'****@****.**',plainPhone:'010-9034-7788',plainEmail:'sylee0412@gmail.com',status:'ACTIVE',joined:'2026-04-02'},
- {id:103,name:'박지훈',phone:'010-****-****',email:'****@****.**.**',plainPhone:'010-5511-1204',plainEmail:'jhpark@ineb.co.kr',status:'ACTIVE',joined:'2026-05-19'},
+ {id:103,name:'박지훈',phone:'010-****-****',email:'****@****.**.**',plainPhone:'010-5511-1204',plainEmail:'jhpark@ineb.co.kr',status:'ACTIVE',joined:'2026-05-19',integrity:false},
  {id:104,name:'최유나',phone:'010-****-****',email:'****@****.**',plainPhone:'010-7723-6650',plainEmail:'ynchoi_c@daum.net',status:'SUSPENDED',joined:'2026-06-07'},
  {id:105,name:'정다은',phone:'010-****-****',email:'****@****.**',plainPhone:'010-3308-9917',plainEmail:'dejung95@kakao.com',status:'ACTIVE',joined:'2026-07-28'},
 ];
@@ -125,13 +125,15 @@ const AUDITS=[
  {id:1279,at:'2026-08-17 18:31:44',actor:'admin',action:'USER_UPDATED',target:'USER#104',keyId:null,detail:'fields=status:ACTIVE→SUSPENDED'},
  {id:1278,at:'2026-08-01 00:00:03',actor:'SYSTEM',action:'KEY_STATUS_CHANGED',target:'KEY#1',keyId:1,detail:'action=ACTIVATE, version=3, trigger=DATE_REACHED'},
  {id:1277,at:'2026-07-28 11:20:44',actor:'admin',action:'KEY_ROTATED',target:'KEY#1',keyId:1,detail:'newVersion=3, activationDate=2026-08-01 00:00:00'},
- {id:1276,at:'2026-07-01 10:00:00',actor:'admin',action:'KEY_STATUS_CHANGED',target:'KEY#4',keyId:4,detail:'action=DEACTIVATE, version=1, reason=재봉인 완료'},
+ {id:1276,at:'2026-07-01 10:00:00',actor:'admin',action:'KEY_STATUS_CHANGED',target:'KEY#4',keyId:4,detail:'action=DEACTIVATE, version=1, reason=재봉인 완료'},,
+ {id:1270,at:'2026-08-10 11:20:05',actor:'admin',action:'USER_PLAIN_VIEWED',target:'USER#101',keyId:null,detail:'reason=CS 본인확인 요청 처리'}
 ];
+/* 공지사항 — pinned(상단 고정, 배지 "고정") 는 목록 상단 고정, 번호는 id 그대로 표시 (설계의 expose_yn 은 폐기, 2026-09-08) */
 const NOTICES=[
- {id:12,no:1524,important:true,title:'[점검] 8월 정기 시스템 점검 안내 (08/24 02:00~04:00)',files:2,views:129,by:'류재민',at:'2026-08-17'},
- {id:11,no:1523,important:true,title:'[보안] 마스터키 순환(enc_ver) 정책 변경 사전 공지',files:1,views:86,by:'김보안',at:'2026-08-05'},
- {id:10,no:1522,important:false,title:'KMS 관리 키 명명 규칙 가이드 v2 배포',files:1,views:214,by:'류재민',at:'2026-07-22'},
- {id:9,no:1521,important:false,title:'감사로그 CSV 정규화 규칙 안내 (구분자·Null·KST 포맷)',files:0,views:57,by:'김보안',at:'2026-07-10'},
+ {id:12,pinned:true,title:'[점검] 8월 정기 시스템 점검 안내 (08/24 02:00~04:00)',files:2,views:129,by:'류재민',at:'2026-08-17'},
+ {id:11,pinned:true,title:'[보안] 마스터키 순환(enc_ver) 정책 변경 사전 공지',files:1,views:86,by:'김보안',at:'2026-08-05'},
+ {id:10,pinned:false,title:'KMS 관리 키 명명 규칙 가이드 v2 배포',files:1,views:214,by:'류재민',at:'2026-07-22'},
+ {id:9,pinned:false,title:'감사로그 CSV 정규화 규칙 안내 (구분자·Null·KST 포맷)',files:0,views:57,by:'김보안',at:'2026-07-10'},
 ];
 /* 상태 배지 클래스 / 한글 라벨 */
 const BADGE={PRE_ACTIVE:'b-pre',ACTIVE:'b-active',DEACTIVATED:'b-deact',DESTROYED:'b-destroyed'};
@@ -152,4 +154,7 @@ const ALGOS={
  SHA512:{sizes:[512],modes:[],purpose:'SIGN_VERIFY',hmac:true},
 };
 const MAX_VERSIONS=100, ROT_MIN=1, ROT_MAX=730, ROT_DEFAULT=90;
-function stateBadge(s){return `<span class="badge ${BADGE[s]}">${s} · ${STATE_KO[s]}</span>`;}
+/* 상태 표시는 배지 대신 색상점(2026-09-10) — stateDot: 점만(이름 뒤), stateBadge: 점 + 상태명(표 셀) */
+function stateDot(s){return `<span class="sdot s-${s}" data-tip="${s} · ${STATE_KO[s]}" aria-label="${s} · ${STATE_KO[s]}"></span>`;}
+function stateBadge(s){return `<span class="stext"><span class="sdot s-${s}"></span>${STATE_KO[s]}</span>`;}
+function userDot(st){return `<span class="sdot u-${st==='ACTIVE'?'ACTIVE':'SUSPENDED'}" data-tip="${st==='ACTIVE'?'활성':'정지'}"></span>`;}

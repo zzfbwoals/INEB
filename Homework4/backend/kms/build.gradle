@@ -28,7 +28,7 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 	// ARIA · SEED · LEA 등 국산 알고리즘 및 EC 곡선 지원 (2주차 KMS 관리 키)
 	implementation 'org.bouncycastle:bcprov-jdk18on:1.79'
-	runtimeOnly 'org.postgresql:postgresql'
+	implementation 'org.postgresql:postgresql'   // LISTEN/NOTIFY(PGConnection) 를 코드에서 쓰므로 컴파일 의존성
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
