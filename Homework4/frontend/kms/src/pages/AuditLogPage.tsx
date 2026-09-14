@@ -258,7 +258,7 @@ function LogRow({ item, className, badge, onClick }: { item: AuditLogItem; class
       <td className="mono" style={{ color: 'var(--text-3)' }}>#{item.id}</td>
       <td className="mono">{item.createdAt}</td>
       <td><b>{item.actor}</b></td>
-      <td><span className={`acttxt${isIntegrityViolation(item.action) ? ' bad' : ''}`}>{item.action}</span></td>
+      <td><span className={`actchip${isIntegrityViolation(item.action) ? ' bad' : ''}`}>{item.action}</span></td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{item.target}</td>
       <td className="mono" style={{ color: 'var(--text-3)' }} title={item.detail}>{badge}{badge && ' '}{item.detail}</td>
     </tr>
