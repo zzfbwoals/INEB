@@ -35,7 +35,7 @@ class AuditChainFlagTest {
         repository = mock(AuditLogRepository.class);
         chainService = mock(AuditChainService.class);
         service = new AuditLogService(repository, mock(AuditLogShadowRepository.class), chainService,
-                mock(AuditShadowComparer.class), mock(AuditShadowGuard.class), mock(PersonalDataCodec.class),
+                mock(AuditShadowComparer.class), mock(PersonalDataCodec.class),
                 mock(AuditViolationStore.class));
     }
 

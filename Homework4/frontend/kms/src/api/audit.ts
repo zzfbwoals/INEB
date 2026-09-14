@@ -27,15 +27,14 @@ export interface AuditShadowSummary {
   currentRows: number
   shadowRows: number
   shadowChainValid: boolean
-  guard: 'ACTIVE' | 'DISABLED' | 'MISSING'
 }
 
 export interface AuditVerifyResult {
   /** 원본 체인만의 판정 */
   valid: boolean
-  /** 체인 + 섀도 비교 + 보호 트리거 + 위반 표시(flagged)를 합친 최종 판정 (shadowChainValid 는 참고용) */
+  /** 체인 + 섀도 비교 + 위반 표시(flagged)를 합친 최종 판정 (shadowChainValid 는 참고용) */
   healthy: boolean
-  /** AUDIT_CHAIN_VIOLATION 기록 또는 변조 증거가 있는지 — 영구 위반(재해시 없음). valid·섀도·트리거가 정상인데 true 면 원복 뒤에도 남은 위반 */
+  /** AUDIT_CHAIN_VIOLATION 기록 또는 변조 증거가 있는지 — 영구 위반(재해시 없음). valid·섀도가 정상인데 true 면 원복 뒤에도 남은 위반 */
   flagged: boolean
   /** 변조 증거(audit_violation)에 남은 행 수 — 원복해도 유지, 배지 "체인 위반 N건" */
   flaggedRows: number
@@ -57,7 +56,6 @@ export interface AuditForensics {
   checkedAt: string
   chainValid: boolean
   shadowChainValid: boolean
-  guard: 'ACTIVE' | 'DISABLED' | 'MISSING'
   currentRows: number
   shadowRows: number
   deletedCount: number
@@ -72,7 +70,7 @@ export interface AuditForensics {
 export function shadowHasIssue(r: AuditVerifyResult | null | 'unavailable'): boolean {
   if (!r || r === 'unavailable' || !r.shadow) return false
   const s = r.shadow
-  return s.deleted + s.inserted + s.modified > 0 || s.guard !== 'ACTIVE'
+  return s.deleted + s.inserted + s.modified > 0
 }
 
 export interface AuditListParams {
@@ -87,6 +85,11 @@ export interface AuditListParams {
   direction?: 'asc' | 'desc'
 }
 
+/** 무결성 위반 행위(KEY_/USER_INTEGRITY_VIOLATION) — 감사 로그 표·상세의 행위 칩을 빨갛게 */
+export function isIntegrityViolation(action: string): boolean {
+  return /_INTEGRITY_VIOLATION$/.test(action)
+}
+
 /** 감사 대상 행위유형 — 백엔드 AuditHook 예약 목록과 동일 */
 export const AUDIT_ACTIONS = [
   'LOGIN_SUCCESS', 'LOGIN_FAILED', 'LOGOUT',
@@ -96,7 +99,7 @@ export const AUDIT_ACTIONS = [
   'USER_CREATED', 'USER_UPDATED', 'USER_PLAIN_VIEWED', 'USER_INTEGRITY_VIOLATION', 'USER_INTEGRITY_RESEALED',
   'AUDIT_CHAIN_VERIFIED', 'AUDIT_EXPORTED', 'AUDIT_CHAIN_VIOLATION', 'AUDIT_CHAIN_RESTORED',
   'DB_DIRECT_CHANGE', 'INTEGRITY_TRIGGER_TAMPERED',
-  'AUDIT_SHADOW_BACKFILLED', 'AUDIT_SHADOW_GUARD_TAMPERED',
+  'AUDIT_SHADOW_BACKFILLED',
   'NOTICE_CREATED', 'NOTICE_UPDATED', 'NOTICE_DELETED', 'NOTICE_FILE_DOWNLOADED', 'NOTICE_FILE_DELETED',
 ] as const
 

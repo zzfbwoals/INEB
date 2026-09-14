@@ -90,6 +90,7 @@ textarea.input.txt{font-size:13.5px;font-variant-numeric:normal}
 .sdot.s-PRE_ACTIVE{background:var(--blue)}
 .sdot.s-DEACTIVATED,.sdot.u-SUSPENDED{background:var(--text-3)}
 .sdot.s-DESTROYED{background:color-mix(in srgb,var(--text-3) 55%,transparent)}
+.sdot.c-ok{background:var(--green)}.sdot.c-bad{background:var(--red)}.sdot.c-na{background:var(--text-3)}
 .stext{display:inline-flex;align-items:center;gap:6px}
 .stext .sdot{margin-left:0}
 h2>.sdot{width:9px;height:9px;margin-left:10px;vertical-align:4px}
@@ -391,8 +392,6 @@ tbody tr.row-ghost td .row-tag,tbody tr.row-ghost td .actchip{display:inline-blo
 .pin-mark{display:inline-flex;align-items:center;color:var(--red)}
 
 /* 무결성 재해시 확인 모달 — 대상 표시명 + 한 문장 안내 (키·사용자 공용) */
-.reseal-note { margin: 0 0 12px; font-size: 13px; line-height: 1.6; color: var(--text-2); }
-.reseal-note b { color: var(--text); }
 
 /* 대시보드 키 도넛 툴팁 — 카드 안에 갇혀 잘리던 data-tip 대신 body 에 붙는 fixed 툴팁 */
 .donut-tip{position:fixed;transform:translate(-50%,-100%);z-index:200;pointer-events:none;background:var(--surface);color:var(--text);border:1px solid var(--line-strong);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;white-space:nowrap;box-shadow:var(--modal-shadow)}

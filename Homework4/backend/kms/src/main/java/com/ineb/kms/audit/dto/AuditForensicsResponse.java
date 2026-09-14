@@ -10,7 +10,6 @@ public record AuditForensicsResponse(
         String checkedAt,
         boolean chainValid,
         boolean shadowChainValid,
-        String guard,
         long currentRows,
         long shadowRows,
         long deletedCount,

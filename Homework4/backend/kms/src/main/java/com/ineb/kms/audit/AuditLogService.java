@@ -25,8 +25,8 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 감사 로그 조회·검증. 검증은 {@link AuditShadowComparer} 로 원본 체인·섀도 비교·섀도 체인을 한 번에 계산하고,
- * 보호 트리거 상태({@link AuditShadowGuard})까지 합쳐 healthy 를 판정한다.
+ * 감사 로그 조회·검증. 검증은 {@link AuditShadowComparer} 로 원본 체인·섀도 비교·섀도 체인을 한 번에 계산해 healthy 를 판정한다
+ * (섀도에는 보호 트리거가 없다 — 2026-09-14 개정, 섀도는 증거이지 보장이 아니다).
  * 검증 트랜잭션은 REPEATABLE READ — 배치 사이에 새 행이 커밋되면 원본·섀도 스냅샷이 어긋나 "삭제됨" 오탐이 나기 때문.
  */
 @Service
@@ -52,18 +52,16 @@ public class AuditLogService {
     private final AuditLogShadowRepository shadowRepository;
     private final AuditChainService chainService;
     private final AuditShadowComparer comparer;
-    private final AuditShadowGuard guard;
     private final PersonalDataCodec codec;
     private final AuditViolationStore violationStore;
 
     public AuditLogService(AuditLogRepository repository, AuditLogShadowRepository shadowRepository,
                            AuditChainService chainService, AuditShadowComparer comparer,
-                           AuditShadowGuard guard, PersonalDataCodec codec, AuditViolationStore violationStore) {
+                           PersonalDataCodec codec, AuditViolationStore violationStore) {
         this.repository = repository;
         this.shadowRepository = shadowRepository;
         this.chainService = chainService;
         this.comparer = comparer;
-        this.guard = guard;
         this.codec = codec;
         this.violationStore = violationStore;
     }
@@ -153,7 +151,7 @@ public class AuditLogService {
     }
 
     /**
-     * 검증 + 위반 표시 (2026-09-11 영구 위반): 검사(체인 + 섀도 비교 + 보호 트리거)가 실패했는데 아직 AUDIT_CHAIN_VIOLATION 이
+     * 검증 + 위반 표시 (2026-09-11 영구 위반): 검사(체인 + 섀도 비교)가 실패했는데 아직 AUDIT_CHAIN_VIOLATION 이
      * 없으면 그 자리에서 1건 기록한다(조회는 읽기 전용이라 별도 트랜잭션). 한 번 기록되면 값을 원복해 검사가 통과해도
      * healthy=false 로 남는다 — 감사 로그에는 재해시가 없고, 위반 행을 지우면 체인이 끊겨 다시 위반이다.
      * 배치·트리거 알림·감사 로그 화면·대시보드가 모두 이 판정을 쓴다.
@@ -161,13 +159,12 @@ public class AuditLogService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Check check() {
         AuditShadowComparer.Result result = compareAll();
-        AuditShadowGuard.Status guardStatus = guard.status();
         // 변조 증거 스냅샷 — 삭제·삽입·수정 행을 처음 본 순간 값째 남긴다(원복해도 유지, 별도 트랜잭션)
         List<AuditViolation> added = violationStore.recordNew(result);
-        String detail = summaryDetail(result, guardStatus) + evidenceDetail(added);
-        boolean checksOk = result.chain().valid() && result.shadowClean() && guardStatus == AuditShadowGuard.Status.ACTIVE;
+        String detail = summaryDetail(result) + evidenceDetail(added);
+        boolean checksOk = result.chain().valid() && result.shadowClean();
         boolean flagged = settleViolation(checksOk, !added.isEmpty(), detail);
-        return new Check(toResponse(result, guardStatus, checksOk, flagged, evidenceSummary(evidence(added))), detail);
+        return new Check(toResponse(result, checksOk, flagged, evidenceSummary(evidence(added))), detail);
     }
 
     /**
@@ -257,7 +254,7 @@ public class AuditLogService {
         long deletedCount = ev.stream().filter(v -> AuditViolation.DELETED.equals(v.getKind())).map(AuditViolation::getAuditId).distinct().count();
         long insertedCount = ev.stream().filter(v -> AuditViolation.INSERTED.equals(v.getKind())).map(AuditViolation::getAuditId).distinct().count();
         return new AuditForensicsResponse(KstTime.format(Instant.now()),
-                r.chain().valid(), r.shadowChain().valid(), guard.status().name(),
+                r.chain().valid(), r.shadowChain().valid(),
                 r.currentRows(), r.shadowRows(), deletedCount, insertedCount, fieldsById.size(),
                 deleted, inserted, modified);
     }
@@ -270,7 +267,7 @@ public class AuditLogService {
                 AuditShadowComparer.keyset(shadowRepository::findFirst500ByIdGreaterThanOrderByIdAsc));
     }
 
-    private static AuditVerifyResponse toResponse(AuditShadowComparer.Result r, AuditShadowGuard.Status guardStatus,
+    private static AuditVerifyResponse toResponse(AuditShadowComparer.Result r,
                                                   boolean checksOk, boolean flagged, EvidenceSummary ev) {
         // 섀도 체인은 판정에 넣지 않는다 — 원본이 변조된 뒤 정상 기록이 이어지면 그 행이 변조된 상태를 prev 로 물고 섀도에 복사되어
         // 섀도 체인도 필연적으로 끊기므로 독립 신호가 아니다. "원본·섀도 동일 변조"는 체인 위반 + 섀도 차이 0 으로 드러난다.
@@ -284,22 +281,21 @@ public class AuditLogService {
                         .toList(),
                 new AuditVerifyResponse.ShadowSummary(Math.max(r.deletedCount(), ev.deleted()),
                         Math.max(r.insertedCount(), ev.inserted()), Math.max(r.modifiedCount(), ev.modified()),
-                        r.currentRows(), r.shadowRows(), r.shadowChain().valid(), guardStatus.name()));
+                        r.currentRows(), r.shadowRows(), r.shadowChain().valid()));
     }
 
     /**
      * 감사 detail — 기존 key=value 관례. 예:
-     * violations=2, rows=1234, shadowDeleted=3, shadowInserted=0, shadowModified=1, shadowChainValid=true, shadowGuard=ACTIVE, deletedIds=1201-1203, modifiedIds=77
+     * violations=2, rows=1234, shadowDeleted=3, shadowInserted=0, shadowModified=1, shadowChainValid=true, deletedIds=1201-1203, modifiedIds=77
      */
-    static String summaryDetail(AuditShadowComparer.Result r, AuditShadowGuard.Status guardStatus) {
+    static String summaryDetail(AuditShadowComparer.Result r) {
         StringBuilder sb = new StringBuilder()
                 .append("violations=").append(r.chain().violations().size())
                 .append(", rows=").append(r.currentRows())
                 .append(", shadowDeleted=").append(r.deletedCount())
                 .append(", shadowInserted=").append(r.insertedCount())
                 .append(", shadowModified=").append(r.modifiedCount())
-                .append(", shadowChainValid=").append(r.shadowChain().valid())
-                .append(", shadowGuard=").append(guardStatus);
+                .append(", shadowChainValid=").append(r.shadowChain().valid());
         appendIds(sb, "deletedIds", r.deleted().stream().map(ChainRow::getId).toList());
         appendIds(sb, "insertedIds", r.inserted().stream().map(ChainRow::getId).toList());
         appendIds(sb, "modifiedIds", r.modified().stream().map(m -> m.current().getId()).toList());

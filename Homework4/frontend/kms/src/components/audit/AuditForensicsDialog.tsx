@@ -59,9 +59,6 @@ export function AuditForensicsDialog({ data, view, onClose }: { data: AuditForen
           {!data.chainValid && noDiff && (
             <div className="result-box bad">체인 위반이 있으나 섀도와 차이가 없습니다 — 원본 증거(섀도)도 함께 변조된 것으로 추정됩니다.</div>
           )}
-          {data.guard !== 'ACTIVE' && (
-            <div className="result-box bad">섀도 보호 트리거가 {data.guard === 'DISABLED' ? '해제' : '제거'}되어 있습니다. 재기동 시 자동 복구되며 AUDIT_SHADOW_GUARD_TAMPERED 로 기록됩니다.</div>
-          )}
           <div className="scroll-list">
             {listed.length === 0 && <div className="tbl-empty">{view.mode === 'single' ? '해당 행의 위반 정보가 없습니다' : '해당하는 행이 없습니다'}</div>}
             {listed.map((e) => <DiffCard key={`${e.kind}-${e.id}`} entry={e} showHeader={view.mode === 'all'} />)}

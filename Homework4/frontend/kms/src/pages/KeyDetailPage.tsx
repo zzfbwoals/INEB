@@ -368,7 +368,7 @@ function VersionRow({ v, detail, onAction, onReveal }: { v: VersionInfo; detail:
   )
   return (
     <tr className={`${isCur ? 'vcur' : ''} ${!v.integrityValid ? 'row-bad' : ''}`.trim()}>
-      <td style={{ whiteSpace: 'nowrap' }}><span className={`vtxt ${isCur ? 'cur' : ''}`}>v{v.version}</span><StateDot state={v.state} />{reveal}</td>
+      <td style={{ whiteSpace: 'nowrap' }}><span className={`vtxt ${isCur ? 'cur' : ''}`}>v{v.version}</span><StateDot state={v.state} tip="right" />{reveal}</td>
       <td className="mono">
         {fmt(v.activationDate)}
         {v.state === 'PRE_ACTIVE' && <span style={{ color: 'var(--blue)' }}> 예정</span>}
