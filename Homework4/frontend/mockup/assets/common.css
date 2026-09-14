@@ -420,3 +420,5 @@ tbody tr.row-ghost td .row-tag,tbody tr.row-ghost td .actchip{display:inline-blo
 .id-ack{position:absolute;inset:0;display:grid;place-items:center;color:var(--red)}
 tbody tr.row-ghost td .id-ack{text-decoration:none}
 .chain-ic.ack{color:var(--amber)}
+
+.diff-grid .hash{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}

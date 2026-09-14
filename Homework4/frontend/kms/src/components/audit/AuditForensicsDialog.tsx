@@ -16,7 +16,7 @@ export type ForensicsView = { mode: 'all'; tab: DiffKind } | { mode: 'single'; k
 export const FIELD_KO: Record<string, string> = {
   actor: '행위자', action: '행위', target: '대상', detail: '상세', prevHash: 'prev_hash', rowHash: 'row_hash', createdAt: '일시',
 }
-const BASE_FIELDS = ['actor', 'action', 'target', 'detail', 'createdAt']
+const BASE_FIELDS = ['actor', 'action', 'target', 'detail', 'createdAt', 'prevHash', 'rowHash']
 
 function value(item: AuditLogItem | null, field: string): string {
   if (!item) return '—'
@@ -26,7 +26,9 @@ function value(item: AuditLogItem | null, field: string): string {
     case 'target': return item.target
     case 'detail': return item.detailDecrypted ? item.detail : `${item.detail} (복호화 실패 · 변조 추정)`
     case 'createdAt': return item.createdAt
-    default: return '(해시 — 목록에 미노출)'
+    case 'prevHash': return item.prevHash ?? '—'
+    case 'rowHash': return item.rowHash ?? '—'
+    default: return '—'
   }
 }
 
@@ -120,9 +122,7 @@ export function AuditForensicsDialog({ data, view, canAck, onAck, onClose }: {
 function DiffCard({ entry, showHeader, ack }: { entry: DiffEntry; showHeader: boolean; ack: ReactNode }) {
   const isChain = entry.kind === 'chain'
   const changed = new Set(entry.kind === 'modified' ? entry.fields : isChain ? [] : BASE_FIELDS)
-  const shown = entry.kind === 'modified'
-    ? [...BASE_FIELDS, ...entry.fields.filter((f) => f === 'prevHash' || f === 'rowHash')]
-    : BASE_FIELDS
+  const shown = BASE_FIELDS
   return (
     <div className="meta-box">
       {(showHeader || isChain) && (
@@ -137,22 +137,23 @@ function DiffCard({ entry, showHeader, ack }: { entry: DiffEntry; showHeader: bo
         <div className="h">필드</div><div className="h">원본</div><div className="h">{isChain ? '현재 값' : '변조 값'}</div>
         {shown.map((f) => (
           <ContentsRow key={f} label={FIELD_KO[f] ?? f} original={value(entry.original, f)} current={value(entry.current, f)}
-            changed={changed.has(f)} hasOriginal={!!entry.original} hasCurrent={!!entry.current} />
+            changed={changed.has(f)} hasOriginal={!!entry.original} hasCurrent={!!entry.current} hash={f === 'prevHash' || f === 'rowHash'} />
         ))}
       </div>
     </div>
   )
 }
 
-/* git diff 색: 원본(빠진 값)은 빨강 "-", 현재(들어온 값)는 초록 "+" */
-function ContentsRow({ label, original, current, changed, hasOriginal, hasCurrent }: {
-  label: string; original: string; current: string; changed: boolean; hasOriginal: boolean; hasCurrent: boolean
+/* git diff 색: 원본(빠진 값)은 빨강 "-", 현재(들어온 값)는 초록 "+". 해시(64자)는 열 너비만큼만 보이고 잘리는 자리에 … */
+function ContentsRow({ label, original, current, changed, hasOriginal, hasCurrent, hash }: {
+  label: string; original: string; current: string; changed: boolean; hasOriginal: boolean; hasCurrent: boolean; hash?: boolean
 }) {
+  const h = hash ? ' hash' : ''
   return (
     <>
       <div className="k">{label}</div>
-      <div className={`mono${changed && hasOriginal ? ' del' : ''}`}>{original}</div>
-      <div className={`mono${changed && hasCurrent ? ' add' : ''}`}>{current}</div>
+      <div className={`mono${h}${changed && hasOriginal ? ' del' : ''}`}>{original}</div>
+      <div className={`mono${h}${changed && hasCurrent ? ' add' : ''}`}>{current}</div>
     </>
   )
 }

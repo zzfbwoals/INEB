@@ -81,23 +81,18 @@ public class AuditViolationStore {
     }
 
     /**
-     * 체인만 깨진 구간의 증거 — 위반 구간 [fromId, toId] 안에 삭제·삽입·수정 증거가 하나도 없으면(섀도 차이 없음) CHAIN 증거를 남긴다.
-     * 스냅샷은 fromId 행의 현재 값, fields 는 "fromId-toId"(unique 로 구간당 1건). 구간의 시작 행이 없으면 건너뛴다.
+     * 체인만 깨진 구간의 증거 — 체인 검증은 실패했는데 복사본 비교에 차이가 하나도 없을 때(백필 이전 변조·원본/복사본 동시 변조)만
+     * 구간당 CHAIN 증거를 남긴다. 스냅샷은 fromId 행의 현재 값, fields 는 "fromId-toId"(unique 로 구간당 1건).
+     * 복사본 차이(삭제·삽입·수정)가 하나라도 있으면 체인 끊김은 그 차이로 설명되므로 만들지 않는다 — 검증기는 끊김을 "다음 행"
+     * (prev_hash 가 안 맞는 행)에 보고하므로 구간 안에 증거가 있는지로는 판정할 수 없다(삭제·수정된 행의 id 는 구간 앞에 있다).
      */
     List<AuditViolation> recordChainOnly(AuditShadowComparer.Result result, List<AuditViolation> justAdded) {
         List<AuditViolation> out = new ArrayList<>();
-        if (result.chain().valid()) {
+        if (result.chain().valid() || !result.shadowClean() || !justAdded.isEmpty()) {
             return out;
         }
-        List<AuditViolation> existing = new ArrayList<>(repository.findAllByOrderByIdAsc());
-        existing.addAll(justAdded);
         Instant now = Instant.now();
         for (AuditChainVerifier.Violation v : result.chain().violations()) {
-            boolean covered = existing.stream().anyMatch(e -> !AuditViolation.CHAIN.equals(e.getKind())
-                    && e.getAuditId() >= v.fromId() && e.getAuditId() <= v.toId());
-            if (covered) {
-                continue;
-            }
             auditLogRepository.findById(v.fromId())
                     .ifPresent(row -> add(out, AuditViolation.CHAIN, v.fromId() + "-" + v.toId(), row, now));
         }

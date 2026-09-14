@@ -2018,6 +2018,13 @@ body.col-resizing * {
 .diff-grid .mono {
   overflow-wrap: anywhere;
 }
+/* 해시 셀 — 한 줄, 열 너비만큼만 보이고 넘치면 … (grid 셀이 줄어들 수 있게 min-width:0) */
+.diff-grid .hash {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
 /* git diff 색 — 원본(빠진 값) 빨강 "-", 현재(들어온 값) 초록 "+" */
 .diff-grid .del {
   background: rgba(248, 81, 73, 0.15);
