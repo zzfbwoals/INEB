@@ -1,23 +1,27 @@
-import { Download, List, RotateCw } from 'lucide-react'
+import { Check, Download, List, RotateCw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useSearchParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import {
-  AUDIT_ACTIONS, downloadAuditCsv, fetchAuditActors, fetchChainStatus, fetchForensics, isIntegrityViolation, listAuditLogs, shadowHasIssue, verifyAuditChain,
-  type AuditForensics, type AuditLogItem, type AuditModifiedItem, type AuditVerifyResult,
+  AUDIT_ACTIONS, acknowledgeViolation, chainState, chainTip, downloadAuditCsv, fetchAuditActors, fetchChainStatus, fetchForensics, isIntegrityViolation, listAuditLogs, shadowHasIssue, verifyAuditChain,
+  type AuditAck, type AuditChainItem, type AuditForensics, type AuditLogItem, type AuditModifiedItem, type AuditVerifyResult,
 } from '@/api/audit'
+import { fetchMe } from '@/api/auth'
 import type { PageResponse } from '@/api/keys'
+import { ReasonDialog } from '@/components/ui/reason-dialog'
 import { errorMessage, useToast } from '@/components/ui/toast'
 import { subscribeUiEvents } from '@/lib/events'
 import { useAutoPageSize } from '@/lib/usePageSize'
 import { useColumnResize } from '@/lib/useColumnResize'
 import { SortMark, sortClass } from '@/components/ui/sort-mark'
 import { Pager } from '@/components/ui/pager'
-import { AuditForensicsDialog, FIELD_KO, type ForensicsView } from '@/components/audit/AuditForensicsDialog'
+import { AuditForensicsDialog, FIELD_KO, ackByAudit, ackTip, type ForensicsView } from '@/components/audit/AuditForensicsDialog'
 import { AuditLogDetailDialog } from '@/components/audit/AuditLogDetailDialog'
 
 /* 목업 audit.html — 감사 로그. append-only 해시 체인 + 섀도(복사본) 비교 + CSV 내려받기.
    목록은 원본 테이블 기준으로 보여주고, 섀도 비교 결과(수정·삽입)를 행에 표시하며 지워진 행은 유령 행으로 끼워 넣는다.
+   확인(acknowledge, 2026-09-14): 위반 행의 상세에서 사유와 함께 확인하면 ID 위에 빨간 체크가 덮이고, 전부 확인되면 제목 옆 점이
+   빨강에서 벗어난다(검사 통과면 초록, 원복 안 됐으면 주황). 원복은 하지 않는다(append-only).
    페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
 /* 열 기본 폭(%) — ID·일시·행위자·행위·대상·상세 */
 const COLS = [6, 14, 9, 15, 22, 34]
@@ -47,6 +51,9 @@ export default function AuditLogPage() {
   const [chain, setChain] = useState<AuditVerifyResult | null | 'unavailable'>(null)
   const [forensics, setForensics] = useState<AuditForensics | null>(null)
   const [forensicsOpen, setForensicsOpen] = useState<ForensicsView | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  // 확인 대상 감사 행 — 사유 입력 모달
+  const [ackTarget, setAckTarget] = useState<number | null>(null)
   const location = useLocation()
   // 통합 검색·대시보드 최근 활동에서 진입 — state.detail 이 있으면 그 행의 상세 모달을 바로 연다
   const [detailItem, setDetailItem] = useState<AuditLogItem | null>(() => (location.state as { detail?: AuditLogItem } | null)?.detail ?? null)
@@ -60,7 +67,7 @@ export default function AuditLogPage() {
     try {
       const status = await fetchChainStatus()
       setChain(status)
-      setForensics(shadowHasIssue(status) || !status.valid ? await fetchForensics() : null)
+      setForensics(shadowHasIssue(status) || !status.valid || status.flaggedRows > 0 ? await fetchForensics() : null)
     } catch {
       setChain('unavailable')
       setForensics(null)
@@ -68,6 +75,7 @@ export default function AuditLogPage() {
   }, [])
 
   useEffect(() => { refreshChain() }, [refreshChain])
+  useEffect(() => { fetchMe().then((me) => setIsAdmin(me.role === 'ADMIN')).catch(() => {}) }, [])
   useEffect(() => { fetchAuditActors().then(setActors).catch(() => {}) }, [reloadTick])
 
   // 실시간 갱신 — 모든 행위는 감사 기록되므로 이벤트가 오면 목록·체인 상태를 refetch
@@ -105,7 +113,7 @@ export default function AuditLogPage() {
     try {
       const { data: result, message } = await verifyAuditChain()
       setChain(result)
-      setForensics(shadowHasIssue(result) || !result.valid ? await fetchForensics() : null)
+      setForensics(shadowHasIssue(result) || !result.valid || result.flaggedRows > 0 ? await fetchForensics() : null)
       toast(message ?? (result.healthy ? '해시 체인 검증을 통과했습니다.' : '감사 로그 위반이 감지되었습니다.'),
         result.healthy ? 'ok' : 'error')
     } catch (err) {
@@ -118,6 +126,10 @@ export default function AuditLogPage() {
   const rows = data?.content ?? []
   const modifiedById = new Map<number, AuditModifiedItem>(forensics?.modified.map((m) => [m.id, m]) ?? [])
   const insertedIds = new Set(forensics?.inserted.map((r) => r.id) ?? [])
+  // 체인만 깨진 구간(섀도 차이 없음) — 시작 행에 표시. 확인 상태는 감사 행 단위(그 행의 증거가 전부 확인됐을 때)
+  const chainById = new Map<number, AuditChainItem>(forensics?.chain?.map((c) => [c.id, c]) ?? [])
+  const acks = ackByAudit(forensics)
+  const hasEvidence = !!forensics && ((forensics.evidence?.length ?? 0) > 0 || !forensics.chainValid)
   // 유령 행(지워진 행)은 기본 정렬(id 내림차순)·필터 없음일 때만 끼워 넣는다 — 필터가 있으면 페이지 id 범위가 불연속이라 위치를 정할 수 없다
   const inlineGhosts = !sort && !actor && !action && !target && !from && !to
   // '위반 행만' — forensics 의 수정(현재 값)·삽입·삭제(섀도 값) 행을 합쳐 클라이언트에서 필터·정렬·페이징
@@ -126,6 +138,7 @@ export default function AuditLogPage() {
       ...forensics.modified.map((m): Row => ({ kind: 'row', item: m.current })),
       ...forensics.inserted.map((item): Row => ({ kind: 'row', item })),
       ...forensics.deleted.map((item): Row => ({ kind: 'ghost', item })),
+      ...(forensics.chain ?? []).map((c): Row => ({ kind: 'row', item: c.current })),
     ].filter((r) => r.kind !== 'more' && matchesFilter(r.item, { actor, action, target, from, to }))
       .sort((a, b) => compareRows(a, b, sort))
     : []
@@ -140,9 +153,10 @@ export default function AuditLogPage() {
   const pageInfo = onlyBad ? badPage : data
   // '정상' 은 현재 페이지에서 수정·삽입·삭제 행을 제외 (페이지 총계는 서버 기준이라 위반 행 수만큼 적게 보일 수 있음)
   const shown = view === 'ok'
-    ? merged.filter((r) => r.kind === 'row' && !modifiedById.has(r.item.id) && !insertedIds.has(r.item.id))
+    ? merged.filter((r) => r.kind === 'row' && !modifiedById.has(r.item.id) && !insertedIds.has(r.item.id) && !chainById.has(r.item.id))
     : merged
-  const unhealthy = chain && chain !== 'unavailable' && !chain.healthy
+  const state = chainState(chain)
+  const tip = chainTip(chain)
 
   return (
     <AppLayout>
@@ -150,12 +164,10 @@ export default function AuditLogPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <h2>
             감사 로그
-            {chain === 'unavailable' && <span className="sdot c-na" data-tip="체인 확인 불가" aria-label="체인 확인 불가" />}
-            {chain && chain !== 'unavailable' && (chain.healthy
-              ? <span className="sdot c-ok" data-tip="체인 정상" aria-label="체인 정상" />
-              : <span className="sdot c-bad" data-tip={badgeText(chain)} aria-label={badgeText(chain)} />)}
+            {/* 색상점: 미확인 증거 = 빨강 / 전부 확인·원복 필요 = 주황 / 정상 = 초록 / 확인 불가·확인 중 = 회색 */}
+            {chain !== null && <span className={`sdot c-${state === 'loading' ? 'na' : state}`} data-tip={tip} aria-label={tip} />}
           </h2>
-          {unhealthy && forensics && (
+          {hasEvidence && forensics && (
             <button type="button" className="icon-btn" data-tip="위반 상세" aria-label="위반 상세" onClick={() => setForensicsOpen({ mode: 'all', tab: 'deleted' })}>
               <List size={15} />
             </button>
@@ -225,16 +237,21 @@ export default function AuditLogPage() {
                   )
                 }
                 const a = r.item
+                const ack = acks.get(a.id) ?? null
                 if (r.kind === 'ghost') {
-                  return <LogRow key={`g${a.id}`} item={a} className="row-ghost" badge={<span className="row-tag">삭제됨</span>} onClick={() => setForensicsOpen({ mode: 'single', kind: 'deleted', id: a.id })} />
+                  return <LogRow key={`g${a.id}`} item={a} ack={ack} className="row-ghost" badge={<span className="row-tag">삭제됨</span>} onClick={() => setForensicsOpen({ mode: 'single', kind: 'deleted', id: a.id })} />
                 }
                 const modified = modifiedById.get(a.id)
                 if (modified) {
-                  // 바뀐 컬럼을 태그에 함께 표시 — 증거 기반이라 DB 를 원복한 뒤에도 그대로 남는다
-                  return <LogRow key={a.id} item={a} className="row-bad rowlink" badge={<span className="row-tag">수정됨 · {modified.fields.map((f) => FIELD_KO[f] ?? f).join(', ')}</span>} onClick={() => setForensicsOpen({ mode: 'single', kind: 'modified', id: a.id })} />
+                  // 바뀐 컬럼을 태그에 함께 표시 — 증거 기반이라 DB 를 원복한 뒤에도 그대로 남는다(확인해도 배경은 유지, ID 에 체크만)
+                  return <LogRow key={a.id} item={a} ack={ack} className="row-bad rowlink" badge={<span className="row-tag">수정됨 · {modified.fields.map((f) => FIELD_KO[f] ?? f).join(', ')}</span>} onClick={() => setForensicsOpen({ mode: 'single', kind: 'modified', id: a.id })} />
                 }
                 if (insertedIds.has(a.id)) {
-                  return <LogRow key={a.id} item={a} className="row-bad rowlink" badge={<span className="row-tag">삽입됨</span>} onClick={() => setForensicsOpen({ mode: 'single', kind: 'inserted', id: a.id })} />
+                  return <LogRow key={a.id} item={a} ack={ack} className="row-bad rowlink" badge={<span className="row-tag">삽입됨</span>} onClick={() => setForensicsOpen({ mode: 'single', kind: 'inserted', id: a.id })} />
+                }
+                const chainItem = chainById.get(a.id)
+                if (chainItem) {
+                  return <LogRow key={a.id} item={a} ack={ack} className="row-bad rowlink" badge={<span className="row-tag">체인 끊김{chainItem.toId !== chainItem.id ? ` · #${chainItem.id}~#${chainItem.toId}` : ''}</span>} onClick={() => setForensicsOpen({ mode: 'single', kind: 'chain', id: a.id })} />
                 }
                 return <LogRow key={a.id} item={a} className="rowlink" onClick={() => setDetailItem(a)} />
               })}
@@ -245,17 +262,25 @@ export default function AuditLogPage() {
       </div>
 
       {forensicsOpen && forensics && (
-        <AuditForensicsDialog data={forensics} view={forensicsOpen} onClose={() => setForensicsOpen(null)} />
+        <AuditForensicsDialog data={forensics} view={forensicsOpen} canAck={isAdmin} onAck={(id) => setAckTarget(id)} onClose={() => setForensicsOpen(null)} />
+      )}
+      {ackTarget !== null && (
+        <ReasonDialog title={`위반 확인 #${ackTarget}`} confirmLabel="확인" placeholder="예: 변조 원인 파악 · DBA 원복 요청"
+          doneMessage="위반 증거를 확인했습니다." onClose={() => { setAckTarget(null); refreshChain() }}
+          run={(reason) => acknowledgeViolation(ackTarget, reason).then(({ message }) => ({ message }))} />
       )}
       {detailItem && <AuditLogDetailDialog item={detailItem} onClose={() => setDetailItem(null)} />}
     </AppLayout>
   )
 }
 
-function LogRow({ item, className, badge, onClick }: { item: AuditLogItem; className?: string; badge?: ReactNode; onClick?: () => void }) {
+function LogRow({ item, ack, className, badge, onClick }: { item: AuditLogItem; ack?: AuditAck | null; className?: string; badge?: ReactNode; onClick?: () => void }) {
   return (
     <tr className={className} onClick={onClick}>
-      <td className="mono" style={{ color: 'var(--text-3)' }}>#{item.id}</td>
+      {/* 확인된 위반 행 — ID 위에 빨간 체크를 덮는다(툴팁: 누가·언제·사유). 빨간 배경·태그는 증거로 유지 */}
+      <td className="mono" style={{ color: 'var(--text-3)' }}>
+        <span className="idwrap">#{item.id}{ack && <span className="id-ack tip-right" data-tip={ackTip(ack)} aria-label={ackTip(ack)}><Check size={14} strokeWidth={3} /></span>}</span>
+      </td>
       <td className="mono">{item.createdAt}</td>
       <td><b>{item.actor}</b></td>
       <td><span className={`actchip${isIntegrityViolation(item.action) ? ' bad' : ''}`}>{item.action}</span></td>
@@ -263,12 +288,6 @@ function LogRow({ item, className, badge, onClick }: { item: AuditLogItem; class
       <td className="mono" style={{ color: 'var(--text-3)' }} title={item.detail}>{badge}{badge && ' '}{item.detail}</td>
     </tr>
   )
-}
-
-/** 헤더 배지 문구 — 체인 위반 건수만. 건수는 남아 있는 변조 증거 행 수와 지금 체인 위반 구간 수 중 큰 값
-    (감사 로그 위반은 영구라 DB 를 원복해도 증거 행 수는 줄지 않는다) */
-function badgeText(chain: AuditVerifyResult): string {
-  return `체인 위반 ${Math.max(chain.flaggedRows, chain.violations.length)}건`
 }
 
 /**

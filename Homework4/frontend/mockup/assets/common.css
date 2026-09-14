@@ -90,7 +90,7 @@ textarea.input.txt{font-size:13.5px;font-variant-numeric:normal}
 .sdot.s-PRE_ACTIVE{background:var(--blue)}
 .sdot.s-DEACTIVATED,.sdot.u-SUSPENDED{background:var(--text-3)}
 .sdot.s-DESTROYED{background:color-mix(in srgb,var(--text-3) 55%,transparent)}
-.sdot.c-ok{background:var(--green);--pulse:var(--green);animation:dotpulse 2s infinite}.sdot.c-bad{background:var(--red);--pulse:var(--red);animation:dotpulse 2s infinite}.sdot.c-na{background:var(--text-3)}
+.sdot.c-ok{background:var(--green);--pulse:var(--green);animation:dotpulse 2s infinite}.sdot.c-bad{background:var(--red);--pulse:var(--red);animation:dotpulse 2s infinite}.sdot.c-na{background:var(--text-3)}.sdot.c-ack{background:var(--amber);--pulse:var(--amber);animation:dotpulse 2s infinite}
 @keyframes dotpulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--pulse,var(--green)) 55%,transparent)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .stext{display:inline-flex;align-items:center;gap:6px}
 .stext .sdot{margin-left:0}
@@ -336,6 +336,7 @@ html.collapsed .me-menu{left:calc(100% + 10px);bottom:4px}
 
 /* 툴팁 버튼이 있는 표 셀·래퍼는 넘침 허용 (overflow:hidden 에 툴팁이 잘리지 않도록) */
 table.tbl-fixed tbody td:has([data-tip]){overflow:visible}
+table.tbl-fixed tbody td:has([data-tip]){position:relative;z-index:1}table.tbl-fixed tbody td:has([data-tip]:hover){z-index:2}
 .tbl-wrap:not(.tbl-scroll):has([data-tip]){overflow:visible}
 
 /* 열 너비 조절 — shell.js enableColResize(): th 우측 드래그, 더블클릭 복원 */
@@ -408,3 +409,14 @@ tbody tr.row-ghost td .row-tag,tbody tr.row-ghost td .actchip{display:inline-blo
 /* 오른쪽 툴팁 — 표 첫 열의 아이콘(버전 목록 키값 조회)은 왼쪽 툴팁이 표 밖으로 나가므로 오른쪽에 띄운다 */
 .tip-right[data-tip]::after{top:50%;left:calc(100% + 8px);right:auto;transform:translateY(-50%) translateX(-4px)}
 .tip-right[data-tip]:hover::after{transform:translateY(-50%) translateX(0)}
+
+/* 감사 로그 위반 확인(acknowledge) — 회색 체크(미확인)·호버 확대·빨간 체크(확인됨), 확인된 행은 ID 위에 빨간 체크 */
+.modal-title-row{display:flex;align-items:center;gap:10px;min-width:0}
+.ack-btn{width:26px;height:26px;border-radius:8px;display:inline-grid;place-items:center;color:var(--text-3);background:transparent;border:0;cursor:pointer;flex:none;transition:color .15s,background .15s}
+.ack-btn.sm{width:22px;height:22px}
+.ack-btn:hover:not(:disabled){color:var(--text);background:var(--hover)}
+.ack-btn.on,.ack-btn.on:disabled{color:var(--red);cursor:default}
+.idwrap{position:relative;display:inline-block}
+.id-ack{position:absolute;inset:0;display:grid;place-items:center;color:var(--red)}
+tbody tr.row-ghost td .id-ack{text-decoration:none}
+.chain-ic.ack{color:var(--amber)}

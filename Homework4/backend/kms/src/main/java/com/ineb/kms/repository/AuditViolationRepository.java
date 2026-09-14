@@ -10,4 +10,7 @@ public interface AuditViolationRepository extends JpaRepository<AuditViolation, 
     boolean existsByAuditIdAndKindAndFields(Long auditId, String kind, String fields);
 
     List<AuditViolation> findAllByOrderByIdAsc();
+
+    /** 감사 행 하나에 걸린 증거 전부 — 확인(acknowledge) 단위 */
+    List<AuditViolation> findByAuditIdOrderByIdAsc(Long auditId);
 }

@@ -22,6 +22,8 @@ public class AuditViolation {
     public static final String MODIFIED = "MODIFIED";
     public static final String INSERTED = "INSERTED";
     public static final String DELETED = "DELETED";
+    /** 체인만 깨진 구간(섀도 차이 없음 — 백필 이전 변조·원본/복사본 동시 변조). fields = "fromId-toId", 스냅샷은 fromId 행의 현재 값 */
+    public static final String CHAIN = "CHAIN";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

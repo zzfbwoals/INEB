@@ -11,10 +11,11 @@ function DialogContent({
   className,
   title,
   headerExtra,
+  titleRight,
   children,
   wide,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & { title: string; wide?: boolean; headerExtra?: React.ReactNode }) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & { title: string; wide?: boolean; headerExtra?: React.ReactNode; titleRight?: React.ReactNode }) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="modal-bk" />
@@ -22,9 +23,13 @@ function DialogContent({
         {/* headerExtra: 제목 바로 아래 고정되는 부가 요소(탭 등) — 본문과 함께 스크롤되지 않는다 */}
         <div className={cn('modal-h', headerExtra && 'has-extra')}>
           <div className="modal-h-main">
-            <DialogPrimitive.Title asChild>
-              <h3>{title}</h3>
-            </DialogPrimitive.Title>
+            {/* titleRight: 제목 바로 오른쪽의 작은 액션(위반 확인 체크 등) */}
+            <div className="modal-title-row">
+              <DialogPrimitive.Title asChild>
+                <h3>{title}</h3>
+              </DialogPrimitive.Title>
+              {titleRight}
+            </div>
             {headerExtra}
           </div>
           <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>

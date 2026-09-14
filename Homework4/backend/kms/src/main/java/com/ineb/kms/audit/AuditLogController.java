@@ -20,15 +20,22 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.ineb.kms.common.ReasonRequest;
+import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api/audit-logs")
 public class AuditLogController {
 
     private final AuditLogService auditLogService;
+    private final AuditAcknowledgeService acknowledgeService;
 
-    public AuditLogController(AuditLogService auditLogService) {
+    public AuditLogController(AuditLogService auditLogService, AuditAcknowledgeService acknowledgeService) {
         this.auditLogService = auditLogService;
+        this.acknowledgeService = acknowledgeService;
     }
 
     /** target 은 KEY#{keyUid} / USER#{id} / AUTH#{loginId} 형식의 정확 일치 */
@@ -85,6 +92,19 @@ public class AuditLogController {
     @GetMapping("/forensics")
     public ApiResponse<AuditForensicsResponse> forensics() {
         return ApiResponse.ok(auditLogService.forensics());
+    }
+
+    /**
+     * 위반 증거 확인(acknowledge) — 감사 행(auditId)에 걸린 미확인 증거 전부를 사유와 함께 AUDIT_VIOLATION_ACKNOWLEDGED 로 기록한다.
+     * 원복은 하지 않는다(append-only). ADMIN 한정, 미확인 증거가 없으면 409. 응답은 갱신된 체인 상태.
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/violations/{auditId}/ack")
+    public ApiResponse<AuditVerifyResponse> acknowledge(@PathVariable long auditId,
+                                                        @Valid @RequestBody ReasonRequest request,
+                                                        @AuthenticationPrincipal AuthPrincipal principal) {
+        int count = acknowledgeService.acknowledge(auditId, request.reason(), principal.loginId());
+        return ApiResponse.ok(auditLogService.status(), "위반 증거 " + count + "건을 확인했습니다.");
     }
 
     /** 전체 해시 체인 재검증 — 검증 실행도 감사 기록(AUDIT_CHAIN_VERIFIED)되므로 POST */
