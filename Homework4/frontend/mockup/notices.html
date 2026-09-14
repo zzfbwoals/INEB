@@ -114,7 +114,7 @@ function renderNotices(){
       <td class="mono">${n.at}</td>
     </tr>`;
   document.getElementById('noticeTbody').innerHTML=[...imp,...normal].map(row).join('')
-    ||'<tr><td colspan="5" style="padding:34px;color:var(--text-3)">검색 결과가 없습니다</td></tr>';
+    ||`<tr><td colspan="5" style="padding:34px;color:var(--text-3)">${NOTICES.length?'조건에 맞는 공지가 없습니다':'등록된 공지가 없습니다'}</td></tr>`;
   document.getElementById('ntTotal').textContent=rows.length;
 }
 renderNotices();

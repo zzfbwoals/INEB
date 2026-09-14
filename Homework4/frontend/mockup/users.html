@@ -80,7 +80,6 @@
   <div class="modal">
     <div class="modal-h"><h3>현재 값으로 재해시</h3><button class="x" onclick="closeModal('mdReseal')">✕</button></div>
     <div class="modal-b">
-      <p class="reseal-note"><b id="resealSubject"></b>의 무결성 해시를 지금 저장된 값으로 다시 계산하고 위반 표시를 해제합니다.</p>
       <div class="field"><label>사유 <em>*</em> <span class="badge b-bad" style="margin-left:6px">ADMIN 한정</span></label><textarea class="input txt" id="resealReason" style="min-height:70px" placeholder="예: 변조 원인 확인 후 재봉인"></textarea></div>
     </div>
     <div class="modal-f">
@@ -126,7 +125,7 @@ function renderUsers(){
           <button class="icon-btn" data-tip="수정" aria-label="수정" onclick="openUserForm(${u.id})"><i data-lucide="pencil" width="15" height="15" stroke-width="2"></i></button>
         </div>
       </td>
-    </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:34px">검색 결과가 없습니다</td></tr>';
+    </tr>`).join('')||`<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:34px">${USERS.length?'조건에 맞는 사용자가 없습니다':'등록된 사용자가 없습니다'}</td></tr>`;
 }
 let editUser=null,pwResetMode=false;
 function openUserForm(id){
@@ -188,7 +187,6 @@ function viewPlain(){
 let resealTarget=null;
 function openReseal(id){
   resealTarget=USERS.find(u=>u.id===id);
-  document.getElementById('resealSubject').textContent='사용자 '+resealTarget.name;
   document.getElementById('resealReason').value='';
   openModal('mdReseal');
 }

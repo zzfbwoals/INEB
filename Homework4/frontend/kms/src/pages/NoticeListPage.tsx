@@ -107,7 +107,7 @@ export default function NoticeListPage() {
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr><td colSpan={5} className="tbl-empty">{loading ? '불러오는 중…' : '검색 결과가 없습니다'}</td></tr>
+                <tr><td colSpan={5} className="tbl-empty">{loading ? '불러오는 중…' : keyword || pinned ? '조건에 맞는 공지가 없습니다' : '등록된 공지가 없습니다'}</td></tr>
               )}
               {rows.map((n) => (
                 <tr key={n.id} className="rowlink" onClick={() => navigate(`/notices/${n.id}`)}>

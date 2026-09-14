@@ -33,6 +33,8 @@ export default function KeyListPage() {
   const [sort, setSort] = useState<{ field: string; dir: 'asc' | 'desc' } | null>(null)
   const [data, setData] = useState<PageResponse<KeySummary> | null>(null)
   const [loading, setLoading] = useState(true)
+  /** 등록된 키가 하나라도 있는지 — 결과가 비었을 때 "등록된 키 없음" 과 "조건 불일치" 를 구분(기본 필터가 폐기 제외라 목록만으로는 알 수 없음) */
+  const [hasAny, setHasAny] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
   const [reloadTick, setReloadTick] = useState(0)
   const tblRef = useRef<HTMLDivElement>(null)
@@ -51,7 +53,12 @@ export default function KeyListPage() {
     let cancelled = false
     setLoading(true)
     listKeys({ keyword, algorithm, status, purpose, page, size: pageSize, sort: sort?.field, direction: sort?.dir })
-      .then((res) => { if (!cancelled) setData(res) })
+      .then((res) => {
+        if (cancelled) return
+        setData(res)
+        if (res.totalElements > 0) setHasAny(true)
+        else listKeys({ status: 'ALL', page: 0, size: 1 }).then((all) => { if (!cancelled) setHasAny(all.totalElements > 0) }).catch(() => {})
+      })
       .catch((err) => { if (!cancelled) toast(errorMessage(err), 'error') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
@@ -127,7 +134,7 @@ export default function KeyListPage() {
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr><td colSpan={8} className="tbl-empty">{loading ? '불러오는 중…' : '조건에 맞는 키가 없습니다 — 필터를 조정해 보세요'}</td></tr>
+                <tr><td colSpan={8} className="tbl-empty">{loading ? '불러오는 중…' : hasAny ? '조건에 맞는 키가 없습니다' : '등록된 키가 없습니다'}</td></tr>
               )}
               {rows.map((k) => (
                 <KeyRow key={k.keyUid} k={k} onClick={() => navigate(`/keys/${k.keyUid}`)}
@@ -141,7 +148,7 @@ export default function KeyListPage() {
 
       <KeyCreateDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={() => setReloadTick((t) => t + 1)} />
       {resealTarget && (
-        <IntegrityResealDialog subject={`키 ${resealTarget.keyName}`} onClose={() => setResealTarget(null)}
+        <IntegrityResealDialog onClose={() => setResealTarget(null)}
           run={(reason) => resealKeyIntegrity(resealTarget.keyUid, reason)} />
       )}
     </AppLayout>

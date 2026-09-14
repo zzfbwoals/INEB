@@ -148,7 +148,7 @@ export default function UserListPage() {
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr><td colSpan={7} className="tbl-empty">{loading ? '불러오는 중…' : '검색 결과가 없습니다'}</td></tr>
+                <tr><td colSpan={7} className="tbl-empty">{loading ? '불러오는 중…' : query || status ? '조건에 맞는 사용자가 없습니다' : '등록된 사용자가 없습니다'}</td></tr>
               )}
               {rows.map((u) => (
                 <tr key={u.id} className={u.integrityValid ? undefined : 'row-bad'} title={u.integrityValid ? undefined : '무결성 위반 — 행 해시 불일치'}>
@@ -200,7 +200,7 @@ export default function UserListPage() {
           onRevealed={(plain) => setRevealed((prev) => ({ ...prev, [plain.id]: plain }))} />
       )}
       {resealTarget && (
-        <IntegrityResealDialog subject={`사용자 ${resealTarget.name}`} onClose={() => setResealTarget(null)}
+        <IntegrityResealDialog onClose={() => setResealTarget(null)}
           run={(reason) => resealUserIntegrity(resealTarget.id, reason)} />
       )}
     </AppLayout>

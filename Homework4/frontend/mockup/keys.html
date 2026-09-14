@@ -103,7 +103,6 @@
   <div class="modal">
     <div class="modal-h"><h3>현재 값으로 재해시</h3><button class="x" onclick="closeModal('mdReseal')">✕</button></div>
     <div class="modal-b">
-      <p class="reseal-note"><b id="resealSubject"></b>의 무결성 해시를 지금 저장된 값으로 다시 계산하고 위반 표시를 해제합니다.</p>
       <div class="field"><label>사유 <em>*</em> <span class="badge b-bad" style="margin-left:6px">ADMIN 한정</span></label><textarea class="input txt" id="resealReason" style="min-height:70px" placeholder="예: 변조 원인 확인 후 재봉인"></textarea></div>
     </div>
     <div class="modal-f">
@@ -149,7 +148,7 @@ function renderKeys(){
       <td class="mono" style="color:var(--text-2)">${k.autoRotate?k.rotationPeriodDays+'일':'<span style="color:var(--text-3)">—</span>'}</td>
       <td class="mono">${rotCell}</td>
       <td onclick="event.stopPropagation()">${k.integrity?'':`<div style="display:flex;justify-content:flex-end"><button class="icon-btn danger" data-tip="현재 값으로 재해시" aria-label="현재 값으로 재해시" onclick="openReseal(${k.id})"><i data-lucide="stamp" width="15" height="15" stroke-width="2"></i></button></div>`}</td>
-    </tr>`;}).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:34px">조건에 맞는 키가 없습니다 — 필터를 조정해 보세요</td></tr>';
+    </tr>`;}).join('')||`<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:34px">${KEYS.length?'조건에 맞는 키가 없습니다':'등록된 키가 없습니다'}</td></tr>`;
   renderPager(document.getElementById('keyPager'),total,keyPage,totalPages,'goKeyPage');
 }
 /* ---- 무결성 재해시 (위반 행 전용, ADMIN) — POST /api/keys/{uid}/integrity/reseal, 감사 KEY_INTEGRITY_RESEALED.
@@ -157,7 +156,6 @@ function renderKeys(){
 let resealTarget=null;
 function openReseal(id){
   resealTarget=KEYS.find(k=>k.id===id);
-  document.getElementById('resealSubject').textContent='키 '+resealTarget.name;
   document.getElementById('resealReason').value='';
   openModal('mdReseal');
 }

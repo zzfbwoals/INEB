@@ -170,9 +170,9 @@ class AuditShadowComparerTest {
         List<AuditLogShadow> shadow = shadowOf(rows);
         List<AuditLog> current = new ArrayList<>(rows.subList(0, 3)); // 4,5,6 삭제
         AuditShadowComparer.Result r = compare(current, shadow);
-        String detail = AuditLogService.summaryDetail(r, AuditShadowGuard.Status.ACTIVE);
+        String detail = AuditLogService.summaryDetail(r);
         assertEquals("violations=0, rows=3, shadowDeleted=3, shadowInserted=0, shadowModified=0, "
-                + "shadowChainValid=true, shadowGuard=ACTIVE, deletedIds=4-6", detail);
+                + "shadowChainValid=true, deletedIds=4-6", detail);
     }
 
     private static AuditLog withId(AuditLog row, long id) {

@@ -8,6 +8,8 @@
 <style>
 .actchip{font-size:11px;font-weight:700;letter-spacing:.02em;padding:3px 8px;border-radius:6px;
   background:var(--raised);border:1px solid var(--line-strong);color:var(--text-2)}
+.actchip.bad{background:var(--red-bg);border-color:transparent;color:var(--red)}
+.acttxt{font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--text-2)}.acttxt.bad{color:var(--red)}
 </style>
 </head>
 <body>
@@ -15,10 +17,9 @@
 <template id="page-body">
   <div class="page-h">
     <div style="display:flex;align-items:center;gap:10px">
-      <h2>감사 로그</h2>
-      <!-- 진입 시 자동 검증(GET /api/audit-logs/chain-status) 결과 — 정상(healthy): b-active "체인 정상" /
-           위반: b-bad "체인 위반 N건 · 삭제 N · 삽입 N · 수정 N"(섀도 비교 카운트, 0 은 생략) + 보호 트리거 해제 시 "섀도 보호 해제" + [위반 상세] -->
-      <span class="badge b-bad">체인 위반 2건</span>
+      <!-- 진입 시 자동 검증(GET /api/audit-logs/chain-status) 결과 — 제목 옆 색상점만(툴팁에 상태): 정상(healthy) c-ok "체인 정상" /
+           위반 c-bad "체인 위반 N건"(N = max(증거 행 수, 위반 구간 수)) + [위반 상세] / 확인 불가 c-na -->
+      <h2>감사 로그<span class="sdot c-bad" data-tip="체인 위반 2건" aria-label="체인 위반 2건"></span></h2>
       <button class="icon-btn" data-tip="위반 상세" aria-label="위반 상세" onclick="openModal('mdForensics')"><i data-lucide="list" width="15" height="15" stroke-width="2"></i></button>
       <button class="icon-btn" data-tip="체인 재검증" aria-label="체인 재검증" onclick="toast('해시 체인 검증을 통과했습니다.')"><i data-lucide="rotate-cw" width="15" height="15" stroke-width="2"></i></button>
       <button class="icon-btn" data-tip="CSV 내려받기" aria-label="CSV 내려받기" onclick="toast('CSV 다운로드를 시작합니다.')"><i data-lucide="download" width="15" height="15" stroke-width="2"></i></button>
@@ -51,7 +52,7 @@
       <div class="meta-box"><div class="kv-grid">
         <div class="k">일시</div><div class="mono" id="adAt">-</div>
         <div class="k">행위자</div><div><b id="adActor">-</b></div>
-        <div class="k">행위</div><div><span class="actchip" id="adAction">-</span></div>
+        <div class="k">행위</div><div><span class="acttxt" id="adAction">-</span></div>
         <div class="k">대상</div><div class="mono" id="adTarget">-</div>
         <div class="k">상세</div><div class="mono" id="adDetail" style="white-space:pre-wrap">-</div>
       </div></div>
@@ -117,14 +118,14 @@ function renderAudit(){
     <td class="mono" style="color:var(--text-3)">#${a.id}</td>
     <td class="mono">${a.at}</td>
     <td><b>${a.actor}</b></td>
-    <td><span class="actchip">${a.action}</span></td>
+    <td><span class="acttxt ${/_INTEGRITY_VIOLATION$/.test(a.action)?'bad':''}">${a.action}</span></td>
     <td class="mono" style="color:var(--text-2)">${a.target}</td>
     <td class="mono" style="color:var(--text-3)" title="${a.detail}">${MOD.has(a.id)?'<span class="row-tag">수정됨 · '+(MOD.get(a.id)||'행위자')+'</span>':INS.has(a.id)?'<span class="row-tag">삽입됨</span>':''}${a.detail}</td>
   </tr>`;
   const ghostHtml=g=>`
   <tr class="row-ghost" onclick="openModal('mdForensics')">
     <td class="mono">#${Math.floor(g.id)}</td><td class="mono">${g.at}</td><td><b>${g.actor}</b></td>
-    <td><span class="actchip">${g.action}</span></td><td class="mono">${g.target}</td>
+    <td><span class="acttxt ${/_INTEGRITY_VIOLATION$/.test(g.action)?'bad':''}">${g.action}</span></td><td class="mono">${g.target}</td>
     <td class="mono"><span class="row-tag">삭제됨</span>${g.detail}</td>
   </tr>`;
   document.getElementById('auditTbody').innerHTML=(onlyBad
@@ -137,7 +138,7 @@ function openAuditDetail(id){
   const a=AUDITS.find(x=>x.id===id); if(!a)return;
   document.getElementById('adTitle').textContent='감사 로그 #'+a.id;
   document.getElementById('adAt').textContent=a.at; document.getElementById('adActor').textContent=a.actor;
-  document.getElementById('adAction').textContent=a.action; document.getElementById('adTarget').textContent=a.target;
+  const adAct=document.getElementById('adAction'); adAct.textContent=a.action; adAct.classList.toggle('bad',/_INTEGRITY_VIOLATION$/.test(a.action)); document.getElementById('adTarget').textContent=a.target;
   document.getElementById('adDetail').textContent=a.detail; openModal('mdAuditDetail');
 }
 document.getElementById('auditTarget').value=qs('target')||'';

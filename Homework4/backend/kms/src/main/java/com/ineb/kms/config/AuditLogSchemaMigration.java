@@ -2,7 +2,6 @@ package com.ineb.kms.config;
 
 import com.ineb.kms.audit.AuditChainService;
 import com.ineb.kms.audit.AuditLogService;
-import com.ineb.kms.audit.AuditShadowGuard;
 import com.ineb.kms.audit.dto.AuditVerifyResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,8 +14,9 @@ import org.springframework.stereotype.Component;
  * Hibernate DDL(EntityManagerFactory 초기화) 이후, 웹 서버가 요청을 받기 전에 실행되도록 SmartInitializingSingleton 을 쓴다.
  * <ol>
  *   <li>audit_log.detail varchar(500) → text (2026-09-09 detail 마스터키 암호화, 암호문은 base64 라 평문보다 길다)</li>
- *   <li>audit_log_shadow 보호 트리거 설치(멱등). 이미 설치돼 있는데 비활성·누락이면 조작 흔적이므로 재설치 전에
- *       AUDIT_SHADOW_GUARD_TAMPERED 를 기록해 체인에 고정한다</li>
+ *   <li>audit_log_shadow 는 append-only 가 아니다(2026-09-14 개정 — 시연을 위해 DB 를 통째로 지우고 재기동해도 보호 트리거가
+ *       다시 생기지 않는다). 예전 버전이 설치한 UPDATE/DELETE/TRUNCATE 차단 트리거·함수가 남아 있으면 조용히 제거한다(감사 기록 없음).
+ *       섀도는 무결성 보장이 아니라 "무엇이 바뀌었나"를 보여주는 증거이고 탐지는 체인·비교가 담당한다</li>
  *   <li>섀도 백필 — 섀도가 비어 있고 원본에 행이 있을 때 **단 한 번만** 원본을 통째로 복사하고 AUDIT_SHADOW_BACKFILLED
  *       (경계 표식: 이 행 이전은 복사본, 이후는 동시 기록)를 남긴다. 매 기동 NOT EXISTS 복사는 금지 — DB 에 직접 끼워 넣은
  *       행이 재시작만으로 섀도에 세탁되어 "삽입" 증거가 사라진다. 백필 시점에 이미 변조·삭제된 내용은 섀도에도 같은 값으로
@@ -30,14 +30,11 @@ public class AuditLogSchemaMigration implements SmartInitializingSingleton {
     private static final Logger log = LoggerFactory.getLogger(AuditLogSchemaMigration.class);
 
     private final JdbcTemplate jdbc;
-    private final AuditShadowGuard guard;
     private final AuditLogService auditLogService;
     private final AuditChainService chainService;
 
-    public AuditLogSchemaMigration(JdbcTemplate jdbc, AuditShadowGuard guard,
-                                   AuditLogService auditLogService, AuditChainService chainService) {
+    public AuditLogSchemaMigration(JdbcTemplate jdbc, AuditLogService auditLogService, AuditChainService chainService) {
         this.jdbc = jdbc;
-        this.guard = guard;
         this.auditLogService = auditLogService;
         this.chainService = chainService;
     }
@@ -49,17 +46,19 @@ public class AuditLogSchemaMigration implements SmartInitializingSingleton {
 
         Long shadowRows = jdbc.queryForObject("SELECT count(*) FROM audit_log_shadow", Long.class);
         boolean firstInstall = shadowRows != null && shadowRows == 0;
-        AuditShadowGuard.Status before = guard.status();
-        if (!firstInstall && before != AuditShadowGuard.Status.ACTIVE) {
-            log.warn("audit_log_shadow 보호 트리거가 {} 상태 — 조작 흔적을 기록하고 재설치", before);
-            chainService.append(null, "AUDIT_SHADOW_GUARD_TAMPERED", "AUDIT", "guard=" + before);
-        }
-        guard.install();
-        log.info("audit_log_shadow 보호 트리거 확인 (UPDATE/DELETE/TRUNCATE 차단)");
+        dropLegacyShadowGuard();
 
         if (firstInstall) {
             backfill();
         }
+    }
+
+    /** 예전 버전의 append-only 보호 트리거·함수 제거(멱등) — 이제 섀도는 직접 수정·삭제가 막히지 않는다 */
+    private void dropLegacyShadowGuard() {
+        jdbc.execute("DROP TRIGGER IF EXISTS audit_log_shadow_no_update_delete ON audit_log_shadow");
+        jdbc.execute("DROP TRIGGER IF EXISTS audit_log_shadow_no_truncate ON audit_log_shadow");
+        jdbc.execute("DROP FUNCTION IF EXISTS audit_log_shadow_guard()");
+        log.info("audit_log_shadow 는 append-only 보호 없음 (레거시 차단 트리거가 있었다면 제거)");
     }
 
     private void backfill() {

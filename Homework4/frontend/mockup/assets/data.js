@@ -155,6 +155,6 @@ const ALGOS={
 };
 const MAX_VERSIONS=100, ROT_MIN=1, ROT_MAX=730, ROT_DEFAULT=90;
 /* 상태 표시는 배지 대신 색상점(2026-09-10) — stateDot: 점만(이름 뒤), stateBadge: 점 + 상태명(표 셀) */
-function stateDot(s){return `<span class="sdot s-${s}" data-tip="${s} · ${STATE_KO[s]}" aria-label="${s} · ${STATE_KO[s]}"></span>`;}
+function stateDot(s,tip){return `<span class="sdot s-${s}${tip?' tip-'+tip:''}" data-tip="${s} · ${STATE_KO[s]}" aria-label="${s} · ${STATE_KO[s]}"></span>`;}
 function stateBadge(s){return `<span class="stext"><span class="sdot s-${s}"></span>${STATE_KO[s]}</span>`;}
 function userDot(st){return `<span class="sdot u-${st==='ACTIVE'?'ACTIVE':'SUSPENDED'}" data-tip="${st==='ACTIVE'?'활성':'정지'}"></span>`;}

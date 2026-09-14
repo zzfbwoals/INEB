@@ -1028,6 +1028,10 @@ body.col-resizing .tbl-wrap thead th.sortable:not(.on) {
 .sdot.s-PRE_ACTIVE { background: var(--blue); }
 .sdot.s-DEACTIVATED, .sdot.u-SUSPENDED { background: var(--text-3); }
 .sdot.s-DESTROYED { background: color-mix(in srgb, var(--text-3) 55%, transparent); }
+/* 감사 로그 체인 상태 — 제목 옆 색상점만, 상태명은 툴팁(2026-09-14): 정상 초록 · 위반 빨강 · 확인 불가 회색 */
+.sdot.c-ok { background: var(--green); }
+.sdot.c-bad { background: var(--red); }
+.sdot.c-na { background: var(--text-3); }
 .stext { display: inline-flex; align-items: center; gap: 6px; }
 .stext .sdot { margin-left: 0; }
 h2 > .sdot { width: 9px; height: 9px; margin-left: 10px; vertical-align: 4px; }
@@ -1638,6 +1642,12 @@ h2 > .sdot { width: 9px; height: 9px; margin-left: 10px; vertical-align: 4px; }
   color: var(--text-2);
 }
 
+/* 무결성 위반 행위(*_INTEGRITY_VIOLATION) 칩 — 대시보드 최근 활동 */
+.actchip.bad { background: var(--red-bg); border-color: transparent; color: var(--red); }
+/* 감사 로그 표의 행위 열·단건 상세 — 배경 없는 텍스트(2026-09-14), 무결성 위반만 빨간 글자 */
+.acttxt { font-size: 12px; font-weight: 600; letter-spacing: 0.01em; color: var(--text-2); }
+.acttxt.bad { color: var(--red); }
+
 /* ---- 4주차: 공지사항 (목업 notices.html / notice-detail.html) ---- */
 .att {
   margin-left: 7px;
@@ -2164,7 +2174,6 @@ html.dash-full .dash .stat .num { font-size: 30px; }
 .feed-it .what { min-width: 0; display: flex; align-items: center; gap: 8px; overflow: hidden; }
 .feed-it .what .mono { color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .feed-it .when { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.dash .actchip.bad { background: var(--red-bg); border-color: transparent; color: var(--red); }
 .sig-it { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 16px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--text-2); }
 .sig-it:last-child { border-bottom: none; }
 .sig-it .v { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text); }
@@ -2224,8 +2233,6 @@ html.dash-full .dash .stat .num { font-size: 30px; }
 @media (max-width: 1100px) { .content:has(> .dash) { height: auto; overflow: visible; } .board { height: 900px; } }
 
 /* 무결성 재해시 확인 모달 — 대상 표시명 + 한 문장 안내 (키·사용자 공용, 2026-09-11) */
-.reseal-note { margin: 0 0 12px; font-size: 13px; line-height: 1.6; color: var(--text-2); }
-.reseal-note b { color: var(--text); }
 
 /* 대시보드 키 도넛 툴팁 — 카드(overflow:hidden) 안에 갇혀 잘리던 data-tip 대신 body 포털 + fixed 좌표 (2026-09-11) */
 .donut-tip { position: fixed; transform: translate(-50%, -100%); z-index: 200; pointer-events: none; background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; font-weight: 600; white-space: nowrap; box-shadow: var(--modal-shadow); }

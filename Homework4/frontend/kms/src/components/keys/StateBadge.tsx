@@ -2,9 +2,9 @@ import type { KeyState } from '@/api/keys'
 import { STATE_KO } from '@/lib/keyRules'
 
 /* 상태 표시는 배지 대신 색상점(2026-09-10) — 운영 초록 · 준비 파랑 · 정지 회색 · 폐기 회색 테두리. 이름 뒤에 붙이고 툴팁으로 상태명 */
-export function StateDot({ state }: { state: KeyState }) {
+export function StateDot({ state, tip }: { state: KeyState; /** 툴팁 방향 — 내부 스크롤 표처럼 아래 툴팁이 잘리는 곳은 'right' */ tip?: 'right' | 'left' | 'up' }) {
   const label = `${state} · ${STATE_KO[state]}`
-  return <span className={`sdot s-${state}`} data-tip={label} aria-label={label} />
+  return <span className={`sdot s-${state}${tip ? ` tip-${tip}` : ''}`} data-tip={label} aria-label={label} />
 }
 
 /** 표 셀용 — 점 + 상태명 */

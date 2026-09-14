@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useSearchParams } from 'react-router'
 import AppLayout from '@/components/layout/AppLayout'
 import {
-  AUDIT_ACTIONS, downloadAuditCsv, fetchAuditActors, fetchChainStatus, fetchForensics, listAuditLogs, shadowHasIssue, verifyAuditChain,
+  AUDIT_ACTIONS, downloadAuditCsv, fetchAuditActors, fetchChainStatus, fetchForensics, isIntegrityViolation, listAuditLogs, shadowHasIssue, verifyAuditChain,
   type AuditForensics, type AuditLogItem, type AuditModifiedItem, type AuditVerifyResult,
 } from '@/api/audit'
 import type { PageResponse } from '@/api/keys'
@@ -142,19 +142,19 @@ export default function AuditLogPage() {
   const shown = view === 'ok'
     ? merged.filter((r) => r.kind === 'row' && !modifiedById.has(r.item.id) && !insertedIds.has(r.item.id))
     : merged
-  const summary = chain && chain !== 'unavailable' ? chain.shadow : undefined
   const unhealthy = chain && chain !== 'unavailable' && !chain.healthy
 
   return (
     <AppLayout>
       <div className="page-h">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <h2>감사 로그</h2>
-          {chain === 'unavailable' && <span className="badge b-deact">체인 확인 불가</span>}
-          {chain && chain !== 'unavailable' && (chain.healthy
-            ? <span className="badge b-active">체인 정상</span>
-            : <span className="badge b-bad">{badgeText(chain)}</span>)}
-          {summary && summary.guard !== 'ACTIVE' && <span className="badge b-bad">섀도 보호 {summary.guard === 'DISABLED' ? '해제' : '누락'}</span>}
+          <h2>
+            감사 로그
+            {chain === 'unavailable' && <span className="sdot c-na" data-tip="체인 확인 불가" aria-label="체인 확인 불가" />}
+            {chain && chain !== 'unavailable' && (chain.healthy
+              ? <span className="sdot c-ok" data-tip="체인 정상" aria-label="체인 정상" />
+              : <span className="sdot c-bad" data-tip={badgeText(chain)} aria-label={badgeText(chain)} />)}
+          </h2>
           {unhealthy && forensics && (
             <button type="button" className="icon-btn" data-tip="위반 상세" aria-label="위반 상세" onClick={() => setForensicsOpen({ mode: 'all', tab: 'deleted' })}>
               <List size={15} />
@@ -258,7 +258,7 @@ function LogRow({ item, className, badge, onClick }: { item: AuditLogItem; class
       <td className="mono" style={{ color: 'var(--text-3)' }}>#{item.id}</td>
       <td className="mono">{item.createdAt}</td>
       <td><b>{item.actor}</b></td>
-      <td><span className="actchip">{item.action}</span></td>
+      <td><span className={`acttxt${isIntegrityViolation(item.action) ? ' bad' : ''}`}>{item.action}</span></td>
       <td className="mono" style={{ color: 'var(--text-2)' }}>{item.target}</td>
       <td className="mono" style={{ color: 'var(--text-3)' }} title={item.detail}>{badge}{badge && ' '}{item.detail}</td>
     </tr>
