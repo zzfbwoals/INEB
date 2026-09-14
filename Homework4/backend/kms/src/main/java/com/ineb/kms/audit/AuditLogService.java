@@ -154,17 +154,16 @@ public class AuditLogService {
      * 검증 + 위반 표시 (2026-09-11 영구 위반): 검사(체인 + 섀도 비교)가 실패했는데 아직 AUDIT_CHAIN_VIOLATION 이
      * 없으면 그 자리에서 1건 기록한다(조회는 읽기 전용이라 별도 트랜잭션). 한 번 기록되면 값을 원복해 검사가 통과해도
      * healthy=false 로 남는다 — 감사 로그에는 재해시가 없고, 위반 행을 지우면 체인이 끊겨 다시 위반이다.
-     * 배치·트리거 알림·감사 로그 화면·대시보드가 모두 이 판정을 쓴다.
+     * 배치·트리거 알림·감사 로그 화면·대시보드가 모두 이 판정을 쓴다. 증거 저장·기록은 {@link AuditViolationStore#settle} 이
+     * 체인 잠금 아래 수행해 동시 검증이 두 번 기록하지 않는다(2026-09-14).
      */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Check check() {
         AuditShadowComparer.Result result = compareAll();
-        // 변조 증거 스냅샷 — 삭제·삽입·수정 행을 처음 본 순간 값째 남긴다(원복해도 유지, 별도 트랜잭션)
-        List<AuditViolation> added = violationStore.recordNew(result);
-        String detail = summaryDetail(result) + evidenceDetail(added);
         boolean checksOk = result.chain().valid() && result.shadowClean();
-        boolean flagged = settleViolation(checksOk, !added.isEmpty(), detail);
-        return new Check(toResponse(result, checksOk, flagged, evidenceSummary(evidence(added))), detail);
+        // 변조 증거 스냅샷 + 위반 표시 — 삭제·삽입·수정 행을 처음 본 순간 값째 남긴다(원복해도 유지, 별도 트랜잭션·체인 잠금)
+        AuditViolationStore.Settled settled = violationStore.settle(result, checksOk, summaryDetail(result));
+        return new Check(toResponse(result, checksOk, settled.flagged(), evidenceSummary(evidence(settled.added()))), settled.detail());
     }
 
     /**
@@ -180,20 +179,6 @@ public class AuditLogService {
             byId.putIfAbsent(v.getId(), v);
         }
         return List.copyOf(byId.values());
-    }
-
-    /**
-     * 위반 표시 판정 — 검사 실패인데 기록이 없거나, 새 변조 증거가 발견되면 AUDIT_CHAIN_VIOLATION 을 기록한다.
-     * 표시 여부(true=영구 위반)를 돌려준다. 증거·기록 어느 쪽이 남아 있어도 위반이다.
-     */
-    boolean settleViolation(boolean checksOk, boolean newEvidence, String detail) {
-        boolean flagged = repository.existsByAction(CHAIN_VIOLATION);
-        if (newEvidence || (!checksOk && !flagged)) {
-            log.warn("감사로그 위반 감지 — 영구 위반 표시 기록: {}", detail);
-            chainService.appendDetached(null, CHAIN_VIOLATION, "AUDIT", detail);
-            flagged = true;
-        }
-        return flagged;
     }
 
     /** 새로 남긴 증거 요약 — detail 뒤에 붙는다. 예: ", newModified=77(actor,detail)/78(target), newDeleted=90" */
@@ -226,8 +211,8 @@ public class AuditLogService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public AuditForensicsResponse forensics() {
         AuditShadowComparer.Result r = compareAll();
-        // 지금 차이도 증거로 남긴 뒤 증거 표 기준으로 응답 — 원복된 행도 계속 보인다 (방금 추가분은 스냅샷 밖이라 합쳐 준다)
-        List<AuditViolation> ev = evidence(violationStore.recordNew(r));
+        // 지금 차이도 증거로 남긴 뒤(체인 잠금 아래, 필요하면 위반 기록까지) 증거 표 기준으로 응답 — 원복된 행도 계속 보인다 (방금 추가분은 스냅샷 밖이라 합쳐 준다)
+        List<AuditViolation> ev = evidence(violationStore.settle(r, r.chain().valid() && r.shadowClean(), summaryDetail(r)).added());
         List<AuditLogItem> deleted = ev.stream().filter(v -> AuditViolation.DELETED.equals(v.getKind()))
                 .map(v -> toItem(v.snapshot())).limit(FORENSICS_MAX).toList();
         List<AuditLogItem> inserted = ev.stream().filter(v -> AuditViolation.INSERTED.equals(v.getKind()))

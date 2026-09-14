@@ -33,7 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuditChainService {
 
     /** advisory lock 키 — audit_log 체인 전용 임의 상수 (다른 lock 과 겹치지 않게 고정) */
-    private static final long CHAIN_LOCK_KEY = 0x4B4D_5341_5544_54L;
+    /** 체인 직렬화 advisory lock 키 — 위반 판정·기록(AuditViolationStore.settle)도 같은 잠금을 잡아 동시 검증의 중복 기록을 막는다 */
+    static final long CHAIN_LOCK_KEY = 0x4B4D_5341_5544_54L;
 
     private static final int DETAIL_MAX = 500;
 

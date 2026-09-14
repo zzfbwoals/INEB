@@ -75,7 +75,6 @@ tr.rowlink.vcur:hover td{background:var(--hover)}
     <div>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <h2 id="kdName">-</h2>
-        <span id="kdBadge"></span>
       </div>
       <div class="desc mono" style="margin-top:8px;display:flex;align-items:center;gap:8px">
         <span id="kdUid"></span>
@@ -262,7 +261,7 @@ function render(){
   key.status=deriveStatus();
   document.getElementById('kdName').textContent=key.name;
   document.getElementById('kdUid').textContent=key.uid;
-  document.getElementById('kdBadge').innerHTML=stateDot(key.status);
+  document.getElementById('kdName').insertAdjacentHTML('beforeend',stateDot(key.status)); // 앱과 같이 h2 안 — h2>.sdot 크기·맥동 규칙 적용
   const s=key.status,pv=preV(),acts=[],cv=cur();
   // 헤더 액션 — 아이콘 전용 버튼 + 툴팁 (목록의 등록 + 와 동일 스타일)
   // 배경 없는 아이콘 버튼(.icon-btn) — 링크는 a, 액션은 button

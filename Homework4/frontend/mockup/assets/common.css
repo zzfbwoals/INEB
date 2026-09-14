@@ -90,10 +90,14 @@ textarea.input.txt{font-size:13.5px;font-variant-numeric:normal}
 .sdot.s-PRE_ACTIVE{background:var(--blue)}
 .sdot.s-DEACTIVATED,.sdot.u-SUSPENDED{background:var(--text-3)}
 .sdot.s-DESTROYED{background:color-mix(in srgb,var(--text-3) 55%,transparent)}
-.sdot.c-ok{background:var(--green)}.sdot.c-bad{background:var(--red)}.sdot.c-na{background:var(--text-3)}
+.sdot.c-ok{background:var(--green);--pulse:var(--green);animation:pulse 2s infinite}.sdot.c-bad{background:var(--red);--pulse:var(--red);animation:pulse 2s infinite}.sdot.c-na{background:var(--text-3)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--pulse,var(--green)) 55%,transparent)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .stext{display:inline-flex;align-items:center;gap:6px}
 .stext .sdot{margin-left:0}
-h2>.sdot{width:9px;height:9px;margin-left:10px;vertical-align:4px}
+h2>.sdot{width:7px;height:7px;margin-left:10px;vertical-align:5px}
+h2>.sdot.s-ACTIVE{--pulse:var(--green);animation:pulse 2s infinite}h2>.sdot.s-PRE_ACTIVE{--pulse:var(--blue);animation:pulse 2s infinite}
+h2>.sdot[data-tip]::after{transition:none;transform:translateX(-50%) translateY(0)}
+h2>.sdot:hover{animation:none;box-shadow:none}
 .nm{display:inline-block;max-width:calc(100% - 22px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 .uav{position:relative;display:inline-flex;vertical-align:middle;margin-right:10px}
 .uav .uavatar{margin:0}

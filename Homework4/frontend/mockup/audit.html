@@ -9,7 +9,6 @@
 .actchip{font-size:11px;font-weight:700;letter-spacing:.02em;padding:3px 8px;border-radius:6px;
   background:var(--raised);border:1px solid var(--line-strong);color:var(--text-2)}
 .actchip.bad{background:var(--red-bg);border-color:transparent;color:var(--red)}
-.acttxt{font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--text-2)}.acttxt.bad{color:var(--red)}
 </style>
 </head>
 <body>
@@ -52,7 +51,7 @@
       <div class="meta-box"><div class="kv-grid">
         <div class="k">일시</div><div class="mono" id="adAt">-</div>
         <div class="k">행위자</div><div><b id="adActor">-</b></div>
-        <div class="k">행위</div><div><span class="acttxt" id="adAction">-</span></div>
+        <div class="k">행위</div><div><span class="actchip" id="adAction">-</span></div>
         <div class="k">대상</div><div class="mono" id="adTarget">-</div>
         <div class="k">상세</div><div class="mono" id="adDetail" style="white-space:pre-wrap">-</div>
       </div></div>
@@ -118,14 +117,14 @@ function renderAudit(){
     <td class="mono" style="color:var(--text-3)">#${a.id}</td>
     <td class="mono">${a.at}</td>
     <td><b>${a.actor}</b></td>
-    <td><span class="acttxt ${/_INTEGRITY_VIOLATION$/.test(a.action)?'bad':''}">${a.action}</span></td>
+    <td><span class="actchip ${/_INTEGRITY_VIOLATION$/.test(a.action)?'bad':''}">${a.action}</span></td>
     <td class="mono" style="color:var(--text-2)">${a.target}</td>
     <td class="mono" style="color:var(--text-3)" title="${a.detail}">${MOD.has(a.id)?'<span class="row-tag">수정됨 · '+(MOD.get(a.id)||'행위자')+'</span>':INS.has(a.id)?'<span class="row-tag">삽입됨</span>':''}${a.detail}</td>
   </tr>`;
   const ghostHtml=g=>`
   <tr class="row-ghost" onclick="openModal('mdForensics')">
     <td class="mono">#${Math.floor(g.id)}</td><td class="mono">${g.at}</td><td><b>${g.actor}</b></td>
-    <td><span class="acttxt ${/_INTEGRITY_VIOLATION$/.test(g.action)?'bad':''}">${g.action}</span></td><td class="mono">${g.target}</td>
+    <td><span class="actchip ${/_INTEGRITY_VIOLATION$/.test(g.action)?'bad':''}">${g.action}</span></td><td class="mono">${g.target}</td>
     <td class="mono"><span class="row-tag">삭제됨</span>${g.detail}</td>
   </tr>`;
   document.getElementById('auditTbody').innerHTML=(onlyBad

@@ -1028,13 +1028,19 @@ body.col-resizing .tbl-wrap thead th.sortable:not(.on) {
 .sdot.s-PRE_ACTIVE { background: var(--blue); }
 .sdot.s-DEACTIVATED, .sdot.u-SUSPENDED { background: var(--text-3); }
 .sdot.s-DESTROYED { background: color-mix(in srgb, var(--text-3) 55%, transparent); }
-/* 감사 로그 체인 상태 — 제목 옆 색상점만, 상태명은 툴팁(2026-09-14): 정상 초록 · 위반 빨강 · 확인 불가 회색 */
-.sdot.c-ok { background: var(--green); }
-.sdot.c-bad { background: var(--red); }
+/* 감사 로그 체인 상태 — 제목 옆 색상점만, 상태명은 툴팁(2026-09-14): 정상 초록 · 위반 빨강 · 확인 불가 회색. 대시보드 실시간 점과 같은 맥동(확인 불가는 정지) */
+.sdot.c-ok { background: var(--green); --pulse: var(--green); animation: pulse 2s infinite; }
+.sdot.c-bad { background: var(--red); --pulse: var(--red); animation: pulse 2s infinite; }
 .sdot.c-na { background: var(--text-3); }
 .stext { display: inline-flex; align-items: center; gap: 6px; }
 .stext .sdot { margin-left: 0; }
-h2 > .sdot { width: 9px; height: 9px; margin-left: 10px; vertical-align: 4px; }
+/* 제목 옆 상태점(키 상세·감사 로그 체인) — 대시보드 실시간 점과 같은 7px, 살아 있는 상태(운영·준비·체인 정상/위반)는 상태색 맥동 */
+h2 > .sdot { width: 7px; height: 7px; margin-left: 10px; vertical-align: 5px; }
+h2 > .sdot.s-ACTIVE { --pulse: var(--green); animation: pulse 2s infinite; }
+h2 > .sdot.s-PRE_ACTIVE { --pulse: var(--blue); animation: pulse 2s infinite; }
+h2 > .sdot[data-tip]::after { transition: none; transform: translateX(-50%) translateY(0); }
+/* 호버 중엔 맥동 정지 — 링(반투명 상태색)이 툴팁 위를 지나며 툴팁이 흐려졌다 밝아지는 것처럼 보이는 문제 */
+h2 > .sdot:hover { animation: none; box-shadow: none; }
 /* 이름 말줄임 — 상태 점 툴팁 때문에 셀 overflow 가 visible 이라 이름 span 에서 자른다 (열을 좁혀도 옆 열로 넘치지 않음) */
 .nm { display: inline-block; max-width: calc(100% - 22px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
 /* 사용자 상태 점 — 아바타 우측 하단에 겹침 (디스코드 상태 표시) */
@@ -1642,11 +1648,8 @@ h2 > .sdot { width: 9px; height: 9px; margin-left: 10px; vertical-align: 4px; }
   color: var(--text-2);
 }
 
-/* 무결성 위반 행위(*_INTEGRITY_VIOLATION) 칩 — 대시보드 최근 활동 */
+/* 무결성 위반 행위(*_INTEGRITY_VIOLATION) 칩 — 감사 로그 표·단건 상세·대시보드 최근 활동 공용 */
 .actchip.bad { background: var(--red-bg); border-color: transparent; color: var(--red); }
-/* 감사 로그 표의 행위 열·단건 상세 — 배경 없는 텍스트(2026-09-14), 무결성 위반만 빨간 글자 */
-.acttxt { font-size: 12px; font-weight: 600; letter-spacing: 0.01em; color: var(--text-2); }
-.acttxt.bad { color: var(--red); }
 
 /* ---- 4주차: 공지사항 (목업 notices.html / notice-detail.html) ---- */
 .att {
@@ -2046,7 +2049,8 @@ html.dash-full .dash .stat .num { font-size: 30px; }
 .live { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
 .live.off i { background: var(--text-3); animation: none; }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent); } 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+/* 맥동 색은 --pulse 로 — 대시보드 실시간 점(초록)과 감사 로그 체인 상태 점(상태색)이 공유 */
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pulse, var(--green)) 55%, transparent); } 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 
 /* 헤더 검색창 — "/" 키 배지 안내 */
 .sbox { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px 0 11px; min-width: 224px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--raised); color: var(--text-3); font-size: 12.5px; cursor: text; transition: border-color 0.15s, color 0.15s; font-family: inherit; }
