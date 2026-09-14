@@ -23,8 +23,8 @@ import { AuditLogDetailDialog } from '@/components/audit/AuditLogDetailDialog'
    확인(acknowledge, 2026-09-14): 위반 행의 상세에서 사유와 함께 확인하면 ID 위에 빨간 체크가 덮이고, 전부 확인되면 제목 옆 점이
    빨강에서 벗어난다(검사 통과면 초록, 원복 안 됐으면 주황). 원복은 하지 않는다(append-only).
    페이지 크기는 화면 높이에 맞춰 자동 계산(스크롤 없이 한 화면) */
-/* 열 기본 폭(%) — ID·일시·행위자·행위·대상·상세 */
-const COLS = [6, 14, 9, 15, 22, 34]
+/* 열 기본 폭(%) — ID·일시·행위자·행위·대상·상세. 행위 열은 가장 긴 배지(AUDIT_VIOLATION_ACKNOWLEDGED)가 잘리지 않게 19% (2026-09-14, 상세에서 4% 이동) */
+const COLS = [6, 14, 9, 19, 22, 30]
 /** 페이지당 인라인 유령 행 상한 — 초과분은 한 줄로 접는다 (페이지 크기는 건드리지 않는다) */
 const GHOST_MAX = 3
 
@@ -60,7 +60,8 @@ export default function AuditLogPage() {
   const [reloadTick, setReloadTick] = useState(0)
   const tblRef = useRef<HTMLDivElement>(null)
   const pageSize = useAutoPageSize(tblRef, 46)
-  const { tableRef, widths, resizer } = useColumnResize('audit', COLS)
+  // 저장 키 v2 — 행위 열 기본 폭을 바꿔 이전에 저장된 폭이 새 기본값을 덮지 않게 한다
+  const { tableRef, widths, resizer } = useColumnResize('audit.v2', COLS)
 
   // 체인 상태(원본 체인·섀도 요약·보호 트리거) — 문제가 있을 때만 상세(forensics)를 추가로 받는다 (비용 절감)
   const refreshChain = useCallback(async () => {
