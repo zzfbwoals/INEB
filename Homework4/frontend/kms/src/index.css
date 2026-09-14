@@ -2187,9 +2187,11 @@ html.dash-full .dash .stat .num { font-size: 30px; }
 .fail-it .kn b { display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fail-it .kn span { font-size: 11px; color: var(--red); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .fail-it .when { font-size: 11px; color: var(--text-3); white-space: nowrap; }
-.bars { padding: 10px 16px; display: flex; flex-direction: column; gap: 7px; }
-.bar-it { display: grid; grid-template-columns: 46px 1fr 20px; align-items: center; gap: 10px; font-size: 11.5px; }
-.bar-it .nm { font-weight: 700; color: var(--text-2); }
+/* 이름 열은 가장 긴 알고리즘명 기준(max-content)으로 전 행 공통 — 행마다 subgrid 로 부모 열을 물려받아 막대 시작점이 맞는다 */
+.bars { padding: 10px 16px; display: grid; grid-template-columns: max-content 1fr 20px; column-gap: 10px; row-gap: 7px; align-content: start; }
+.bars > .empty { grid-column: 1 / -1; }
+.bar-it { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; font-size: 11.5px; }
+.bar-it .nm { font-weight: 700; color: var(--text-2); max-width: none; overflow: visible; }
 .bar-it .tr { height: 7px; border-radius: 4px; background: var(--raised); overflow: hidden; }
 .bar-it .fl { height: 100%; border-radius: 4px; background: var(--blue); opacity: 0.85; transition: width 0.3s; }
 .bar-it .v { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-3); }
