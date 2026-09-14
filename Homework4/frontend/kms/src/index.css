@@ -1029,15 +1029,15 @@ body.col-resizing .tbl-wrap thead th.sortable:not(.on) {
 .sdot.s-DEACTIVATED, .sdot.u-SUSPENDED { background: var(--text-3); }
 .sdot.s-DESTROYED { background: color-mix(in srgb, var(--text-3) 55%, transparent); }
 /* 감사 로그 체인 상태 — 제목 옆 색상점만, 상태명은 툴팁(2026-09-14): 정상 초록 · 위반 빨강 · 확인 불가 회색. 대시보드 실시간 점과 같은 맥동(확인 불가는 정지) */
-.sdot.c-ok { background: var(--green); --pulse: var(--green); animation: pulse 2s infinite; }
-.sdot.c-bad { background: var(--red); --pulse: var(--red); animation: pulse 2s infinite; }
+.sdot.c-ok { background: var(--green); --pulse: var(--green); animation: dotpulse 2s infinite; }
+.sdot.c-bad { background: var(--red); --pulse: var(--red); animation: dotpulse 2s infinite; }
 .sdot.c-na { background: var(--text-3); }
 .stext { display: inline-flex; align-items: center; gap: 6px; }
 .stext .sdot { margin-left: 0; }
 /* 제목 옆 상태점(키 상세·감사 로그 체인) — 대시보드 실시간 점과 같은 7px, 살아 있는 상태(운영·준비·체인 정상/위반)는 상태색 맥동 */
 h2 > .sdot { width: 7px; height: 7px; margin-left: 10px; vertical-align: 5px; }
-h2 > .sdot.s-ACTIVE { --pulse: var(--green); animation: pulse 2s infinite; }
-h2 > .sdot.s-PRE_ACTIVE { --pulse: var(--blue); animation: pulse 2s infinite; }
+h2 > .sdot.s-ACTIVE { --pulse: var(--green); animation: dotpulse 2s infinite; }
+h2 > .sdot.s-PRE_ACTIVE { --pulse: var(--blue); animation: dotpulse 2s infinite; }
 h2 > .sdot[data-tip]::after { transition: none; transform: translateX(-50%) translateY(0); }
 /* 호버 중엔 맥동 정지 — 링(반투명 상태색)이 툴팁 위를 지나며 툴팁이 흐려졌다 밝아지는 것처럼 보이는 문제 */
 h2 > .sdot:hover { animation: none; box-shadow: none; }
@@ -2047,10 +2047,10 @@ html.dash-full .dash .stat .num { font-size: 30px; }
 
 /* 실시간 표시 */
 .live { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
-.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: dotpulse 2s infinite; }
 .live.off i { background: var(--text-3); animation: none; }
-/* 맥동 색은 --pulse 로 — 대시보드 실시간 점(초록)과 감사 로그 체인 상태 점(상태색)이 공유 */
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pulse, var(--green)) 55%, transparent); } 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+/* 맥동 색은 --pulse 로 — 대시보드 실시간 점(초록)과 제목 옆 상태점(상태색)이 공유. 이름을 pulse 로 두면 Tailwind v4 내장 pulse(opacity 50%) 와 충돌해 덮이므로 dotpulse */
+@keyframes dotpulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pulse, var(--green)) 55%, transparent); } 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 
 /* 헤더 검색창 — "/" 키 배지 안내 */
 .sbox { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px 0 11px; min-width: 224px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--raised); color: var(--text-3); font-size: 12.5px; cursor: text; transition: border-color 0.15s, color 0.15s; font-family: inherit; }
