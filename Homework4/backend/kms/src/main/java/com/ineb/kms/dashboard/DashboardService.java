@@ -158,7 +158,8 @@ public class DashboardService {
         }
         // 체인 위반은 영구(재해시 없음) — 값이 원복돼 구간이 0이어도 위반 표시가 남아 있으면 1건으로 센다
         var chain = auditLogService.status();
-        long auditChain = chain.healthy() ? 0 : Math.max(1, Math.max(chain.flaggedRows(), chain.violations().size()));
+        // 감사 체인 = 미확인 증거 행 수 (2026-09-14 확인 도입) — 확인이 끝나면 0, 원복 여부는 체인 밴드 색(주황)이 보여준다
+        long auditChain = chain.unacknowledgedRows();
         return new Integrity(keyMeta, keyVersion, user, auditChain, keyMeta + keyVersion + user + auditChain,
                 first == null ? null : first.getKeyUid(), first == null ? null : first.getKeyName());
     }

@@ -16,9 +16,9 @@
 <template id="page-body">
   <div class="page-h">
     <div style="display:flex;align-items:center;gap:10px">
-      <!-- 진입 시 자동 검증(GET /api/audit-logs/chain-status) 결과 — 제목 옆 색상점만(툴팁에 상태): 정상(healthy) c-ok "체인 정상" /
-           위반 c-bad "체인 위반 N건"(N = max(증거 행 수, 위반 구간 수)) + [위반 상세] / 확인 불가 c-na -->
-      <h2>감사 로그<span class="sdot c-bad" data-tip="체인 위반 2건" aria-label="체인 위반 2건"></span></h2>
+      <!-- 진입 시 자동 검증(GET /api/audit-logs/chain-status) 결과 — 제목 옆 색상점만(툴팁에 상태): 미확인 증거 있음 c-bad "체인 위반 N건 · 미확인 M건" /
+           전부 확인했지만 검사 실패(원복 안 됨) c-ack 주황 "위반 확인 완료 · 원복 필요" / 정상 c-ok / 확인 불가 c-na. + [위반 상세] -->
+      <h2>감사 로그<span class="sdot c-bad" data-tip="체인 위반 2건 · 미확인 1건" aria-label="체인 위반 2건 · 미확인 1건"></span></h2>
       <button class="icon-btn" data-tip="위반 상세" aria-label="위반 상세" onclick="openModal('mdForensics')"><i data-lucide="list" width="15" height="15" stroke-width="2"></i></button>
       <button class="icon-btn" data-tip="체인 재검증" aria-label="체인 재검증" onclick="toast('해시 체인 검증을 통과했습니다.')"><i data-lucide="rotate-cw" width="15" height="15" stroke-width="2"></i></button>
       <button class="icon-btn" data-tip="CSV 내려받기" aria-label="CSV 내려받기" onclick="toast('CSV 다운로드를 시작합니다.')"><i data-lucide="download" width="15" height="15" stroke-width="2"></i></button>
@@ -63,14 +63,16 @@
   <!-- 헤더·탭 고정, diff 카드 목록만 스크롤(.scroll-list). 목록 행 클릭 시에는 탭 없이 그 행의 diff 하나만 -->
   <div class="modal wide scroll-body">
     <div class="modal-h has-extra">
-      <div class="modal-h-main"><h3>감사 로그 위반 상세</h3>
+      <div class="modal-h-main"><div class="modal-title-row"><h3>감사 로그 위반 상세</h3></div>
         <div class="tabs"><button class="tab">삭제됨 1</button><button class="tab">삽입됨 1</button><button class="tab on">수정됨 1</button></div></div>
       <button class="x" data-tip="닫기" aria-label="닫기" onclick="closeModal('mdForensics')">✕</button>
     </div>
     <div class="modal-b">
       <div class="scroll-list">
       <div class="meta-box">
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="mono" style="color:var(--text-3)">#1288</span><span style="font-size:12px;color:var(--text-3)">행위자, 상세</span></div>
+        <!-- 카드 머리 오른쪽 확인 체크 — 회색(미확인) → 사유 입력 → 빨간 체크(확인됨). 목록 행 클릭(single)에서는 제목 오른쪽에 같은 버튼. 원복은 없음(append-only) -->
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span class="mono" style="color:var(--text-3)">#1288</span><span style="font-size:12px;color:var(--text-3)">행위자, 상세</span>
+          <span style="margin-left:auto"><button class="ack-btn sm tip-left" data-tip="위반 확인" aria-label="위반 확인" onclick="ackViolation(this)"><i data-lucide="check" width="16" height="16" stroke-width="2.6"></i></button></span></div>
         <div class="diff-grid">
           <div class="h">필드</div><div class="h">원본</div><div class="h">변조 값</div>
           <div class="k">행위자</div><div class="mono del">admin</div><div class="mono add">intruder</div>
@@ -104,6 +106,8 @@ function renderAudit(){
      실제 앱은 GET /api/audit-logs/forensics 결과를 목록에 병합 — 기본 정렬(id 내림차순)·필터 없음일 때만 유령 행 인라인, 페이지당 3개 상한.
      '위반 행만' 은 forensics 의 수정·삽입·삭제 행만(클라이언트 필터·정렬·페이징) */
   const MOD=new Map([[AUDITS[1]?.id,'행위자, 상세']]), INS=new Set([AUDITS[0]?.id]);   // MOD: id → 바뀐 컬럼(원복해도 증거로 유지)   // 시연용 위반 행은 필터와 무관하게 고정
+  const ACK=new Map([[AUDITS[0]?.id,'확인됨 · admin · 2026-08-28 10:12:00']]);   // 확인된 위반 행 — ID 위에 빨간 체크, 툴팁은 누가·언제
+  const idHtml=a=>`<span class="idwrap">#${Math.floor(a.id)}${ACK.has(a.id)?`<span class="id-ack tip-right" data-tip="${ACK.get(a.id)}"><i data-lucide="check" width="14" height="14" stroke-width="3"></i></span>`:''}</span>`;
   const GHOST={id:(AUDITS[2]?.id??0)+0.5, at:AUDITS[2]?.at??'', actor:'admin', action:'LOGIN_SUCCESS', target:'AUTH#admin', detail:'role=ADMIN'};
   const view=document.getElementById('auditView').dataset.v,onlyBad=view==='bad';
   if(onlyBad)list=list.filter(a=>MOD.has(a.id)||INS.has(a.id));
@@ -114,7 +118,7 @@ function renderAudit(){
   const rows=list.slice(auditPage*size,(auditPage+1)*size);
   const rowHtml=a=>`
   <tr class="${MOD.has(a.id)||INS.has(a.id)?'row-bad rowlink':'rowlink'}" onclick="${MOD.has(a.id)||INS.has(a.id)?`openModal('mdForensics')`:`openAuditDetail(${a.id})`}">
-    <td class="mono" style="color:var(--text-3)">#${a.id}</td>
+    <td class="mono" style="color:var(--text-3)">${idHtml(a)}</td>
     <td class="mono">${a.at}</td>
     <td><b>${a.actor}</b></td>
     <td><span class="actchip ${/_INTEGRITY_VIOLATION$/.test(a.action)?'bad':''}">${a.action}</span></td>
@@ -123,7 +127,7 @@ function renderAudit(){
   </tr>`;
   const ghostHtml=g=>`
   <tr class="row-ghost" onclick="openModal('mdForensics')">
-    <td class="mono">#${Math.floor(g.id)}</td><td class="mono">${g.at}</td><td><b>${g.actor}</b></td>
+    <td class="mono">${idHtml(g)}</td><td class="mono">${g.at}</td><td><b>${g.actor}</b></td>
     <td><span class="actchip ${/_INTEGRITY_VIOLATION$/.test(g.action)?'bad':''}">${g.action}</span></td><td class="mono">${g.target}</td>
     <td class="mono"><span class="row-tag">삭제됨</span>${g.detail}</td>
   </tr>`;
@@ -133,6 +137,8 @@ function renderAudit(){
     ||'<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:34px">조건에 맞는 기록이 없습니다</td></tr>';
   renderPager(document.getElementById('auditPager'),onlyBad?list.length+1:list.length,auditPage,totalPages,'goAuditPage');
 }
+/* 위반 확인(목업) — 실제 앱은 사유 입력 모달 → POST /api/audit-logs/violations/{auditId}/ack → AUDIT_VIOLATION_ACKNOWLEDGED 기록 → SSE 로 목록·점 갱신 */
+function ackViolation(btn){btn.classList.add('on');btn.disabled=true;btn.dataset.tip='확인됨 · admin · 방금 · (사유)';toast('위반 증거를 확인했습니다.');}
 function openAuditDetail(id){
   const a=AUDITS.find(x=>x.id===id); if(!a)return;
   document.getElementById('adTitle').textContent='감사 로그 #'+a.id;

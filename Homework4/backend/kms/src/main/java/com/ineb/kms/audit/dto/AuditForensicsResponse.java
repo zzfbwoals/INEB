@@ -15,10 +15,27 @@ public record AuditForensicsResponse(
         long deletedCount,
         long insertedCount,
         long modifiedCount,
+        /** 체인만 깨진 구간 수(섀도 차이 없음) */
+        long chainCount,
+        /** 미확인 증거 행 수 */
+        long unacknowledgedRows,
         List<AuditLogItem> deleted,
         List<AuditLogItem> inserted,
-        List<ModifiedItem> modified) {
+        List<ModifiedItem> modified,
+        List<ChainItem> chain,
+        /** 증거 행마다의 확인 기록 — 화면이 감사 행 단위로 "전부 확인됐는가"를 판정하고 ID 에 체크를 덮는다 */
+        List<EvidenceItem> evidence) {
 
     public record ModifiedItem(long id, AuditLogItem current, AuditLogItem original, List<String> fields) {
+    }
+
+    /** 체인만 깨진 구간 — id(fromId)~toId, current 는 fromId 행의 현재 값 */
+    public record ChainItem(long id, long toId, AuditLogItem current) {
+    }
+
+    public record EvidenceItem(long id, long auditId, String kind, String fields, AckItem ack) {
+    }
+
+    public record AckItem(String by, String at, String reason) {
     }
 }

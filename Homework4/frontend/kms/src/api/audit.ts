@@ -32,16 +32,43 @@ export interface AuditShadowSummary {
 export interface AuditVerifyResult {
   /** 원본 체인만의 판정 */
   valid: boolean
-  /** 체인 + 섀도 비교 + 위반 표시(flagged)를 합친 최종 판정 (shadowChainValid 는 참고용) */
+  /** checksOk && !flagged — 초록 (shadowChainValid 는 참고용) */
   healthy: boolean
-  /** AUDIT_CHAIN_VIOLATION 기록 또는 변조 증거가 있는지 — 영구 위반(재해시 없음). valid·섀도가 정상인데 true 면 원복 뒤에도 남은 위반 */
+  /** 관리자가 아직 확인하지 않은 변조 증거가 있는지 — 빨강. 증거는 원복해도 남으므로 확인 전까지 유지 */
   flagged: boolean
+  /** 지금 검사(체인 + 섀도 비교) 통과 — 전부 확인했는데 false 면 주황(원복 필요) */
+  checksOk: boolean
+  /** 미확인 증거 행 수 */
+  unacknowledgedRows: number
   /** 변조 증거(audit_violation)에 남은 행 수 — 원복해도 유지, 배지 "체인 위반 N건" */
   flaggedRows: number
   totalRows: number
   verifiedAt: string
   violations: AuditViolation[]
   shadow?: AuditShadowSummary
+}
+
+/** 확인(acknowledge) 기록 — 누가·언제·왜 (AUDIT_VIOLATION_ACKNOWLEDGED, 원복 없음) */
+export interface AuditAck {
+  by: string
+  at: string
+  reason: string
+}
+
+/** 체인만 깨진 구간(섀도 차이 없음) — id(fromId)~toId, current 는 fromId 행의 현재 값 */
+export interface AuditChainItem {
+  id: number
+  toId: number
+  current: AuditLogItem
+}
+
+/** 증거 행 하나 + 확인 기록. 감사 행(auditId)의 증거가 전부 확인돼야 그 행이 "확인됨" */
+export interface AuditEvidenceItem {
+  id: number
+  auditId: number
+  kind: 'MODIFIED' | 'INSERTED' | 'DELETED' | 'CHAIN'
+  fields: string
+  ack: AuditAck | null
 }
 
 export interface AuditModifiedItem {
@@ -61,9 +88,37 @@ export interface AuditForensics {
   deletedCount: number
   insertedCount: number
   modifiedCount: number
+  chainCount: number
+  unacknowledgedRows: number
   deleted: AuditLogItem[]
   inserted: AuditLogItem[]
   modified: AuditModifiedItem[]
+  chain: AuditChainItem[]
+  evidence: AuditEvidenceItem[]
+}
+
+/** 제목 옆 색상점·대시보드 방패 색 — 미확인 증거 있음 = bad(빨강) / 전부 확인했지만 검사 실패 = ack(주황) / 정상 = ok(초록) */
+export type ChainState = 'loading' | 'na' | 'ok' | 'ack' | 'bad'
+
+export function chainState(r: AuditVerifyResult | null | 'unavailable'): ChainState {
+  if (r === null) return 'loading'
+  if (r === 'unavailable') return 'na'
+  if (r.flagged) return 'bad'
+  if (!r.checksOk) return 'ack'
+  return 'ok'
+}
+
+export function chainTip(r: AuditVerifyResult | null | 'unavailable'): string {
+  switch (chainState(r)) {
+    case 'loading': return '확인 중'
+    case 'na': return '체인 확인 불가'
+    case 'ok': return '체인 정상'
+    case 'ack': return '위반 확인 완료 · 원복 필요'
+    default: {
+      const v = r as AuditVerifyResult
+      return `체인 위반 ${Math.max(v.flaggedRows, v.violations.length)}건 · 미확인 ${v.unacknowledgedRows}건`
+    }
+  }
 }
 
 /** 섀도 요약에 문제가 있는지 — 있을 때만 forensics 를 부른다 */
@@ -97,7 +152,7 @@ export const AUDIT_ACTIONS = [
   'KEY_INTEGRITY_VIOLATION', 'KEY_INTEGRITY_RESEALED', 'KEY_MATERIAL_VIEWED',
   'KEY_TEST_ENCRYPT', 'KEY_TEST_DECRYPT', 'KEY_TEST_SIGN', 'KEY_TEST_VERIFY',
   'USER_CREATED', 'USER_UPDATED', 'USER_PLAIN_VIEWED', 'USER_INTEGRITY_VIOLATION', 'USER_INTEGRITY_RESEALED',
-  'AUDIT_CHAIN_VERIFIED', 'AUDIT_EXPORTED', 'AUDIT_CHAIN_VIOLATION', 'AUDIT_CHAIN_RESTORED',
+  'AUDIT_CHAIN_VERIFIED', 'AUDIT_EXPORTED', 'AUDIT_CHAIN_VIOLATION', 'AUDIT_CHAIN_RESTORED', 'AUDIT_VIOLATION_ACKNOWLEDGED',
   'DB_DIRECT_CHANGE', 'INTEGRITY_TRIGGER_TAMPERED',
   'AUDIT_SHADOW_BACKFILLED',
   'NOTICE_CREATED', 'NOTICE_UPDATED', 'NOTICE_DELETED', 'NOTICE_FILE_DOWNLOADED', 'NOTICE_FILE_DELETED',
@@ -131,6 +186,12 @@ export async function fetchForensics(): Promise<AuditForensics> {
 }
 
 /** 전체 해시 체인 재검증 — 검증 실행도 AUDIT_CHAIN_VERIFIED 로 기록되므로 POST */
+/** 위반 증거 확인 — 감사 행에 걸린 미확인 증거 전부를 사유와 함께 기록(ADMIN, 원복 없음). 응답은 갱신된 체인 상태 */
+export async function acknowledgeViolation(auditId: number, reason: string): Promise<{ data: AuditVerifyResult; message: string | null }> {
+  const res = await api.post<ApiEnvelope<AuditVerifyResult>>(`/api/audit-logs/violations/${auditId}/ack`, { reason })
+  return { data: res.data.data, message: res.data.message }
+}
+
 export async function verifyAuditChain(): Promise<{ data: AuditVerifyResult; message: string | null }> {
   const res = await api.post<ApiEnvelope<AuditVerifyResult>>('/api/audit-logs/verify')
   return { data: res.data.data, message: res.data.message }

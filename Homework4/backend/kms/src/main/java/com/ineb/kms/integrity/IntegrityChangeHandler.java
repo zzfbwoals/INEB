@@ -158,7 +158,7 @@ public class IntegrityChangeHandler {
                 case "app_user" -> parseLong(c.id()).ifPresent(users::add);
                 case "crypto_key" -> parseLong(c.id()).ifPresent(keys::add);
                 case "key_material" -> parseLong(c.ref()).ifPresent(keys::add);
-                case "audit_log", "audit_log_shadow" -> chain = true;
+                case "audit_log", "audit_log_shadow", "audit_violation" -> chain = true;
                 default -> { }
             }
         }
@@ -195,7 +195,7 @@ public class IntegrityChangeHandler {
             case "notice_file" -> c.ref().isEmpty() ? "NOTICE#*" : "NOTICE#" + c.ref();
             case "admin_user" -> c.ref().isEmpty() ? "AUTH#*" : AuditHook.authTarget(c.ref());
             case "crypto_config" -> c.id().isEmpty() ? "CONFIG#*" : "CONFIG#" + c.id();
-            case "audit_log", "audit_log_shadow" -> "AUDIT";
+            case "audit_log", "audit_log_shadow", "audit_violation" -> "AUDIT";
             default -> "DB#" + c.table();
         };
     }

@@ -33,6 +33,7 @@ public enum ErrorCode {
     KEY_CRYPTO_FAILED(HttpStatus.BAD_REQUEST, "암호 연산에 실패했습니다. 암호문 손상 또는 키 불일치입니다."),
     KEY_INTEGRITY_VIOLATION(HttpStatus.CONFLICT, "무결성 위반이 감지되어 해당 버전이 자동 정지되었습니다."),
     INTEGRITY_NOT_FLAGGED(HttpStatus.CONFLICT, "무결성 위반 상태가 아닙니다."),
+    AUDIT_VIOLATION_NOT_FLAGGED(HttpStatus.CONFLICT, "확인할 위반 증거가 없습니다."),
 
     // ---- 사용자 관리 (3주차) ----
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),

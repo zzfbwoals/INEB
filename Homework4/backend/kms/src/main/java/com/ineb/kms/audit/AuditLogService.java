@@ -54,16 +54,19 @@ public class AuditLogService {
     private final AuditShadowComparer comparer;
     private final PersonalDataCodec codec;
     private final AuditViolationStore violationStore;
+    private final AuditAcknowledgeService acknowledgeService;
 
     public AuditLogService(AuditLogRepository repository, AuditLogShadowRepository shadowRepository,
                            AuditChainService chainService, AuditShadowComparer comparer,
-                           PersonalDataCodec codec, AuditViolationStore violationStore) {
+                           PersonalDataCodec codec, AuditViolationStore violationStore,
+                           AuditAcknowledgeService acknowledgeService) {
         this.repository = repository;
         this.shadowRepository = shadowRepository;
         this.chainService = chainService;
         this.comparer = comparer;
         this.codec = codec;
         this.violationStore = violationStore;
+        this.acknowledgeService = acknowledgeService;
     }
 
     /**
@@ -163,7 +166,7 @@ public class AuditLogService {
         boolean checksOk = result.chain().valid() && result.shadowClean();
         // 변조 증거 스냅샷 + 위반 표시 — 삭제·삽입·수정 행을 처음 본 순간 값째 남긴다(원복해도 유지, 별도 트랜잭션·체인 잠금)
         AuditViolationStore.Settled settled = violationStore.settle(result, checksOk, summaryDetail(result));
-        return new Check(toResponse(result, checksOk, settled.flagged(), evidenceSummary(evidence(settled.added()))), settled.detail());
+        return new Check(toResponse(result, checksOk, settled, evidenceSummary(evidence(settled.added()))), settled.detail());
     }
 
     /**
@@ -187,7 +190,7 @@ public class AuditLogService {
             return "";
         }
         StringBuilder sb = new StringBuilder();
-        for (String kind : List.of(AuditViolation.MODIFIED, AuditViolation.INSERTED, AuditViolation.DELETED)) {
+        for (String kind : List.of(AuditViolation.MODIFIED, AuditViolation.INSERTED, AuditViolation.DELETED, AuditViolation.CHAIN)) {
             List<String> ids = added.stream().filter(v -> kind.equals(v.getKind())).limit(20)
                     .map(v -> v.getAuditId() + (v.getFields().isEmpty() ? "" : "(" + v.getFields() + ")")).toList();
             if (!ids.isEmpty()) {
@@ -238,10 +241,34 @@ public class AuditLogService {
                 .toList();
         long deletedCount = ev.stream().filter(v -> AuditViolation.DELETED.equals(v.getKind())).map(AuditViolation::getAuditId).distinct().count();
         long insertedCount = ev.stream().filter(v -> AuditViolation.INSERTED.equals(v.getKind())).map(AuditViolation::getAuditId).distinct().count();
+        // 체인만 깨진 구간 — 현재 행 값과 구간
+        List<AuditForensicsResponse.ChainItem> chain = ev.stream().filter(v -> AuditViolation.CHAIN.equals(v.getKind())).limit(FORENSICS_MAX)
+                .map(v -> new AuditForensicsResponse.ChainItem(v.getAuditId(), rangeEnd(v),
+                        repository.findById(v.getAuditId()).map(this::toItem).orElse(toItem(v.snapshot()))))
+                .toList();
+        // 증거별 확인 기록 — 화면은 감사 행(auditId) 단위로 "그 행의 증거가 전부 확인됐는가"를 판정한다
+        java.util.Map<Long, AuditAcknowledgeService.Ack> acks = acknowledgeService.acknowledged();
+        List<AuditForensicsResponse.EvidenceItem> evidence = ev.stream().map(v -> {
+            AuditAcknowledgeService.Ack a = acks.get(v.getId());
+            return new AuditForensicsResponse.EvidenceItem(v.getId(), v.getAuditId(), v.getKind(), v.getFields(),
+                    a == null ? null : new AuditForensicsResponse.AckItem(a.by(), KstTime.format(a.at()), a.reason()));
+        }).toList();
+        long unacknowledged = evidence.stream().filter(e -> e.ack() == null).count();
         return new AuditForensicsResponse(KstTime.format(Instant.now()),
                 r.chain().valid(), r.shadowChain().valid(),
-                r.currentRows(), r.shadowRows(), deletedCount, insertedCount, fieldsById.size(),
-                deleted, inserted, modified);
+                r.currentRows(), r.shadowRows(), deletedCount, insertedCount, fieldsById.size(), chain.size(), unacknowledged,
+                deleted, inserted, modified, chain, evidence);
+    }
+
+    /** CHAIN 증거의 fields "fromId-toId" 에서 toId */
+    private static long rangeEnd(AuditViolation v) {
+        String f = v.getFields();
+        int i = f.indexOf('-');
+        try {
+            return i >= 0 ? Long.parseLong(f.substring(i + 1)) : v.getAuditId();
+        } catch (NumberFormatException e) {
+            return v.getAuditId();
+        }
     }
 
     private static final int FORENSICS_MAX = 200;
@@ -253,20 +280,20 @@ public class AuditLogService {
     }
 
     private static AuditVerifyResponse toResponse(AuditShadowComparer.Result r,
-                                                  boolean checksOk, boolean flagged, EvidenceSummary ev) {
+                                                  boolean checksOk, AuditViolationStore.Settled s, EvidenceSummary ev) {
         // 섀도 체인은 판정에 넣지 않는다 — 원본이 변조된 뒤 정상 기록이 이어지면 그 행이 변조된 상태를 prev 로 물고 섀도에 복사되어
         // 섀도 체인도 필연적으로 끊기므로 독립 신호가 아니다. "원본·섀도 동일 변조"는 체인 위반 + 섀도 차이 0 으로 드러난다.
-        // healthy = 지금 검사 통과 && 위반 표시 없음 — 위반 표시(기록·증거)는 영구(재해시 없음).
+        // flagged = 미확인 증거 있음(빨강) / healthy = 지금 검사 통과 && 미확인 없음(초록) / 나머지 = 확인 완료·원복 필요(주황).
         // 섀도 요약의 삭제·삽입·수정 건수는 지금 차이와 남아 있는 증거 중 큰 값 — 원복해도 화면이 위반 행을 계속 보여준다
-        boolean permanent = flagged || ev.rows() > 0;
-        boolean healthy = checksOk && !permanent;
-        return new AuditVerifyResponse(r.chain().valid(), healthy, permanent, ev.rows(), r.currentRows(), KstTime.format(Instant.now()),
+        boolean healthy = checksOk && !s.flagged();
+        return new AuditVerifyResponse(r.chain().valid(), healthy, s.flagged(), ev.rows(), r.currentRows(), KstTime.format(Instant.now()),
                 r.chain().violations().stream()
                         .map(v -> new AuditVerifyResponse.ViolationRange(v.fromId(), v.toId(), v.type().name()))
                         .toList(),
                 new AuditVerifyResponse.ShadowSummary(Math.max(r.deletedCount(), ev.deleted()),
                         Math.max(r.insertedCount(), ev.inserted()), Math.max(r.modifiedCount(), ev.modified()),
-                        r.currentRows(), r.shadowRows(), r.shadowChain().valid()));
+                        r.currentRows(), r.shadowRows(), r.shadowChain().valid()),
+                checksOk, s.unacknowledged());
     }
 
     /**

@@ -39,7 +39,8 @@ public class IntegrityChangeTrigger implements SmartInitializingSingleton {
     static final String TRUNCATE_SUFFIX = "_trunc";
     /** 감시 대상 — 설계 [표 6-1] 10개 테이블 + 감사 복사본 */
     public static final List<String> TABLES = List.of("crypto_config", "admin_user", "crypto_key", "key_material",
-            "key_status_history", "key_usage_log", "app_user", "notice", "notice_file", "audit_log", "audit_log_shadow");
+            "key_status_history", "key_usage_log", "app_user", "notice", "notice_file", "audit_log", "audit_log_shadow",
+            "audit_violation");   // 변조 증거 표 — 증거 행 삭제(미확인 수 감소)도 DB_DIRECT_CHANGE 로 남긴다 (2026-09-14)
 
     private static final Logger log = LoggerFactory.getLogger(IntegrityChangeTrigger.class);
 

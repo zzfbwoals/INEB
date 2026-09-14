@@ -1,6 +1,6 @@
 import { Check, ChevronDown, KeyRound, MessageSquare, Plus, RotateCcw, RotateCw, ShieldCheck, User } from 'lucide-react'
 import { Link } from 'react-router'
-import type { AuditVerifyResult } from '@/api/audit'
+import { chainState, chainTip, type AuditVerifyResult } from '@/api/audit'
 import { PANEL_GROUPS, PANEL_TITLES, type PanelId } from '@/lib/splitTree'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -13,13 +13,13 @@ export function ChainBand({ chain, verifying, onVerify }: {
   verifying: boolean
   onVerify: () => void
 }) {
-  const ok = chain !== null && chain !== 'unavailable' && chain.healthy
-  const bad = chain !== null && chain !== 'unavailable' && !chain.healthy
-  const tip = chain === 'unavailable' ? '체인 확인 불가' : chain === null ? '확인 중' : ok ? '체인 정상' : `체인 위반 ${chain.violations.length}건`
+  // 방패 색 = 감사 로그 제목 옆 점과 같은 판정: 미확인 증거 빨강 / 확인 완료·원복 필요 주황 / 정상 초록
+  const state = chainState(chain)
+  const tip = chainTip(chain)
   const r = chain !== null && chain !== 'unavailable' ? chain : null
   return (
-    <div className={`chain-band ${bad ? 'bad' : ''}`}>
-      <span className={`chain-ic ${ok ? 'ok' : bad ? 'bad' : 'off'}`} data-tip={tip} aria-label={tip}><ShieldCheck size={16} strokeWidth={2.2} /></span>
+    <div className={`chain-band ${state === 'bad' ? 'bad' : ''}`}>
+      <span className={`chain-ic ${state === 'ok' ? 'ok' : state === 'bad' ? 'bad' : state === 'ack' ? 'ack' : 'off'}`} data-tip={tip} aria-label={tip}><ShieldCheck size={16} strokeWidth={2.2} /></span>
       <span>마지막 검증 <b className="mono">{r?.verifiedAt ?? '—'}</b></span>
       <button type="button" className="icon-btn sm" data-tip="체인 재검증" aria-label="체인 재검증" disabled={verifying} onClick={onVerify}>
         <RotateCw size={14} strokeWidth={2.2} />

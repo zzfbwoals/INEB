@@ -1032,6 +1032,8 @@ body.col-resizing .tbl-wrap thead th.sortable:not(.on) {
 .sdot.c-ok { background: var(--green); --pulse: var(--green); animation: dotpulse 2s infinite; }
 .sdot.c-bad { background: var(--red); --pulse: var(--red); animation: dotpulse 2s infinite; }
 .sdot.c-na { background: var(--text-3); }
+/* 확인 완료·원복 필요(주황) — 미확인 증거는 없지만 지금 검사가 실패 */
+.sdot.c-ack { background: var(--amber); --pulse: var(--amber); animation: dotpulse 2s infinite; }
 .stext { display: inline-flex; align-items: center; gap: 6px; }
 .stext .sdot { margin-left: 0; }
 /* 제목 옆 상태점(키 상세·감사 로그 체인) — 대시보드 실시간 점과 같은 7px, 살아 있는 상태(운영·준비·체인 정상/위반)는 상태색 맥동 */
@@ -1878,9 +1880,15 @@ h2 > .sdot:hover { animation: none; box-shadow: none; }
 .tip-left[data-tip]:hover::after {
   transform: translateY(-50%) translateX(0);
 }
-/* 표 셀은 말줄임을 위해 overflow:hidden 이라 툴팁이 잘린다 — 툴팁 버튼이 있는 셀·표 래퍼(내부 스크롤 표 제외)는 넘침 허용 */
+/* 표 셀은 말줄임을 위해 overflow:hidden 이라 툴팁이 잘린다 — 툴팁 버튼이 있는 셀·표 래퍼(내부 스크롤 표 제외)는 넘침 허용.
+   overflow:hidden 인 이웃 셀이 자기 레이어로 뒤에 그려져 옆으로 뜨는 툴팁(tip-right)을 덮으므로, 툴팁 셀을 위치 지정 + z-index 로 위에 올린다 */
 .tbl-wrap table.tbl-fixed tbody td:has([data-tip]) {
   overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+.tbl-wrap table.tbl-fixed tbody td:has([data-tip]:hover) {
+  z-index: 2;
 }
 .tbl-wrap:not(.tbl-scroll):has([data-tip]) {
   overflow: visible;
@@ -2070,6 +2078,7 @@ html.dash-full .dash .stat .num { font-size: 30px; }
 .chain-ic.ok { color: var(--green); }
 .chain-ic.bad { color: var(--red); }
 .chain-ic.off { color: var(--text-3); }
+.chain-ic.ack { color: var(--amber); }
 .quick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .quick .btn-sm { gap: 4px; }
 .me-menu .mm-sec { font-size: 10.5px; font-weight: 800; letter-spacing: 0.09em; color: var(--text-3); padding: 8px 11px 4px; text-transform: uppercase; }
@@ -2252,3 +2261,16 @@ html.dash-full .dash .stat .num { font-size: 30px; }
 /* 오른쪽 툴팁 — 표 첫 열의 아이콘(버전 목록 키값 조회)은 왼쪽 툴팁이 표 밖으로 나가므로 오른쪽에 띄운다 (2026-09-11) */
 .tip-right[data-tip]::after { top: 50%; left: calc(100% + 8px); right: auto; transform: translateY(-50%) translateX(-4px); }
 .tip-right[data-tip]:hover::after { transform: translateY(-50%) translateX(0); }
+
+/* ---- 감사 로그 위반 확인(acknowledge, 2026-09-14) ---- */
+.modal-title-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+/* 확인 체크 — 회색(미확인)·호버 시 진해짐·확인됨은 빨강. 원복이 아니라 "검토했다"는 기록. 툴팁은 tip-right/left(모달 overflow 에 안 잘리게) */
+.ack-btn { width: 26px; height: 26px; border-radius: 8px; display: inline-grid; place-items: center; color: var(--text-3); background: transparent; border: 0; cursor: pointer; flex: none; transition: color 0.15s, background 0.15s; }
+.ack-btn.sm { width: 22px; height: 22px; }
+.ack-btn:hover:not(:disabled) { color: var(--text); background: var(--hover); }
+.ack-btn.on, .ack-btn.on:disabled { color: var(--red); cursor: default; }
+.ack-btn:disabled:not(.on) { cursor: default; opacity: 0.55; }
+/* 확인된 위반 행 — ID 글자 위에 빨간 체크를 덮는다 */
+.idwrap { position: relative; display: inline-block; }
+.id-ack { position: absolute; inset: 0; display: grid; place-items: center; color: var(--red); }
+.tbl-wrap tbody tr.row-ghost td .id-ack { text-decoration: none; }

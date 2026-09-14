@@ -79,7 +79,9 @@ public class AuditChainService {
                 : detail.substring(0, Math.min(detail.length(), DETAIL_MAX));
         // 상세는 마스터키로 암호화한 값을 detail 에 저장하고, 체인 해시도 저장되는 암호문으로 계산한다 (검증에 마스터키 불필요)
         String encDetail = codec.encrypt(safeDetail);
-        Instant now = Instant.now();
+        // PostgreSQL timestamp 는 마이크로초 — 나노초를 잘라 저장값과 메모리 값을 같게 한다. 같은 요청(open-in-view 로 EntityManager 공유)에서
+        // 기록 직후 검증하면 영속성 컨텍스트의 엔티티(나노초)와 복사본(마이크로초)의 createdAt 이 달라 "수정됨(createdAt)" 가짜 증거가 생겼다 (2026-09-14)
+        Instant now = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         String rowHash = hasher.rowHash(prevHash, safeActor, action, target, encDetail, now);
         AuditLog saved = repository.save(new AuditLog(safeActor, action, target, encDetail, prevHash, rowHash, now));
         // IDENTITY 는 persist 시 즉시 INSERT 되어 id 가 채워진다 — 같은 트랜잭션에서 섀도에 같은 id 로 복사

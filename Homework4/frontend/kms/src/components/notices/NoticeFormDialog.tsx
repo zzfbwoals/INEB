@@ -1,4 +1,4 @@
-import { Upload } from 'lucide-react'
+import { Trash2, Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createNotice, deleteNoticeFile, updateNotice, MAX_FILES, MAX_FILE_SIZE, type NoticeDetail, type NoticeFileItem } from '@/api/notices'
 import { Button } from '@/components/ui/button'
@@ -109,7 +109,7 @@ export function NoticeFormDialog({ edit, open, onClose, onDone }: {
                 ))}
                 {newFiles.map((f, i) => (
                   <NoticeFileRow key={`n${i}-${f.name}`} name={f.name} size={f.size} meta="업로드 예정"
-                    action={<Button variant="ghost" size="sm" onClick={() => setNewFiles((prev) => prev.filter((_, j) => j !== i))}>제거</Button>} />
+                    action={<button type="button" className="icon-btn danger tip-left" data-tip="제거" aria-label="제거" onClick={() => setNewFiles((prev) => prev.filter((_, j) => j !== i))}><Trash2 size={15} /></button>} />
                 ))}
               </div>
             )}
