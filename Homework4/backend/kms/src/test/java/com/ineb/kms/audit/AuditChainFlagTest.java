@@ -190,8 +190,8 @@ class AuditChainFlagTest {
     }
 
     @Test
-    @DisplayName("구간 안에 삭제·삽입·수정 증거가 이미 있으면 CHAIN 증거를 따로 만들지 않는다")
-    void chainEvidenceSkippedWhenCovered() {
+    @DisplayName("복사본 차이(수정 등)가 있으면 체인 끊김은 그 차이로 설명되므로 CHAIN 증거를 만들지 않는다 — 검증기는 끊김을 다음 행에 보고한다")
+    void chainEvidenceSkippedWhenShadowDiffers() {
         AuditViolation existing = evidence(1, new AuditViolation(AuditViolation.MODIFIED, "actor", row(3), Instant.now()));
         when(violationRepository.findAllByOrderByIdAsc()).thenReturn(List.of(existing));
         when(violationRepository.existsByAuditIdAndKindAndFields(3L, AuditViolation.MODIFIED, "actor")).thenReturn(true);

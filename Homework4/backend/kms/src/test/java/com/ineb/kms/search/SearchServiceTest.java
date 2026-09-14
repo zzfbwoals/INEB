@@ -65,7 +65,7 @@ class SearchServiceTest {
                 .thenReturn(page(List.of(new UserSummary(1, "김", "010-****-****", "****@****.**", "ACTIVE", 1, true, "", "")), 1));
         when(noticeService.search(eq("aes"), eq(5))).thenReturn(page(List.of(), 0));
         when(auditLogService.search(eq("aes"), eq(5)))
-                .thenReturn(page(List.of(new AuditLogItem(1, "admin", "KEY_TEST_ENCRYPT", "KEY#x", "version=1", true, "")), 13));
+                .thenReturn(page(List.of(new AuditLogItem(1, "admin", "KEY_TEST_ENCRYPT", "KEY#x", "version=1", true, "", "p", "h")), 13));
 
         SearchResponse r = service.search(" aes ", null);
 

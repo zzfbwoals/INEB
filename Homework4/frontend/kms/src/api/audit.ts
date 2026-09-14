@@ -3,6 +3,9 @@ import type { ApiEnvelope } from './auth'
 import type { PageResponse } from './keys'
 
 export interface AuditLogItem {
+  /** 위반 상세(diff)용 해시 — 화면은 열 너비만큼 보이고 넘치면 … (CSS 말줄임) */
+  prevHash?: string
+  rowHash?: string
   id: number
   actor: string
   action: string

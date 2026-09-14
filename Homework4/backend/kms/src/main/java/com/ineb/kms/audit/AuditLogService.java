@@ -371,7 +371,7 @@ public class AuditLogService {
             decrypted = false;
         }
         return new AuditLogItem(row.getId(), row.getActor(), row.getAction(), row.getTarget(),
-                plain, decrypted, KstTime.format(row.getCreatedAt()));
+                plain, decrypted, KstTime.format(row.getCreatedAt()), row.getPrevHash(), row.getRowHash());
     }
 
     /** 화면·CSV 에는 복호화한 상세를 보여준다. 복호화가 안 되는 값(암호화 이전 평문 행)은 그대로 보여준다 */
